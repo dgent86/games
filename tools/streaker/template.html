@@ -1,0 +1,742 @@
+<title>Streaker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+:root{
+  color-scheme: dark;
+  --turf:#0f3a27; --turf2:#124530; --line:rgba(255,255,255,.14);
+  --chalk:#f4f6f1; --muted:#a9c3b4; --ink:#12201a;
+  --card:#fbfcf8; --flood:#f5d90a; --bad:#ff5a47; --badDeep:#b3170a; --badTint:#ffe0db; --good:#5ee39a;
+  --c-pos:#1d5fd1; --c-nat:#c2410c; --c-in:#0e7c86; --c-hon:#a87a06; --c-int:#8a1c7c;
+  --display:"Big Shoulders Display", Impact, "Arial Narrow", sans-serif;
+  --body:"Barlow", system-ui, sans-serif;
+  --cond:"Barlow Condensed", "Arial Narrow", sans-serif;
+  --pitch:repeating-linear-gradient(90deg,var(--turf) 0 64px,var(--turf2) 64px 128px);
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--turf);background-image:var(--pitch);color:var(--chalk);font-family:var(--body);font-size:16px;line-height:1.45;padding-inline:16px}
+body.playing{overflow:hidden}
+.wrap{max-width:760px;margin:0 auto;padding-block:16px 48px;display:flex;flex-direction:column;gap:18px}
+
+/* ---------- stage ---------- */
+.stage{display:flex;flex-direction:column;gap:14px}
+body.playing .stage{
+  position:fixed;left:0;right:0;top:0;height:100%;z-index:10;gap:6px;box-sizing:border-box;
+  background:var(--turf);background-image:var(--pitch);
+  padding:max(10px,env(safe-area-inset-top,0px)) max(16px,calc((100vw - 760px)/2)) max(10px,env(safe-area-inset-bottom,0px));
+  overflow-y:auto;overscroll-behavior:contain;
+}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:900;font-size:clamp(26px,6vw,40px);line-height:.95;letter-spacing:.01em;margin:0;text-transform:uppercase}
+h1 span{color:var(--flood)}
+.brand{display:flex;flex-direction:column;gap:4px;min-width:0}
+.made{margin:0;font-family:var(--cond);font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+body.playing h1{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.board{display:flex;gap:8px}
+.stat{background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:6px;padding:4px 10px;text-align:center;min-width:60px}
+.stat b{display:block;font-family:var(--display);font-weight:900;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.stat small{font-family:var(--cond);text-transform:uppercase;letter-spacing:.12em;font-size:10px;color:var(--muted)}
+body.playing .stat{padding:2px 8px}
+body.playing .stat b{font-size:22px}
+#streak{color:var(--flood)}
+
+.kick{background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.kick p{margin:0;color:var(--muted);font-size:15px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.grow>button{flex:1;white-space:nowrap}
+.clock{min-width:60px}
+.seg{display:flex;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px}
+.seg button{flex:1;background:transparent;color:var(--muted);font-size:15px;padding:9px 8px;border-radius:6px;letter-spacing:.06em}
+.seg button[aria-pressed="true"]{background:var(--chalk);color:var(--ink)}
+.seg button small{display:block;font-family:var(--body);font-weight:500;font-size:12px;letter-spacing:0;text-transform:none;opacity:.8}
+.mode{font-family:var(--cond);font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);background:var(--chalk);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.sugg li small{font-weight:500;opacity:.7;margin-left:4px}
+select{font:500 16px var(--body);padding:11px 10px;border-radius:8px;background:rgba(0,0,0,.35);color:var(--chalk);border:1px solid var(--line)}
+.lbl{font-family:var(--cond);text-transform:uppercase;letter-spacing:.1em;font-size:12px;color:var(--muted)}
+button{font-family:var(--cond);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:17px;border:0;border-radius:8px;padding:12px 20px;cursor:pointer;background:var(--flood);color:#1a1a00}
+button.ghost{background:transparent;color:var(--chalk);border:1px solid var(--line)}
+button:focus-visible,select:focus-visible{outline:3px solid var(--chalk);outline-offset:2px}
+
+.clockbox{display:flex;align-items:center;gap:10px}
+.clock{flex:1;height:8px;background:rgba(0,0,0,.35);border-radius:4px;overflow:hidden;position:relative}
+.clock i{position:absolute;inset:0 auto 0 0;background:var(--flood);width:100%;transition:width .25s linear}
+.clock.low i{background:var(--bad)}
+#secs{font-family:var(--display);font-weight:900;font-size:20px;min-width:3ch;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---------- cards ---------- */
+.tablewrap{position:relative}
+.table{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sample{font-family:var(--cond);text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:var(--muted);margin:0 0 6px}
+body.playing .tablewrap{flex:none}
+.card{container-type:inline-size;position:relative;background:var(--card);color:var(--ink);border-radius:10px;aspect-ratio:5/7;max-width:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.35);transition:background .3s,opacity .3s}
+.card .band{padding:8px 4px 7px;color:#fff;font-family:var(--display);font-weight:900;font-size:clamp(13px,14cqi,22px);line-height:1;letter-spacing:.04em;text-align:center;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.card .face{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px;font-family:var(--display);font-weight:900;text-transform:uppercase;line-height:1;text-wrap:balance}
+.card .pip{height:6px}
+.card.new{animation:flip .45s ease-out}
+@keyframes flip{from{transform:rotateY(90deg)}to{transform:rotateY(0)}}
+.cat-pos .band,.cat-pos .pip{background:var(--c-pos)}
+.cat-nat .band,.cat-nat .pip{background:var(--c-nat)}
+.cat-in .band,.cat-in .pip{background:var(--c-in)}
+.cat-hon .band,.cat-hon .pip{background:var(--c-hon)}
+.cat-int .band,.cat-int .pip{background:var(--c-int)}
+.card.miss{background:var(--badTint);box-shadow:0 0 0 4px var(--bad),0 10px 24px rgba(0,0,0,.35)}
+.card.miss .band,.card.miss .pip{background:var(--badDeep)}
+.card.miss .face{color:var(--badDeep)}
+.card.hit{opacity:.45}
+
+/* ---------- full-time sash ---------- */
+.sash{position:absolute;left:-16px;right:-16px;top:52%;z-index:3;
+  background:rgba(8,14,11,.94);border-block:4px solid var(--bad);padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  box-shadow:0 18px 40px rgba(0,0,0,.55);animation:sweep .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+body.over .card .face{align-items:flex-start;padding-top:14%}
+body.over .tablewrap{margin-bottom:112px}
+body.over .card .face{font-size:min(1em,13cqi)}
+.sash .eyebrow{font-family:var(--cond);font-weight:700;letter-spacing:.2em;text-transform:uppercase;font-size:12px;color:var(--bad)}
+.sash button{flex:none;padding:12px 14px;white-space:nowrap}
+.sash>div{flex:1;min-width:0}
+.sash h2{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:clamp(26px,6.5vw,40px);line-height:.95;margin:2px 0 4px;white-space:nowrap}
+.sash h2 em{font-style:normal;color:var(--flood)}
+.sash p{margin:0;font-size:15px;color:var(--muted);max-width:44ch}
+.sash p b{color:var(--chalk)}
+
+.sash.yellow{border-color:var(--flood)}
+.sash.yellow .eyebrow{color:var(--flood)}
+.sash.yellow h2 em{color:var(--chalk)}
+.sash .cardicon{display:inline-block;width:.62em;height:.85em;border-radius:3px;background:var(--bad);vertical-align:-.06em;margin-right:.25em;transform:rotate(8deg)}
+.sash.yellow .cardicon{background:var(--flood)}
+.yc{display:inline-block;width:12px;height:17px;border-radius:2px;background:var(--flood);transform:rotate(8deg);flex:none;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+/* ---------- answer bar ---------- */
+.play{display:flex;flex-direction:column;gap:6px}
+.sugg{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;min-height:38px;align-items:center;list-style:none;margin:0;padding:0}
+.sugg::-webkit-scrollbar{display:none}
+.sugg li{flex:none;background:rgba(255,255,255,.12);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:600;font-size:15px;cursor:pointer;white-space:nowrap}
+.sugg li.on{background:var(--card);color:var(--ink);border-color:var(--card)}
+.sugg li.used{opacity:.4;text-decoration:line-through}
+.sugg .hint{color:var(--muted);font-size:14px;cursor:default;background:none;border:0;padding:0}
+.guess{display:flex;align-items:center;font:600 18px var(--body);padding:10px 14px;border-radius:8px;border:2px solid var(--flood);background:var(--card);color:var(--ink);min-height:44px;white-space:nowrap;overflow:hidden}
+.guess #gtext{overflow:hidden;text-overflow:ellipsis}
+.guess .caret{display:inline-block;width:2px;height:1.2em;background:var(--ink);margin-left:1px;animation:blink 1s steps(1) infinite}
+.guess .ph{color:#8a958f;font-weight:500;margin-left:4px}
+@keyframes blink{50%{opacity:0}}
+body.playing .play{flex:1;min-height:0}
+.kb{flex:1;min-height:0;margin-top:6px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.kb .r{display:flex;gap:5px;flex:1 1 0;min-height:44px;max-height:60px}
+.kb button{flex:1;min-width:0;height:auto;padding:0;border-radius:7px;background:rgba(255,255,255,.2);box-shadow:0 2px 0 rgba(0,0,0,.35);color:var(--chalk);font:600 21px var(--cond);letter-spacing:0;text-transform:uppercase;-webkit-tap-highlight-color:transparent;transition:background .08s,transform .08s}
+.kb button.down{background:rgba(255,255,255,.45);transform:translateY(1px) scale(.96)}
+.kb button.wide{flex:1.5;font-size:15px;letter-spacing:.08em}
+.kb .r.last{gap:12px}
+.kb .r.last button.space{flex:3.2;font-size:15px;letter-spacing:.14em;color:var(--muted)}
+.kb .r.last button.go{flex:1;background:var(--flood);color:#1a1a00;font-size:18px;letter-spacing:.1em}
+.kb .r.last button.go.down{background:#ffe84a}
+body.playing{touch-action:manipulation}
+body.playing .topbar,body.playing .msg{display:none}
+.mini{font-family:var(--cond);font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.mini b{font-family:var(--display);font-size:20px;color:var(--flood);letter-spacing:0;margin-left:3px}
+.mini b.bst{color:var(--chalk)}
+.sugg .hint.bad{color:var(--bad)} .sugg .hint.good{color:var(--good)}
+.msg{min-height:20px;font-size:14px;color:var(--muted)}
+.msg.bad{color:var(--bad)} .msg.good{color:var(--good)}
+
+/* ---------- result ---------- */
+.result{display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chip{font-family:var(--cond);font-weight:600;font-size:14px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid var(--line)}
+
+/* ---------- leaderboard ---------- */
+.lb{background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.lbhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.lbhead h3{margin:0;font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:22px;line-height:1}
+.lbmeta{font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.lbform{display:flex;gap:8px}
+.lbform input{flex:1;min-width:0;font:600 17px var(--body);padding:10px 12px;border-radius:8px;border:2px solid var(--flood);background:var(--card);color:var(--ink)}
+.lbform button{flex:none;padding:10px 14px;white-space:nowrap;font-size:16px}
+.lbform button:disabled{opacity:.5;cursor:default}
+.lbmsg{margin:0;font-size:14px;color:var(--muted)} .lbmsg.bad{color:var(--bad)} .lbmsg.good{color:var(--good)}
+.lbt{width:100%;border-collapse:separate;border-spacing:0;font-size:15px;font-variant-numeric:tabular-nums}
+.lbt th{font-family:var(--cond);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:0 6px 4px;border-bottom:1px solid var(--line)}
+.lbt td{padding:6px;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap}
+.lbt .rk{width:2.6em;font-family:var(--display);font-weight:900;font-size:18px;color:var(--muted)}
+.lbt .nm{max-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.lbt td.sk{text-align:right;font-family:var(--display);font-weight:900;font-size:18px;color:var(--flood)}
+.lbt td.dt{text-align:right;color:var(--muted);font-size:13px}
+.lbt th.sk,.lbt th.dt{text-align:right}
+.lbt tr.top1 .rk{color:var(--flood)}
+.lbt tr.me td{background:var(--flood);color:#1a1a00} .lbt tr.me .rk,.lbt tr.me td.sk,.lbt tr.me td.dt{color:#1a1a00}
+.lbt tr.me td:first-child{border-radius:6px 0 0 6px} .lbt tr.me td:last-child{border-radius:0 6px 6px 0}
+.lbt tr.ghost td{background:rgba(245,217,10,.16);font-style:italic}
+.lbt tr.gap td{text-align:center;color:var(--muted);letter-spacing:.3em;padding:2px;border-bottom:1px solid rgba(255,255,255,.07)}
+.lbtabs{display:flex;gap:3px;background:#e4e8e1;border-radius:8px;padding:3px;margin:8px 0 10px}
+.lbtabs button{flex:1;background:transparent;color:#35584a;font-size:14px;padding:8px}
+.lbtabs button[aria-pressed="true"]{background:var(--turf);color:var(--chalk)}
+.sheet .lbt th{color:#5d7a6c;border-color:#dfe4dc} .sheet .lbt td{border-color:#e7ebe4}
+.sheet .lbt td{color:var(--ink)} .sheet .lbt .rk,.sheet .lbt td.dt{color:#5d7a6c} .sheet .lbt td.sk{color:var(--ink)} .sheet .lbmsg{color:#35584a} .sheet .lbt tr.me td{color:#1a1a00} .sheet .lbt tr.top1 .rk{color:#a87a06}
+.sheet .lbt tr.gap td{color:#5d7a6c}
+
+/* ---------- data notes popup ---------- */
+.linkbtn{background:none;border:0;padding:4px 0;color:var(--muted);font:600 14px var(--body);letter-spacing:0;text-transform:none;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(4,10,7,.72);display:flex;align-items:flex-end;justify-content:center;padding:max(12px,env(safe-area-inset-top,0px)) 12px 0}
+.sheet{background:#f7f8f3;color:var(--ink);width:100%;max-width:640px;max-height:88%;border-radius:14px 14px 0 0;display:flex;flex-direction:column;box-shadow:0 -12px 40px rgba(0,0,0,.5)}
+.sheet header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px 10px;border-bottom:1px solid #dfe4dc}
+.sheet h2{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:26px;margin:0;line-height:1}
+.sheet .close{padding:8px 14px;font-size:15px}
+.sheet .body{overflow-y:auto;padding:6px 18px max(18px,env(safe-area-inset-bottom,0px));font-size:15px;line-height:1.5}
+.sheet h3{font-family:var(--cond);font-weight:700;font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:16px 0 4px;color:#35584a}
+.sheet p,.sheet ul{margin:0 0 6px}
+.sheet ul{padding-left:18px}
+.sheet li{margin-bottom:3px}
+.sheet .stamp{display:inline-block;font-family:var(--cond);font-weight:700;letter-spacing:.06em;background:var(--flood);color:#1a1a00;border-radius:4px;padding:1px 7px}
+@media (min-width:700px){.modal{align-items:center}.sheet{border-radius:14px;max-height:84%}}
+
+#copyText{width:100%;min-height:70px;font:500 15px var(--body);border-radius:8px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--chalk);padding:8px}
+/* ---------- info ---------- */
+.info{display:flex;flex-direction:column;gap:14px}
+details{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+summary{cursor:pointer;font-family:var(--cond);font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.deck{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:12px}
+.deck h3{font-family:var(--cond);font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 4px;padding-left:8px;border-left:4px solid}
+.deck ul{list-style:none;margin:0;padding:0;font-size:14px}
+.deck li{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px dotted var(--line)}
+.deck li span:last-child{font-variant-numeric:tabular-nums;color:var(--muted)}
+.foot{font-size:13px;color:var(--muted);margin:0}
+
+@media (max-width:480px){.table{gap:8px}}
+@media (prefers-reduced-motion:reduce){.card.new,.sash{animation:none}.clock i{transition:none}}
+</style>
+
+<div class="wrap">
+  <div class="stage" id="stage">
+    <div class="topbar">
+      <div class="brand"><h1>Streak<span>er</span></h1><p class="made">Proudly Made in Skeffling</p></div>
+      <div class="board">
+        <div class="stat"><b id="streak">0</b><small>Streak</small></div>
+        <div class="stat"><b id="best">0</b><small>Best</small></div>
+      </div>
+    </div>
+
+    <section class="kick" id="kick">
+      <p>Name a player who fits all three cards. After each correct answer one to three cards change and the clock resets. Each player can be used once. A wrong answer or running out of time is a yellow card. A second yellow is a red, and the run is over.</p>
+      <div class="seg" role="group" aria-label="Player pool">
+        <button type="button" id="modeAll" aria-pressed="true">All leagues<small id="cntAll"></small></button>
+        <button type="button" id="modePL" aria-pressed="false">PL only<small id="cntPL"></small></button>
+      </div>
+      <div class="row grow">
+        <select id="time" aria-label="Time per answer"><option value="60">60s per answer</option><option value="45">45s per answer</option><option value="30">30s per answer</option><option value="15">15s per answer</option></select>
+        <button id="start">Kick off</button>
+      </div>
+      <div class="row"><button type="button" class="linkbtn" id="lbBtn" hidden>Leaderboard</button><button type="button" class="linkbtn" id="aboutBtn">About the data</button></div>
+    </section>
+
+    <div class="clockbox" id="clockbox" hidden><span class="mode" id="modeTag">All</span><i class="yc" id="yc" title="Booked" hidden></i><span class="mini">Streak<b id="streak2">0</b></span><span class="mini">Best<b class="bst" id="best2">0</b></span><div class="clock" id="clock"><i id="bar"></i></div><b id="secs">60</b></div>
+
+    <div class="tablewrap">
+      <p class="sample" id="sampleLbl">Sample deal</p>
+      <section class="table" id="table" aria-live="polite"></section>
+      <div class="sash" id="sash" role="alertdialog" aria-labelledby="sashTitle" hidden>
+        <div>
+          <div class="eyebrow" id="sashEyebrow">Full time</div>
+          <h2 id="sashTitle">Streak over <em id="sashNum">0</em></h2>
+          <p id="sashText"></p>
+        </div>
+        <button id="again">Play again</button>
+        <button id="resume" hidden>Resume play</button>
+      </div>
+    </div>
+
+    <div class="play" id="play" hidden>
+      <ul class="sugg" id="list"><li class="hint">Type two letters to see players</li></ul>
+      <div class="guess" id="guess" role="textbox" aria-label="Player name" aria-live="polite"><span id="gtext"></span><span class="caret"></span><span class="ph" id="gph">Name a player</span></div>
+      <div class="msg" id="msg"></div>
+      <div class="kb" id="kb" aria-label="Keyboard"></div>
+    </div>
+
+    <div class="result" id="result" hidden>
+      <section class="lb" id="lbBox" hidden aria-labelledby="lbTitle">
+        <div class="lbhead"><h3 id="lbTitle">Leaderboard</h3><span class="lbmeta" id="lbMeta"></span></div>
+        <form class="lbform" id="lbForm" autocomplete="off"><input id="lbName" maxlength="16" placeholder="Your name" aria-label="Your name for the leaderboard" enterkeyhint="done" autocapitalize="words" spellcheck="false"><button type="submit" id="lbSave">Add my score</button></form>
+        <p class="lbmsg" id="lbMsg" aria-live="polite"></p>
+        <table class="lbt" id="lbTable"></table>
+      </section>
+      <div><span class="lbl">Answers that would have worked</span><div class="chips" id="valid"></div></div>
+      <textarea id="copyText" readonly hidden aria-label="Score to copy"></textarea>
+      <div><span class="lbl">Your run</span><div class="chips" id="run"></div></div>
+      <div class="row"><button id="copyBtn">Copy my score</button><button class="ghost" id="menu">Change clock</button><button type="button" class="linkbtn" id="aboutBtn2">About the data</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="lbModal" role="dialog" aria-modal="true" aria-labelledby="lbmTitle" hidden>
+  <div class="sheet">
+    <header><h2 id="lbmTitle">Leaderboard</h2><button type="button" class="close" id="lbClose">Close</button></header>
+    <div class="body">
+      <div class="lbtabs" role="group" aria-label="Board"><button type="button" id="lbmAll" aria-pressed="true">All leagues</button><button type="button" id="lbmPL" aria-pressed="false">PL only</button></div>
+      <p class="lbmsg" id="lbmMsg"></p>
+      <table class="lbt" id="lbmTable"></table>
+    </div>
+  </div>
+</div>
+
+  <div class="modal" id="about" role="dialog" aria-modal="true" aria-labelledby="aboutTitle" hidden>
+  <div class="sheet">
+    <header><h2 id="aboutTitle">About the data</h2><button type="button" class="close" id="aboutClose">Close</button></header>
+    <div class="body">
+      <p>Updated for the start of the <span class="stamp">2026/27 season</span> (October 2026). Clubs include summer 2026 transfers, caps include the 2026 World Cup, and honours run to the end of 2025/26.</p>
+
+      <h3>The players</h3>
+      <ul>
+        <li><b id="aboutAll">5,000</b> players who have played in the Premier League, LaLiga, Serie A, Bundesliga or Ligue 1. <b id="aboutPL">2,055</b> of them have played in or signed for a Premier League club (PL only mode).</li>
+        <li>Chosen by top-five-league appearances, Champions League appearances, caps and peak market value.</li>
+        <li>Club records start around 1992/93. 60 earlier PL names the data misses (Shearer, Cantona, Bergkamp, Gascoigne and others) were added by hand.</li>
+        <li>The October 2026 update added 520 players the first version missed, such as Théo Hernandez, Milinković-Savić, Huntelaar and Luka Vušković.</li>
+        <li>Players with the same name show their birth year in the suggestions.</li>
+      </ul>
+
+      <h3>Nationality and caps</h3>
+      <ul>
+        <li>Nationality is the senior national team a player has played for (the one with most caps, as listed on Wikipedia). Uncapped players take their first listed citizenship.</li>
+        <li>Caps are senior caps as listed on Wikipedia in October 2026, including the 2026 World Cup, checked against Transfermarkt. Where the two differ, the higher figure is used for the 50+ card.</li>
+        <li>Caps for predecessor teams count towards the successor nation: FR Yugoslavia and Serbia and Montenegro for Serbia, Czechoslovakia for Czechia and Slovakia, the USSR and CIS for Russia.</li>
+      </ul>
+
+      <h3>Positions</h3>
+      <ul>
+        <li>One main position per player, as listed on Transfermarkt. Hand-added players and the original test pack can have more than one.</li>
+        <li>Defensive, central and attacking midfielders all count as Central midfielder. Right and left midfielders count as wingers.</li>
+      </ul>
+
+      <h3>Played in</h3>
+      <ul>
+        <li>A country counts if the player made a league appearance there in any division. For moves since September 2025, signing (or joining on loan) is enough, so summer 2026 transfers count straight away. Welsh clubs in the English leagues count as England.</li>
+        <li>London: Arsenal, Chelsea, Tottenham, West Ham, Crystal Palace, Fulham, Brentford, QPR, Charlton, Wimbledon, Millwall, Leyton Orient, Barnet. Manchester: United and City. Merseyside: Liverpool, Everton, Tranmere. North East: Newcastle, Sunderland, Middlesbrough, Hartlepool.</li>
+      </ul>
+
+      <h3>Honours</h3>
+      <ul>
+        <li><b>League title:</b> a league appearance for the champions of England, Spain, Italy, Germany, France, the Netherlands, Portugal, Scotland, Turkey, Russia, Ukraine, Sweden or Norway, from 1992/93.</li>
+        <li><b>Premier League:</b> a PL appearance in a title-winning season.</li>
+        <li><b>Champions League:</b> in a matchday squad for the winning club in that season's competition, from 1992/93.</li>
+        <li><b>International trophy:</b> in the winning squad for a World Cup, Euros, Copa América, AFCON, Asian Cup or Gold Cup, from 1992. Squads come from Wikipedia. Not covered: the 1992, 1996 and 2007 Asian Cups and the 1993, 1996 and 1998 Gold Cups.</li>
+        <li><b>AFCON 2025:</b> credited to Senegal, who won the final. CAF later awarded the title to Morocco.</li>
+        <li><b>2025/26 champions</b> (Arsenal, Barcelona, Inter, Bayern, PSG, PSV, Porto, Celtic, Galatasaray, Zenit and Shakhtar, and PSG in the Champions League) are credited to everyone who played for them that season, including January signings.</li>
+        <li><b>Honours on Wikipedia:</b> winners' medals listed in a player's Wikipedia honours were added where the match data missed them.</li>
+      </ul>
+
+      <h3>Sources</h3>
+      <p>Transfermarkt-derived open datasets (salimt/football-datasets, and transfermarkt-datasets refreshed to 5 September 2026), English Wikipedia player and club articles (October 2026), Wikipedia tournament squad pages, and a hand-checked test pack of 626 PL players.</p>
+    </div>
+  </div>
+</div>
+
+<div class="info" id="info">
+    <details>
+      <summary>The deck: <span id="deckSum"></span></summary>
+      <div class="deck" id="deck"></div>
+    </details>
+  </div>
+</div>
+
+<script>
+const DATA = __DATA__;
+const ALL = DATA.players, CONT = DATA.cont;
+const SPECIAL={'ø':'o','Ø':'O','æ':'ae','Æ':'Ae','ß':'ss','đ':'d','Đ':'D','ł':'l','Ł':'L','ı':'i','ð':'d'};
+const norm = s => s.replace(/[øØæÆßđĐłŁıð]/g,c=>SPECIAL[c]).normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/ +/g,' ').trim();
+ALL.forEach((p,i)=>{ p.gi=i; p.a=p.a||[]; p.keys=[p.n,...p.a].map(norm); p.words=[...new Set(p.keys.join(' ').split(' '))]; });
+const CATCLASS = {'Position':'pos','Nationality':'nat','Continent':'nat','Played in':'in','Honours':'hon','International':'int'};
+const POS={GK:'Goalkeeper',RB:'Right-back',CB:'Centre-back',LB:'Left-back',CM:'Central midfielder',RW:'Right winger',LW:'Left winger',ST:'Striker'};
+const CTY={E:'England',I:'Italy',F:'France',S:'Spain',G:'Germany',N:'Netherlands',P:'Portugal',C:'Scotland',T:'Turkey',A:'Saudi Arabia',U:'USA'};
+const CITY={L:'London',M:'Manchester',V:'Merseyside',N:'the North East'};
+const HON=[['W','intl','Honours','Won the World Cup or a continental title'],['P','league','Honours','Won the Premier League'],['T','league','Honours','Won a top-flight league title'],['C','cl','Honours','Won the Champions League'],['X','caps','International','50+ international caps']];
+const ISO={"Bangladesh": "BD", "Cyprus": "CY", "Jordan": "JO", "Libya": "LY", "Panama": "PA", "Saudi Arabia": "SA", "Tanzania": "TZ", "Albania": "AL", "Algeria": "DZ", "Angola": "AO", "Argentina": "AR", "Armenia": "AM", "Australia": "AU", "Austria": "AT", "Barbados": "BB", "Belarus": "BY", "Belgium": "BE", "Benin": "BJ", "Bolivia": "BO", "Bosnia and Herzegovina": "BA", "Brazil": "BR", "Bulgaria": "BG", "Burkina Faso": "BF", "Burundi": "BI", "Cameroon": "CM", "Canada": "CA", "Cape Verde": "CV", "Central African Republic": "CF", "Chad": "TD", "Chile": "CL", "China": "CN", "Colombia": "CO", "Comoros": "KM", "Congo": "CG", "Costa Rica": "CR", "Croatia": "HR", "Cura\u00e7ao": "CW", "Czechia": "CZ", "DR Congo": "CD", "Denmark": "DK", "Dominican Republic": "DO", "Ecuador": "EC", "Egypt": "EG", "Equatorial Guinea": "GQ", "Estonia": "EE", "Finland": "FI", "France": "FR", "French Guiana": "GF", "Gabon": "GA", "Gambia": "GM", "Georgia": "GE", "Germany": "DE", "Ghana": "GH", "Gibraltar": "GI", "Greece": "GR", "Grenada": "GD", "Guadeloupe": "GP", "Guinea": "GN", "Guinea-Bissau": "GW", "Haiti": "HT", "Honduras": "HN", "Hungary": "HU", "Iceland": "IS", "Indonesia": "ID", "Iran": "IR", "Iraq": "IQ", "Israel": "IL", "Italy": "IT", "Ivory Coast": "CI", "Jamaica": "JM", "Japan": "JP", "Kenya": "KE", "Kosovo": "XK", "Latvia": "LV", "Lebanon": "LB", "Lithuania": "LT", "Luxembourg": "LU", "Madagascar": "MG", "Mali": "ML", "Malta": "MT", "Martinique": "MQ", "Mexico": "MX", "Moldova": "MD", "Montenegro": "ME", "Montserrat": "MS", "Morocco": "MA", "Mozambique": "MZ", "Namibia": "NA", "Netherlands": "NL", "New Caledonia": "NC", "New Zealand": "NZ", "Nigeria": "NG", "North Macedonia": "MK", "Norway": "NO", "Oman": "OM", "Paraguay": "PY", "Peru": "PE", "Philippines": "PH", "Poland": "PL", "Portugal": "PT", "Qatar": "QA", "Republic of Ireland": "IE", "Romania": "RO", "Russia": "RU", "Senegal": "SN", "Serbia": "RS", "Sierra Leone": "SL", "Slovakia": "SK", "Slovenia": "SI", "South Africa": "ZA", "South Korea": "KR", "Spain": "ES", "Suriname": "SR", "Sweden": "SE", "Switzerland": "CH", "Syria": "SY", "Tahiti": "PF", "Togo": "TG", "Trinidad and Tobago": "TT", "Tunisia": "TN", "Turkey": "TR", "USA": "US", "Ukraine": "UA", "Uruguay": "UY", "Uzbekistan": "UZ", "Venezuela": "VE", "Zambia": "ZM", "Zimbabwe": "ZW"};
+const SUBFLAG={"England": "gbeng", "Scotland": "gbsct", "Wales": "gbwls"};
+function flag(nat){
+  if(SUBFLAG[nat]) return '\u{1F3F4}'+[...SUBFLAG[nat]].map(c=>String.fromCodePoint(0xE0000+c.charCodeAt(0))).join('')+'\u{E007F}';
+  if(nat==='Northern Ireland') return '\u{1F1EC}\u{1F1E7}';
+  const c=ISO[nat]; if(!c) return '\u{1F3F3}\u{FE0F}';
+  return [...c].map(ch=>String.fromCodePoint(0x1F1E6+ch.charCodeAt(0)-65)).join('');
+}
+const MIN_CARD=8, MIN_NAT=15, MIN_ANSWERS=2;
+
+let mode='all', POOL=[], CARDS=[], byGroup={}, GROUPS=[], W=0, usedBits=null, dupes=new Set();
+let slots=[], used=new Set(), runList=[], streak=0, best=0, limit=60, left=60, timer=null, live=false, hl=-1, shown=[];
+const $=id=>document.getElementById(id);
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+const esc=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+
+/* Each card holds a bitset over the pool, so checking a deal is three ANDs over ~160 words */
+function makeCard(id,g,cat,label,test){
+  const bits=new Uint32Array(W); let count=0;
+  POOL.forEach((p,j)=>{ if(test(p)){ bits[j>>5]|=1<<(j&31); count++; } });
+  return {id,g,cat,label,test,bits,count};
+}
+function buildDeck(){
+  POOL=mode==='pl'?ALL.filter(p=>p.l):ALL.slice();
+  POOL.forEach((p,j)=>p.j=j); W=Math.ceil(POOL.length/32);
+  const seen={}; POOL.forEach(p=>{const k=norm(p.n); seen[k]=(seen[k]||0)+1;}); dupes=new Set(Object.keys(seen).filter(k=>seen[k]>1));
+  const cs=[];
+  for(const [k,v] of Object.entries(POS)) cs.push(makeCard('pos_'+k,'pos','Position',v,p=>p.p.includes(k)));
+  const nc={}; POOL.forEach(p=>nc[p.t]=(nc[p.t]||0)+1);
+  Object.keys(nc).filter(n=>nc[n]>=MIN_NAT).sort().forEach(n=>cs.push(makeCard('nat_'+n,'nat','Nationality',n,p=>p.t===n)));
+  [...new Set(Object.values(CONT))].sort().forEach(c=>cs.push(makeCard('cont_'+c,'nat','Continent',c,p=>CONT[p.t]===c)));
+  for(const [k,v] of Object.entries(CTY)) cs.push(makeCard('in_'+k,'cty','Played in',v,p=>p.c.includes(k)));
+  for(const [k,v] of Object.entries(CITY)) cs.push(makeCard('city_'+k,'city','Played in',v,p=>p.k.includes(k)));
+  for(const [k,g,cat,label] of HON) cs.push(makeCard('h_'+k,g,cat,label,p=>p.f.includes(k)));
+  CARDS=cs.filter(c=>c.count>=MIN_CARD);
+  byGroup={}; CARDS.forEach(c=>(byGroup[c.g] ||= []).push(c)); GROUPS=Object.keys(byGroup);
+  renderDeck();
+}
+function countAnswers(cs,stopAt=Infinity){
+  let n=0; const a=cs[0].bits,b=cs[1].bits,c=cs[2].bits,u=usedBits;
+  for(let w=0;w<W;w++){ let x=a[w]&b[w]&c[w]&~u[w]; while(x){ x&=x-1; if(++n>=stopAt) return n; } }
+  return n;
+}
+function answers(cs){
+  const out=[]; const a=cs[0].bits,b=cs[1].bits,c=cs[2].bits,u=usedBits;
+  for(let w=0;w<W;w++){ let x=a[w]&b[w]&c[w]&~u[w]; while(x){ const bit=31-Math.clz32(x&-x); out.push(POOL[w*32+bit]); x&=x-1; } }
+  return out;
+}
+const fits=(p,c)=>!!(c.bits[p.j>>5]&(1<<(p.j&31)));
+
+function freshDeal(){
+  for(let t=0;t<4000;t++){
+    const gs=[...GROUPS].sort(()=>Math.random()-.5).slice(0,3);
+    const cs=gs.map(g=>rnd(byGroup[g]));
+    if(countAnswers(cs,MIN_ANSWERS)>=MIN_ANSWERS) return cs;
+  }
+  return null;
+}
+function nextDeal(){
+  const r=Math.random(), k=r<.5?1:r<.85?2:3;
+  for(let t=0;t<4000;t++){
+    const idx=[0,1,2].sort(()=>Math.random()-.5).slice(0,k);
+    const cs=slots.slice();
+    const taken=new Set([0,1,2].filter(i=>!idx.includes(i)).map(i=>cs[i].g));
+    let ok=true;
+    for(const i of idx){
+      const g=rnd(GROUPS.filter(g=>!taken.has(g)));
+      const opts=byGroup[g].filter(c=>c.id!==slots[i].id);
+      if(!opts.length){ok=false;break;}
+      cs[i]=rnd(opts); taken.add(g);
+    }
+    if(ok&&countAnswers(cs,MIN_ANSWERS)>=MIN_ANSWERS) return {cs,idx};
+  }
+  const cs=freshDeal(); return cs?{cs,idx:[0,1,2]}:null;
+}
+
+function renderTable(changed=[0,1,2],marks=null){
+  $('table').innerHTML='';
+  slots.forEach((c,i)=>{
+    const d=document.createElement('div');
+    const miss=marks&&!marks[i], hit=marks&&marks[i];
+    d.className='card cat-'+CATCLASS[c.cat]+(changed.includes(i)?' new':'')+(miss?' miss':'')+(hit?' hit':'');
+    const lw=Math.max(...c.label.split(' ').map(w=>w.length));
+    const size=Math.min(19,150/Math.max(lw,1),c.label.length>24?13:99);
+    const band=miss?'Not met':c.cat;
+    d.innerHTML=`<div class="band" style="font-size:${Math.min(15,125/band.length).toFixed(1)}cqi">${band}</div><div class="face" style="font-size:${size.toFixed(1)}cqi">${esc(c.label)}</div><div class="pip"></div>`;
+    $('table').appendChild(d);
+  });
+}
+const bestKey=()=>'bk_best_'+mode;
+function loadBest(){ try{best=+localStorage.getItem(bestKey())||0;}catch(e){best=0;} }
+function setStats(){ $('streak').textContent=$('streak2').textContent=streak; $('best').textContent=$('best2').textContent=best; }
+function draw(){
+  $('bar').style.width=(left/limit*100)+'%';
+  $('secs').textContent=Math.ceil(left);
+  $('clock').classList.toggle('low',left<=10);
+}
+function tick(){ left-=.25; if(left<=0){left=0;draw();end(null,'time');return;} draw(); }
+function resetClock(){ clearInterval(timer); left=limit; draw(); timer=setInterval(tick,250); }
+
+function setMode(m){
+  document.body.classList.toggle('playing',m!=='idle'); document.body.classList.toggle('over',m==='over'||m==='booked');
+  $('kick').hidden=m!=='idle'; $('info').hidden=m!=='idle'; $('sampleLbl').hidden=m!=='idle';
+  $('clockbox').hidden=m==='idle'; $('play').hidden=m!=='live';
+  $('result').hidden=m!=='over'; $('sash').hidden=!(m==='over'||m==='booked');
+  $('sash').classList.toggle('yellow',m==='booked'); $('again').hidden=m!=='over'; $('resume').hidden=m!=='booked';
+  if(m==='idle') window.scrollTo(0,0);
+}
+function setPool(m){
+  mode=m; try{localStorage.setItem('bk_mode',m);}catch(e){}
+  $('modeAll').setAttribute('aria-pressed',m==='all'); $('modePL').setAttribute('aria-pressed',m==='pl');
+  $('modeTag').textContent=m==='pl'?'PL':'All';
+  buildDeck(); usedBits=new Uint32Array(W); loadBest(); setStats();
+  slots=freshDeal(); renderTable();
+}
+
+function start(){
+  limit=+$('time').value; used=new Set(); usedBits=new Uint32Array(W); runList=[]; streak=0; booked=false; bookedAt=-1; bookedWhy=''; $('yc').hidden=true; loadBest(); setStats();
+  slots=freshDeal(); renderTable();
+  setMode('live'); window.scrollTo(0,0);
+  setTyped(''); msg('',''); live=true; resetClock();
+}
+function msg(t,cls){ $('msg').textContent=t; $('msg').className='msg '+(cls||''); if(live&&t){ shown=[]; hl=-1; $('list').innerHTML=`<li class="hint ${cls||''}">${esc(t)}</li>`; } }
+
+function submit(p){
+  if(!live) return;
+  if(used.has(p.j)){ msg(p.n+' has already been used this run.','bad'); return; }
+  setTyped('');
+  const ok=slots.map(c=>fits(p,c));
+  if(ok.every(Boolean)){
+    used.add(p.j); usedBits[p.j>>5]|=1<<(p.j&31); runList.push(p); streak++;
+    if(streak>best){best=streak; try{localStorage.setItem(bestKey(),best);}catch(e){}}
+    setStats();
+    const nd=nextDeal();
+    if(!nd){ end(null,'empty'); return; }
+    slots=nd.cs; renderTable(nd.idx); resetClock(); msg('Correct: '+p.n,'good');
+  } else end(p,'wrong',ok);
+}
+let booked=false, bookedAt=-1, bookedWhy='';
+/* First offence: yellow card. The clock stops and the player resumes when ready. */
+function caution(p,why,ok){
+  live=false; clearInterval(timer);
+  booked=true; bookedAt=runList.length; bookedWhy=why;
+  $('sashTitle').innerHTML='<span class="cardicon"></span>Yellow card';
+  if(why==='wrong'){
+    renderTable([],ok);
+    const failed=slots.filter((c,i)=>!ok[i]).map(c=>c.label);
+    $('sashEyebrow').textContent='Wrong answer';
+    $('sashText').innerHTML=(failed.length===1?`<b>${esc(p.n)}</b> doesn't fit <b>${esc(failed[0])}</b>.`:`<b>${esc(p.n)}</b> misses ${failed.length} of the 3 cards.`)+' One more and you\'re off.';
+  } else {
+    renderTable([]);
+    $('sashEyebrow').textContent='Time up';
+    $('sashText').textContent=`The ${limit}-second clock ran out. The cards will change when you resume. One more and you're off.`;
+  }
+  setMode('booked'); $('resume').focus({preventScroll:true});
+}
+function resume(){
+  $('yc').hidden=false;
+  if(bookedWhy==='time'){ const nd=nextDeal(); if(nd){ slots=nd.cs; renderTable(nd.idx); } else renderTable([]); }
+  else renderTable([]);
+  setMode('live'); setTyped(''); live=true; resetClock(); msg('Booked. Resume play.','bad');
+}
+function end(p,why,ok){
+  if(why!=='empty'&&!booked) return caution(p,why,ok);
+  live=false; clearInterval(timer);
+  $('sashTitle').innerHTML=why==='empty'?'Streak over <em id="sashNum"></em>':'<span class="cardicon"></span>Red card <em id="sashNum"></em>';
+  const valid=answers(slots).sort(()=>Math.random()-.5);
+  if(why==='wrong'){
+    renderTable([],ok);
+    const failed=slots.filter((c,i)=>!ok[i]).map(c=>c.label);
+    $('sashEyebrow').textContent='Second yellow';
+    $('sashText').innerHTML=failed.length===1?`<b>${esc(p.n)}</b> doesn't fit <b>${esc(failed[0])}</b>.`:`<b>${esc(p.n)}</b> misses ${failed.length} of the 3 cards.`;
+  } else if(why==='time'){
+    renderTable([]);
+    $('sashEyebrow').textContent='Second yellow';
+    $('sashText').textContent=`The ${limit}-second clock ran out.`;
+  } else {
+    $('sashEyebrow').textContent='Full time';
+    $('sashText').textContent='No fresh combinations left.';
+  }
+  $('sashNum').textContent=streak;
+  $('valid').innerHTML=valid.slice(0,10).map(v=>`<span class="chip">${esc(v.n)}</span>`).join('')+(valid.length>10?`<span class="chip">+${valid.length-10} more</span>`:'')||'<span class="chip">None left</span>';
+  $('run').innerHTML=runList.length?runList.map(q=>`<span class="chip">${esc(q.n)}</span>`).join(''):'<span class="chip">No correct answers</span>';
+  $('copyText').value=`Streaker: ${streak} (${mode==='pl'?'PL only':'All leagues'})`+'\n'+runList.map((q,i)=>(i===bookedAt?'\u{1F7E8}':'')+flag(q.t)).join('')+(bookedAt===runList.length?'\u{1F7E8}':'')+(why==='empty'?'':'\u{1F7E5}');
+  $('copyText').hidden=true; $('copyBtn').textContent='Copy my score';
+  setMode('over');
+  $('again').focus({preventScroll:true});
+  lbShowEnd();
+}
+
+/* Suggestions: word-start matches first, then anywhere in the name */
+function search(q){
+  q=norm(q); if(q.length<2) return [];
+  const qs=q.split(' '), starts=[], inside=[];
+  for(const p of POOL){
+    if(qs.every(w=>p.words.some(x=>x.startsWith(w)))) starts.push(p);
+    else if(p.keys.some(k=>k.includes(q))) inside.push(p);
+    if(starts.length>=10) break;
+  }
+  return starts.concat(inside).slice(0,10);
+}
+const label=p=>esc(p.n)+(dupes.has(norm(p.n))?`<small>b. ${p.y||'?'}</small>`:'');
+function clearList(){ shown=[]; hl=-1; $('list').innerHTML='<li class="hint">Type two letters to see players</li>'; }
+function openList(items,q){
+  shown=items; hl=items.findIndex(p=>!used.has(p.j));
+  if(!items.length){ $('list').innerHTML=`<li class="hint">No player in the ${mode==='pl'?'PL pool':'pool'} matches that</li>`; return; }
+  $('list').innerHTML=items.map((p,i)=>`<li data-i="${i}" class="${i===hl?'on':''}${used.has(p.j)?' used':''}">${label(p)}</li>`).join('');
+  $('list').scrollLeft=0;
+}
+function paintHl(){ [...$('list').children].forEach((li,i)=>li.classList.toggle('on',i===hl)); $('list').children[hl]?.scrollIntoView({block:'nearest',inline:'nearest'}); }
+
+/* On-screen keyboard: the phone's own keyboard never opens, so the layout never moves */
+let typed='';
+function setTyped(s){
+  typed=s.replace(/^ +/,'').replace(/ {2,}/g,' ').slice(0,30);
+  $('gtext').textContent=typed; $('gph').hidden=!!typed;
+  if(norm(typed).length<2) clearList(); else openList(search(typed),typed);
+}
+function press(k){
+  if(!live) return;
+  if(k==='DEL') setTyped(typed.slice(0,-1));
+  else if(k==='SPACE') setTyped(typed+' ');
+  else if(k==='PLAY') play();
+  else setTyped(typed+k.toLowerCase());
+}
+(function(){
+  const rows=['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+  let h=rows.map((r,i)=>`<div class="r">${[...r].map(c=>`<button type="button" data-k="${c}">${c}</button>`).join('')}${i===2?'<button type="button" class="wide" data-k="DEL" aria-label="Delete">Del</button>':''}</div>`).join('');
+  h+='<div class="r last"><button type="button" class="space" data-k="SPACE">Space</button><button type="button" class="go" data-k="PLAY">Play</button></div>';
+  $('kb').innerHTML=h;
+  $('kb').addEventListener('pointerdown',e=>{
+    const b=e.target.closest('button'); if(!b) return; e.preventDefault();
+    b.classList.add('down'); setTimeout(()=>b.classList.remove('down'),110);
+    try{ navigator.vibrate && navigator.vibrate(6); }catch(_){}
+    press(b.dataset.k);
+  });
+})();
+document.addEventListener('keydown',e=>{
+  if(!live||e.metaKey||e.ctrlKey||e.altKey) return;
+  const n=shown.length;
+  if(/^[a-zA-Z]$/.test(e.key)){ setTyped(typed+e.key.toLowerCase()); e.preventDefault(); }
+  else if(e.key===' '){ setTyped(typed+' '); e.preventDefault(); }
+  else if(e.key==='Backspace'){ setTyped(typed.slice(0,-1)); e.preventDefault(); }
+  else if(e.key==='Enter'){ play(); e.preventDefault(); }
+  else if((e.key==='ArrowRight'||e.key==='ArrowDown')&&n){ hl=(hl+1)%n; paintHl(); e.preventDefault(); }
+  else if((e.key==='ArrowLeft'||e.key==='ArrowUp')&&n){ hl=(hl-1+n)%n; paintHl(); e.preventDefault(); }
+});
+$('list').addEventListener('pointerdown',e=>e.preventDefault());
+$('list').addEventListener('click',e=>{ const li=e.target.closest('li[data-i]'); if(li) submit(shown[+li.dataset.i]); });
+function play(){
+  if(hl>=0&&shown[hl]) return submit(shown[hl]);
+  const q=norm(typed); const exact=POOL.find(p=>p.keys.includes(q));
+  if(exact) return submit(exact);
+  msg(q.length<2?'Type a name first.':'Pick a player from the suggestions.','bad');
+}
+$('start').addEventListener('click',start);
+$('again').addEventListener('click',start);
+$('resume').addEventListener('click',resume);
+$('menu').addEventListener('click',()=>{ slots=freshDeal(); renderTable([]); setMode('idle'); $('start').focus(); });
+$('modeAll').addEventListener('click',()=>setPool('all'));
+$('copyBtn').addEventListener('click',()=>{
+  const txt=$('copyText').value;
+  const fallback=()=>{ $('copyText').hidden=false; $('copyText').focus(); $('copyText').select(); $('copyBtn').textContent='Select and copy'; };
+  try{ navigator.clipboard.writeText(txt).then(()=>{ $('copyBtn').textContent='Copied'; setTimeout(()=>$('copyBtn').textContent='Copy my score',2000); },fallback); }catch(e){ fallback(); }
+});
+let aboutReturn=null;
+function openAbout(e){ aboutReturn=e.currentTarget; $('about').hidden=false; $('aboutClose').focus(); }
+function closeAbout(){ $('about').hidden=true; aboutReturn?.focus(); }
+$('aboutBtn').addEventListener('click',openAbout); $('aboutBtn2').addEventListener('click',openAbout);
+$('aboutClose').addEventListener('click',closeAbout);
+$('about').addEventListener('click',e=>{ if(e.target.id==='about') closeAbout(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('about').hidden) closeAbout(); });
+$('modePL').addEventListener('click',()=>setPool('pl'));
+
+/* ---------- leaderboard (Supabase; hidden when not configured or unreachable) ---------- */
+const LB_URL='__LB_URL__', LB_KEY='__LB_KEY__';
+const lbOn=/^(https:\/\/|http:\/\/localhost)/.test(LB_URL)||(LB_URL.startsWith('/')&&/^https?:$/.test(location.protocol));
+async function rpc(fn,body){
+  /* LB_URL '/api' = this site's own Cloudflare Worker; an https URL = a Supabase project */
+  const own=LB_URL.startsWith('/');
+  const h={'Content-Type':'application/json'};
+  if(!own){ h.apikey=LB_KEY; if(LB_KEY.startsWith('eyJ')) h.Authorization='Bearer '+LB_KEY; }
+  const ctl=new AbortController(), to=setTimeout(()=>ctl.abort(),8000);
+  try{
+    const r=await fetch(own?LB_URL+'/'+fn:LB_URL.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(body),signal:ctl.signal});
+    if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(_){} const e=new Error(m||'http '+r.status); if(r.status===400&&m) e.user=m; throw e; }
+    return await r.json();
+  } finally { clearTimeout(to); }
+}
+const ord=n=>{const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]);};
+const lbDate=d=>new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
+const cleanName=s=>s.replace(/[\u0000-\u001f\u007f]/g,'').replace(/\s+/g,' ').trim().slice(0,16);
+const modeName=m=>m==='pl'?'PL only':'All leagues';
+function lbRows(rows,opt={}){
+  /* rows: board() output; opt.meId highlights a saved row; opt.ghost={rank,streak} inserts an unsaved "You" row */
+  let list=rows.map(r=>({...r}));
+  if(opt.ghost){ list.forEach(r=>{ if(r.rank>=opt.ghost.rank) r.rank++; }); list.push({rank:opt.ghost.rank,name:'You',streak:opt.ghost.streak,created_at:new Date().toISOString(),ghost:true}); list.sort((a,b)=>a.rank-b.rank); list=list.filter(r=>r.rank<=5||Math.abs(r.rank-opt.ghost.rank)<=2); }
+  let h='<thead><tr><th>#</th><th>Name</th><th class="sk">Streak</th><th class="dt">Date</th></tr></thead><tbody>', prev=0;
+  for(const r of list){
+    if(prev&&r.rank>prev+1) h+='<tr class="gap" aria-hidden="true"><td colspan="4">&middot; &middot; &middot;</td></tr>';
+    const cls=[r.rank===1?'top1':'', r.ghost?'ghost':'', opt.meId!=null&&r.id===opt.meId?'me':''].join(' ').trim();
+    h+=`<tr class="${cls}"><td class="rk">${r.rank}</td><td class="nm">${esc(r.name)}${r.ghost?' <small>(not saved)</small>':''}</td><td class="sk">${r.streak}</td><td class="dt">${lbDate(r.created_at)}</td></tr>`;
+    prev=r.rank;
+  }
+  return h+'</tbody>';
+}
+let lbState=null;
+function lbMsg(t,cls){ $('lbMsg').textContent=t; $('lbMsg').className='lbmsg '+(cls||''); }
+async function lbShowEnd(){
+  if(!lbOn){ $('lbBox').hidden=true; return; }
+  const st={mode,streak,secs:limit,saved:false}; lbState=st;
+  $('lbBox').hidden=false; $('lbTitle').textContent='Leaderboard'; $('lbMeta').textContent=modeName(mode);
+  $('lbTable').innerHTML=''; lbMsg('Loading the leaderboard...');
+  const canSave=streak>=1;
+  $('lbForm').hidden=!canSave; $('lbSave').disabled=false; $('lbSave').textContent='Add my score';
+  try{ $('lbName').value=localStorage.getItem('bk_name')||''; }catch(e){}
+  try{
+    const rows=await rpc('board',{p_mode:mode,p_streak:canSave?streak:null});
+    if(lbState!==st) return;
+    const total=rows.length?+rows[0].total:0;
+    if(canSave){
+      st.ghostRank=lbGhostRank(rows,streak,total);
+      $('lbTable').innerHTML=lbRows(rows,{ghost:{rank:st.ghostRank,streak}});
+      lbMsg(total?`Add your name to go in ${ord(st.ghostRank)} of ${total+1}.`:'Add your name to be the first on the board.');
+    } else {
+      $('lbTable').innerHTML=rows.length?lbRows(rows):'';
+      lbMsg(rows.length?'Get at least one right to make the board.':'No scores yet. Get at least one right to make the board.');
+    }
+  }catch(e){ if(lbState!==st) return; lbMsg('The leaderboard is unavailable right now.','bad'); $('lbForm').hidden=true; }
+}
+function lbGhostRank(rows,s,total){
+  /* An unsaved streak goes below everyone on the same score or better: its place is the first row with a lower streak */
+  const lower=rows.filter(r=>r.streak<s).map(r=>+r.rank);
+  return lower.length?Math.min(...lower):total+1;
+}
+$('lbForm').addEventListener('submit',async e=>{
+  e.preventDefault(); const st=lbState; if(!st||st.saved) return;
+  const name=cleanName($('lbName').value);
+  if(!name){ lbMsg('Type a name first.','bad'); $('lbName').focus(); return; }
+  $('lbSave').disabled=true; $('lbSave').textContent='Saving...'; $('lbName').blur();
+  try{
+    const id=await rpc('submit_score',{p_name:name,p_streak:st.streak,p_mode:st.mode,p_secs:st.secs});
+    st.saved=true; try{ localStorage.setItem('bk_name',name); localStorage.setItem('bk_lbid_'+st.mode,id); }catch(_){}
+    const rows=await rpc('board',{p_mode:st.mode,p_id:id});
+    if(lbState!==st) return;
+    const me=rows.find(r=>r.id===id), total=rows.length?+rows[0].total:1;
+    $('lbForm').hidden=true; $('lbTable').innerHTML=lbRows(rows,{meId:id});
+    lbMsg(me?`Saved. ${name}, you're ${ord(+me.rank)} of ${total}.`:'Saved.','good');
+  }catch(err){
+    if(lbState!==st) return;
+    $('lbSave').disabled=false; $('lbSave').textContent='Try again';
+    lbMsg(st.saved?'Saved, but the board could not load.':err.user?err.user+'.':'Could not save your score. Check your signal and try again.','bad');
+  }
+});
+let lbmMode='all', lbmReturn=null;
+async function lbmLoad(m){
+  lbmMode=m; $('lbmAll').setAttribute('aria-pressed',m==='all'); $('lbmPL').setAttribute('aria-pressed',m==='pl');
+  $('lbmTable').innerHTML=''; $('lbmMsg').textContent='Loading...';
+  let myId=null; try{ const v=localStorage.getItem('bk_lbid_'+m); myId=v?+v:null; }catch(e){}
+  try{
+    const rows=await rpc('board',{p_mode:m,p_id:myId});
+    if(lbmMode!==m) return;
+    $('lbmTable').innerHTML=rows.length?lbRows(rows,{meId:myId}):'';
+    const me=myId!=null&&rows.find(r=>r.id===myId);
+    $('lbmMsg').textContent=!rows.length?'No scores yet. Be the first.':me?`Your latest saved score is ${ord(+me.rank)} of ${rows[0].total}.`:`${rows[0].total} score${+rows[0].total===1?'':'s'} so far.`;
+  }catch(e){ if(lbmMode===m) $('lbmMsg').textContent='The leaderboard is unavailable right now.'; }
+}
+function openLb(e){ lbmReturn=e.currentTarget; $('lbModal').hidden=false; $('lbClose').focus(); lbmLoad(mode); }
+function closeLb(){ $('lbModal').hidden=true; lbmReturn?.focus(); }
+$('lbBtn').hidden=!lbOn;
+$('lbBtn').addEventListener('click',openLb); $('lbClose').addEventListener('click',closeLb);
+$('lbModal').addEventListener('click',e=>{ if(e.target.id==='lbModal') closeLb(); });
+$('lbmAll').addEventListener('click',()=>lbmLoad('all')); $('lbmPL').addEventListener('click',()=>lbmLoad('pl'));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('lbModal').hidden) closeLb(); });
+
+function renderDeck(){
+  const order=['Position','Nationality','Continent','Played in','Honours','International'];
+  const col={pos:'var(--c-pos)',nat:'var(--c-nat)',in:'var(--c-in)',hon:'var(--c-hon)',int:'var(--c-int)'};
+  $('deck').innerHTML=order.map(cat=>{
+    const cs=CARDS.filter(c=>c.cat===cat); if(!cs.length) return '';
+    return `<div><h3 style="border-color:${col[CATCLASS[cat]]}">${cat} (${cs.length})</h3><ul>${cs.map(c=>`<li><span>${esc(c.label)}</span><span>${c.count.toLocaleString('en-GB')}</span></li>`).join('')}</ul></div>`;
+  }).join('');
+  $('deckSum').textContent=`${CARDS.length} cards, ${POOL.length.toLocaleString('en-GB')} players (${mode==='pl'?'PL only':'all leagues'})`;
+}
+
+$('aboutAll').textContent=ALL.length.toLocaleString('en-GB'); $('aboutPL').textContent=ALL.filter(p=>p.l).length.toLocaleString('en-GB');
+$('cntAll').textContent=ALL.length.toLocaleString('en-GB')+' players';
+$('cntPL').textContent=ALL.filter(p=>p.l).length.toLocaleString('en-GB')+' players';
+let m0='all'; try{ if(localStorage.getItem('bk_mode')==='pl') m0='pl'; }catch(e){}
+setPool(m0); renderTable([]); draw(); setMode('idle');
+</script>
+

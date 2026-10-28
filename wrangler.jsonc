@@ -1,10 +1,15 @@
-// Cloudflare config for dangent.uk: serve everything in ./public as a static site.
+// Cloudflare config for dangent.uk: static site in ./public, leaderboard API in src/worker.js, scores in D1.
 {
   "name": "dangent",
+  "main": "src/worker.js",
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./public",
+    "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
-  }
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": ["/api/*"]
+  },
+  // No database_id: Cloudflare creates "dangent-scores" on first deploy and keeps it linked.
+  "d1_databases": [{ "binding": "DB", "database_name": "dangent-scores" }]
 }

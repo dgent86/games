@@ -624,15 +624,17 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('about').hidden
 $('modePL').addEventListener('click',()=>setPool('pl'));
 
 /* ---------- leaderboard (Supabase; hidden when not configured or unreachable) ---------- */
-const LB_URL='', LB_KEY='';
-const lbOn=/^(https:\/\/|http:\/\/localhost)/.test(LB_URL);
+const LB_URL='/api', LB_KEY='';
+const lbOn=/^(https:\/\/|http:\/\/localhost)/.test(LB_URL)||(LB_URL.startsWith('/')&&/^https?:$/.test(location.protocol));
 async function rpc(fn,body){
-  const h={'Content-Type':'application/json',apikey:LB_KEY};
-  if(LB_KEY.startsWith('eyJ')) h.Authorization='Bearer '+LB_KEY;
+  /* LB_URL '/api' = this site's own Cloudflare Worker; an https URL = a Supabase project */
+  const own=LB_URL.startsWith('/');
+  const h={'Content-Type':'application/json'};
+  if(!own){ h.apikey=LB_KEY; if(LB_KEY.startsWith('eyJ')) h.Authorization='Bearer '+LB_KEY; }
   const ctl=new AbortController(), to=setTimeout(()=>ctl.abort(),8000);
   try{
-    const r=await fetch(LB_URL.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(body),signal:ctl.signal});
-    if(!r.ok) throw new Error('http '+r.status);
+    const r=await fetch(own?LB_URL+'/'+fn:LB_URL.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(body),signal:ctl.signal});
+    if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(_){} const e=new Error(m||'http '+r.status); if(r.status===400&&m) e.user=m; throw e; }
     return await r.json();
   } finally { clearTimeout(to); }
 }
@@ -698,7 +700,7 @@ $('lbForm').addEventListener('submit',async e=>{
   }catch(err){
     if(lbState!==st) return;
     $('lbSave').disabled=false; $('lbSave').textContent='Try again';
-    lbMsg(st.saved?'Saved, but the board could not load.':'Could not save your score. Check your signal and try again.','bad');
+    lbMsg(st.saved?'Saved, but the board could not load.':err.user?err.user+'.':'Could not save your score. Check your signal and try again.','bad');
   }
 });
 let lbmMode='all', lbmReturn=null;
