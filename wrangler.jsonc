@@ -3,6 +3,11 @@
   "name": "dangent",
   "main": "src/worker.js",
   "compatibility_date": "2026-10-01",
+  // Both addresses serve the site. Cloudflare creates the DNS records for these on deploy.
+  "routes": [
+    { "pattern": "dangent.uk", "custom_domain": true },
+    { "pattern": "www.dangent.uk", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
