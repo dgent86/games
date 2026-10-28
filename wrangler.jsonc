@@ -1,0 +1,10 @@
+// Cloudflare config for dangent.uk: serve everything in ./public as a static site.
+{
+  "name": "dangent",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}
