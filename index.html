@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f3a27">
+<title>Games, Proudly Made in Skeffling</title>
+<meta name="description" content="Free football games to play in your browser, made in Skeffling.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@900&family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+:root{--turf:#0f3a27;--turf2:#124530;--chalk:#f4f6f1;--muted:#a9c3b4;--flood:#f5d90a;--line:rgba(255,255,255,.14);
+  --display:"Big Shoulders Display",Impact,"Arial Narrow",sans-serif;--body:"Barlow",system-ui,sans-serif;--cond:"Barlow Condensed","Arial Narrow",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--turf);background-image:repeating-linear-gradient(90deg,var(--turf) 0 64px,var(--turf2) 64px 128px);color:var(--chalk);font:16px/1.5 var(--body);padding:0 16px}
+main{max-width:760px;margin:0 auto;padding:40px 0 56px}
+.made{margin:0;font:600 13px var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+h1{font:900 clamp(40px,11vw,72px)/.9 var(--display);text-transform:uppercase;margin:6px 0 28px}
+h1 span{color:var(--flood)}
+.games{display:grid;gap:14px}
+.game{display:flex;justify-content:space-between;align-items:center;gap:16px;text-decoration:none;color:inherit;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:12px;padding:18px 20px;transition:transform .15s,border-color .15s}
+a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--flood);outline:none}
+.game h2{margin:0;font:900 34px/1 var(--display);text-transform:uppercase}
+.game h2 span{color:var(--flood)}
+.game p{margin:6px 0 0;color:var(--muted)}
+.go{flex:none;font:700 16px var(--cond);letter-spacing:.1em;text-transform:uppercase;background:var(--flood);color:#1a1a00;border-radius:8px;padding:10px 16px}
+.soon{border-style:dashed;opacity:.7}
+.soon .go{background:transparent;color:var(--muted);border:1px solid var(--line)}
+footer{margin-top:36px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <p class="made">Proudly Made in Skeffling</p>
+  <h1>Football <span>games</span></h1>
+  <div class="games">
+    <a class="game" href="/streaker/">
+      <div><h2>Streak<span>er</span></h2><p>Name a player who fits all three cards. One wrong answer is a yellow, two is a red. How long can you keep the streak going?</p></div>
+      <span class="go">Play</span>
+    </a>
+    <div class="game soon" aria-disabled="true">
+      <div><h2>More soon</h2><p>New games are on the way.</p></div>
+      <span class="go">Soon</span>
+    </div>
+  </div>
+  <footer>Free to play. No sign-up needed.</footer>
+</main>
+</body>
+</html>
