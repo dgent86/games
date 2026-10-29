@@ -58,21 +58,25 @@ const AD = (() => {
   }
 
   // ---------------- Deck
-  function buildDeck() {
+  // `used` is shared across decks in campaign mode, so no player is dealt into two drafts
+  function buildDeck(used) {
+    used = used || new Set();
     const by = { GK: [], DEF: [], MID: [], FWD: [] };
     PLAYERS.forEach(p => by[p.pos].push(p));
-    const need = { GK: 3, DEF: 5, MID: 5, FWD: 5 };
     const topN = 3 + Math.floor(rand() * 3); // 3 to 5 top cards, hidden
-    const deck = [], used = new Set();
+    const deck = [];
     const slots = shuffle(['GK', 'GK', 'GK', 'DEF', 'DEF', 'DEF', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'MID', 'MID', 'FWD', 'FWD', 'FWD', 'FWD', 'FWD']);
     slots.forEach((pos, i) => {
       const top = i < topN;
-      const pool = by[pos].filter(p => !used.has(p.id) && (top ? p.ovr >= 86 : p.ovr < 86));
+      let pool = by[pos].filter(p => !used.has(p.id) && (top ? p.ovr >= 86 : p.ovr < 86));
+      if (!pool.length) pool = by[pos].filter(p => !used.has(p.id));
       // below the top cards, quality players are dealt more often: 84-85 x3, 82-83 x2, the rest x1
       const p = top ? pick(pool) : weighted(pool, pool.map(q => q.ovr >= 84 ? 3 : q.ovr >= 82 ? 2 : 1)); used.add(p.id); deck.push(p);
     });
     return shuffle(deck);
   }
+  // n decks with no player in more than one; returned as id lists so they can be saved
+  function buildDecks(n) { const used = new Set(); return [...Array(n)].map(() => buildDeck(used).map(p => p.id)); }
 
   // ---------------- Ratings
   function slotRating(p, line, mods) {
@@ -117,7 +121,8 @@ const AD = (() => {
     if (opts.seed != null) seed(opts.seed);
     const ai = opts.manager != null ? opts.manager : Math.floor(rand() * MANAGERS.length);
     const H = opts.homeManager != null ? aiSide(opts.homeManager) : { name: opts.humanName || 'Mariners', isAI: false, budget: BUDGET, squad: [], refusals: 1 };
-    const g = { deck: buildDeck(), idx: 0, lotNo: 0, contested: 0, log: [], H, A: aiSide(ai), lot: null, done: false };
+    const deck = opts.deck ? opts.deck.map(id => PLAYERS[id]) : buildDeck(opts.used);
+    const g = { deck, idx: 0, lotNo: 0, contested: 0, log: [], H, A: aiSide(ai), lot: null, done: false };
     return g;
   }
   function reroll(m) {
@@ -301,8 +306,8 @@ const AD = (() => {
     return null;
   }
   // Two AI managers draft against each other in the background; returns both squads with prices.
-  function draftAI(miA, miB) {
-    const g = newGame({ homeManager: miA, manager: miB });
+  function draftAI(miA, miB, deck) {
+    const g = newGame({ homeManager: miA, manager: miB, deck });
     let lot = startLot(g), guard = 0;
     while (lot && guard++ < 400) {
       let k = 0;
@@ -667,7 +672,7 @@ const AD = (() => {
     return { events: ev, score, winner, pens, teams: [H, A], ratings };
   }
 
-  return { init, seed, rand, newGame, draftAI, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
+  return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
     match, simulate, lineup, makeTeam, slotRating, tags, freeAgent, T, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;

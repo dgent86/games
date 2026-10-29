@@ -637,12 +637,14 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     const name = ($('#teamName').value || '').trim() || 'Mariners';
     const order = [...Array(15).keys()];
     for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-    C = { v: 1, name, order, round: 0, phase: 'draft', squads: {}, results: [], goals: {} };
+    // eight decks dealt from one pool, so a player can only ever be at one club; your deck is one of the eight at random
+    const decks = AD.buildDecks(8), mine = Math.floor(Math.random() * 8);
+    C = { v: 1, name, order, round: 0, phase: 'draft', squads: {}, results: [], goals: {}, deck: decks.splice(mine, 1)[0] };
     // the other 14 managers draft against each other in pairs, out of sight
     const rest = order.slice(1);
     for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
     for (let i = 0; i < rest.length; i += 2) {
-      const [a, b] = AD.draftAI(rest[i], rest[i + 1]);
+      const [a, b] = AD.draftAI(rest[i], rest[i + 1], decks[i / 2]);
       C.squads[rest[i]] = toSave(a); C.squads[rest[i + 1]] = toSave(b);
     }
     store.set(C);
@@ -652,7 +654,10 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   function beginRound() {
     const opp = C.order[C.round];
     if (C.phase === 'draft') {
-      G = AD.newGame({ humanName: C.name, manager: opp });
+      if (!C.deck) { // older save: deal around the players the other clubs already have
+        const used = new Set(); Object.values(C.squads).forEach(l => fromSave(l).forEach(e => { if (!e.p.fa) used.add(e.p.id); }));
+        G = AD.newGame({ humanName: C.name, manager: opp, used });
+      } else G = AD.newGame({ humanName: C.name, manager: opp, deck: C.deck });
     } else {
       const mine = fromSave(C.squads.U), his = fromSave(C.squads[opp]);
       const mgr = JSON.parse(JSON.stringify(AD.managers[opp]));

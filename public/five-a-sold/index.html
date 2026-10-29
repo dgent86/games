@@ -350,21 +350,25 @@ const AD = (() => {
   }
 
   // ---------------- Deck
-  function buildDeck() {
+  // `used` is shared across decks in campaign mode, so no player is dealt into two drafts
+  function buildDeck(used) {
+    used = used || new Set();
     const by = { GK: [], DEF: [], MID: [], FWD: [] };
     PLAYERS.forEach(p => by[p.pos].push(p));
-    const need = { GK: 3, DEF: 5, MID: 5, FWD: 5 };
     const topN = 3 + Math.floor(rand() * 3); // 3 to 5 top cards, hidden
-    const deck = [], used = new Set();
+    const deck = [];
     const slots = shuffle(['GK', 'GK', 'GK', 'DEF', 'DEF', 'DEF', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'MID', 'MID', 'FWD', 'FWD', 'FWD', 'FWD', 'FWD']);
     slots.forEach((pos, i) => {
       const top = i < topN;
-      const pool = by[pos].filter(p => !used.has(p.id) && (top ? p.ovr >= 86 : p.ovr < 86));
+      let pool = by[pos].filter(p => !used.has(p.id) && (top ? p.ovr >= 86 : p.ovr < 86));
+      if (!pool.length) pool = by[pos].filter(p => !used.has(p.id));
       // below the top cards, quality players are dealt more often: 84-85 x3, 82-83 x2, the rest x1
       const p = top ? pick(pool) : weighted(pool, pool.map(q => q.ovr >= 84 ? 3 : q.ovr >= 82 ? 2 : 1)); used.add(p.id); deck.push(p);
     });
     return shuffle(deck);
   }
+  // n decks with no player in more than one; returned as id lists so they can be saved
+  function buildDecks(n) { const used = new Set(); return [...Array(n)].map(() => buildDeck(used).map(p => p.id)); }
 
   // ---------------- Ratings
   function slotRating(p, line, mods) {
@@ -409,7 +413,8 @@ const AD = (() => {
     if (opts.seed != null) seed(opts.seed);
     const ai = opts.manager != null ? opts.manager : Math.floor(rand() * MANAGERS.length);
     const H = opts.homeManager != null ? aiSide(opts.homeManager) : { name: opts.humanName || 'Mariners', isAI: false, budget: BUDGET, squad: [], refusals: 1 };
-    const g = { deck: buildDeck(), idx: 0, lotNo: 0, contested: 0, log: [], H, A: aiSide(ai), lot: null, done: false };
+    const deck = opts.deck ? opts.deck.map(id => PLAYERS[id]) : buildDeck(opts.used);
+    const g = { deck, idx: 0, lotNo: 0, contested: 0, log: [], H, A: aiSide(ai), lot: null, done: false };
     return g;
   }
   function reroll(m) {
@@ -593,8 +598,8 @@ const AD = (() => {
     return null;
   }
   // Two AI managers draft against each other in the background; returns both squads with prices.
-  function draftAI(miA, miB) {
-    const g = newGame({ homeManager: miA, manager: miB });
+  function draftAI(miA, miB, deck) {
+    const g = newGame({ homeManager: miA, manager: miB, deck });
     let lot = startLot(g), guard = 0;
     while (lot && guard++ < 400) {
       let k = 0;
@@ -959,7 +964,7 @@ const AD = (() => {
     return { events: ev, score, winner, pens, teams: [H, A], ratings };
   }
 
-  return { init, seed, rand, newGame, draftAI, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
+  return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
     match, simulate, lineup, makeTeam, slotRating, tags, freeAgent, T, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;
@@ -1311,12 +1316,14 @@ if (typeof module !== 'undefined') module.exports = AD;
     const name = ($('#teamName').value || '').trim() || 'Mariners';
     const order = [...Array(15).keys()];
     for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-    C = { v: 1, name, order, round: 0, phase: 'draft', squads: {}, results: [], goals: {} };
+    // eight decks dealt from one pool, so a player can only ever be at one club; your deck is one of the eight at random
+    const decks = AD.buildDecks(8), mine = Math.floor(Math.random() * 8);
+    C = { v: 1, name, order, round: 0, phase: 'draft', squads: {}, results: [], goals: {}, deck: decks.splice(mine, 1)[0] };
     // the other 14 managers draft against each other in pairs, out of sight
     const rest = order.slice(1);
     for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
     for (let i = 0; i < rest.length; i += 2) {
-      const [a, b] = AD.draftAI(rest[i], rest[i + 1]);
+      const [a, b] = AD.draftAI(rest[i], rest[i + 1], decks[i / 2]);
       C.squads[rest[i]] = toSave(a); C.squads[rest[i + 1]] = toSave(b);
     }
     store.set(C);
@@ -1326,7 +1333,10 @@ if (typeof module !== 'undefined') module.exports = AD;
   function beginRound() {
     const opp = C.order[C.round];
     if (C.phase === 'draft') {
-      G = AD.newGame({ humanName: C.name, manager: opp });
+      if (!C.deck) { // older save: deal around the players the other clubs already have
+        const used = new Set(); Object.values(C.squads).forEach(l => fromSave(l).forEach(e => { if (!e.p.fa) used.add(e.p.id); }));
+        G = AD.newGame({ humanName: C.name, manager: opp, used });
+      } else G = AD.newGame({ humanName: C.name, manager: opp, deck: C.deck });
     } else {
       const mine = fromSave(C.squads.U), his = fromSave(C.squads[opp]);
       const mgr = JSON.parse(JSON.stringify(AD.managers[opp]));
