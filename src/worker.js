@@ -3,6 +3,8 @@
 //   POST /api/board         {p_mode, p_id?, p_streak?}               -> top 5 plus two either side of you
 //   POST /api/all           {p_mode}                                 -> the whole board (top 500)
 //   POST /api/event         {g, e, d, s}                             -> 204; private play counter, never read back by the site
+//   POST /api/season        {cid, name, w, d, l, gf, ga, pos, scorer, goals} -> {id}; a finished Five-a-Sold campaign
+//   POST /api/seasons       {p_id?}                                  -> global table: top 50 plus two either side of you
 // Scores can only be added or read here. Edit or delete rows in the Cloudflare dashboard (D1 > dangent-scores > Console).
 
 const SCHEMA = [
@@ -23,6 +25,19 @@ const SCHEMA = [
      sid TEXT NOT NULL DEFAULT '',
      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`,
   `CREATE INDEX IF NOT EXISTS events_game ON events (game, event, created_at)`,
+  // Five-a-Sold global table: one row per completed campaign. cid is a random id made when the campaign starts,
+  // so a resent submission can't log the same season twice.
+  `CREATE TABLE IF NOT EXISTS seasons (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     cid TEXT NOT NULL UNIQUE,
+     name TEXT NOT NULL,
+     w INTEGER NOT NULL, d INTEGER NOT NULL, l INTEGER NOT NULL,
+     gf INTEGER NOT NULL, ga INTEGER NOT NULL, pts INTEGER NOT NULL,
+     pos INTEGER NOT NULL,
+     scorer TEXT NOT NULL DEFAULT '',
+     goals INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`,
+  `CREATE INDEX IF NOT EXISTS seasons_board ON seasons (pts DESC, gf, ga)`,
 ];
 let ready = null;
 const init = (db) => (ready ||= db.batch(SCHEMA.map((s) => db.prepare(s))).catch((e) => { ready = null; throw e; }));
@@ -49,6 +64,17 @@ const BOARD = `
   WHERE r.rank <= 5 OR (me.rk IS NOT NULL AND r.rank BETWEEN me.rk - 2 AND me.rk + 2)
   ORDER BY r.rank`;
 
+// Same rules as the campaign table: points, then goal difference, then goals scored; earlier seasons first after that.
+const SEASONS = `
+  WITH r AS (
+    SELECT row_number() OVER (ORDER BY pts DESC, gf - ga DESC, gf DESC, created_at, id) AS rank,
+           id, name, w, d, l, gf, ga, pts, pos, scorer, goals, count(*) OVER () AS total
+    FROM seasons),
+  me AS (SELECT (SELECT rank FROM r WHERE id = ?1) AS rk)
+  SELECT r.* FROM r, me
+  WHERE r.rank <= 50 OR (me.rk IS NOT NULL AND r.rank BETWEEN me.rk - 2 AND me.rk + 2)
+  ORDER BY r.rank`;
+
 const ALL = `
   SELECT row_number() OVER (ORDER BY streak DESC, created_at, id) AS rank,
          id, name, streak, secs, created_at, count(*) OVER () AS total
@@ -66,6 +92,27 @@ async function api(fn, request, env) {
     const s = String(b.s ?? '').replace(/[^a-z0-9]/g, '').slice(0, 12);
     await env.DB.prepare('INSERT INTO events (game, event, detail, sid) VALUES (?1, ?2, ?3, ?4)').bind(g, e, d, s).run();
     return new Response(null, { status: 204 });
+  }
+  if (fn === 'season') {
+    const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+    const cid = String(b.cid ?? '');
+    let name = String(b.name ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20);
+    if (!name || BLOCK.test(name)) name = 'Mystery XI';
+    const scorer = String(b.scorer ?? '').replace(/[^\p{L}\p{M}\p{N} '.-]/gu, '').trim().slice(0, 40);
+    const { w, d, l, gf, ga, pos, goals } = b;
+    if (!/^[a-z0-9]{8,16}$/.test(cid)) return json({ message: 'Bad id' }, 400);
+    if (![w, d, l].every((v) => int(v, 0, 15)) || w + d + l !== 15) return json({ message: 'Bad record' }, 400);
+    if (!int(gf, 0, 400) || !int(ga, 0, 400) || !int(pos, 1, 16) || !int(goals, 0, gf)) return json({ message: 'Bad record' }, 400);
+    await env.DB.prepare(`INSERT INTO seasons (cid, name, w, d, l, gf, ga, pts, pos, scorer, goals)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11) ON CONFLICT(cid) DO NOTHING`)
+      .bind(cid, name, w, d, l, gf, ga, 3 * w + d, pos, scorer, scorer ? goals : 0).run();
+    const row = await env.DB.prepare('SELECT id FROM seasons WHERE cid = ?1').bind(cid).first();
+    return json({ id: row.id });
+  }
+  if (fn === 'seasons') {
+    const id = Number.isInteger(b.p_id) ? b.p_id : null;
+    const { results } = await env.DB.prepare(SEASONS).bind(id).all();
+    return json(results);
   }
   if (fn === 'board') {
     const mode = String(b.p_mode);
@@ -98,7 +145,7 @@ async function api(fn, request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event)\/?$/);
+    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons)\/?$/);
     if (m) {
       try { return await api(m[1], request, env); }
       catch (e) { return json({ message: 'Server error' }, 500); }

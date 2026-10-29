@@ -125,6 +125,14 @@ table.lt th, table.lt td { padding: 3px 4px; text-align: right; border-bottom: 1
 table.lt th:nth-child(2), table.lt td:nth-child(2) { text-align: left; }
 table.lt tr.you td { background: var(--well); font-weight: bold; }
 table.lt td.pts { font-weight: bold; }
+table.gt { font-size: 11px; }
+table.gt th, table.gt td { padding: 3px 3px; }
+@media (min-width: 560px) { table.gt { font-size: 12px; } }
+table.gt th:nth-child(11), table.gt td:nth-child(11) { text-align: left; white-space: nowrap; }
+table.gt th:nth-child(11) { white-space: normal; }
+table.gt .full { display: none; }
+@media (min-width: 560px) { table.gt .full { display: inline; } table.gt .short { display: none; } }
+table.gt tr.gap td { text-align: center; color: var(--muted); border-bottom: 0; }
 .sw { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--panel-lo); }
 .fx { display: grid; gap: 2px; font-size: 13px; }
 .fx div { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; }
@@ -174,6 +182,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
           <button class="btn go" id="campBtn" type="button">New campaign</button>
         </div>
         <button class="btn" id="contBtn" type="button" hidden></button>
+        <button class="btn" id="globalBtn" type="button">Global table</button>
       </div>
     </div>
   </section>
@@ -280,9 +289,20 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
         <div class="fx" id="fixtures"></div>
         <div class="lbl">Table</div>
         <div style="overflow-x:auto"><table class="lt" id="table"></table></div>
-        <div id="bootWrap" hidden><div class="lbl">Golden boot</div><div class="fx" id="boot"></div></div>
+        <div id="bootWrap" hidden><div class="lbl">Golden boot</div><div class="fx" id="boot"></div>
+          <p class="note" id="gDone"></p><button class="btn" id="globalBtn2" type="button">Global table</button></div>
         <button class="btn go" id="nextBtn" type="button">Next match</button>
         <button class="btn" id="titleBtn" type="button">Back to the title screen</button>
+      </div>
+    </div>
+  </section>
+  <section class="screen" id="global" hidden>
+    <div class="win">
+      <div class="bar"><span>Global table</span><span id="gCount"></span></div>
+      <div class="pad">
+        <p class="note" id="gNote"></p>
+        <div style="overflow-x:auto"><table class="lt gt" id="gTable"></table></div>
+        <button class="btn" id="gBack" type="button">Back</button>
       </div>
     </div>
   </section>
@@ -1296,6 +1316,58 @@ if (typeof module !== 'undefined') module.exports = AD;
     else b.hidden = true;
   }
   refreshContinue();
+
+  // ---------- global table: every finished campaign goes in automatically (dangent.uk only)
+  const ON = /(^|\.)dangent\.uk$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  const PENDING = 'fiveasold.pending', MINE = 'fiveasold.mine';
+  const ls = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (_) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (_) {} }
+  };
+  const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), b => (b % 36).toString(36)).join('') + Date.now().toString(36).slice(-4);
+  const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status));
+  function seasonEntry() {
+    const t = table(), i = t.findIndex(r => r.key === 'U'), r = t[i];
+    const top = Object.entries(C.goals).filter(([k]) => k.startsWith('U|')).sort((a, b) => b[1] - a[1])[0];
+    if (!C.cid) C.cid = rid();
+    return { cid: C.cid, name: C.name, w: r.w, d: r.d, l: r.l, gf: r.gf, ga: r.ga, pos: i + 1, scorer: top ? top[0].slice(2) : '', goals: top ? top[1] : 0 };
+  }
+  // kept until the server confirms it, so a season finished offline goes in next time the page opens
+  function submitSeason() {
+    const e = ls.get(PENDING);
+    if (!e || !ON) return Promise.resolve(null);
+    return post('/api/season', e).then(j => { ls.set(MINE, j.id); ls.del(PENDING); return j.id; })
+      .catch(st => { if (st === 400) ls.del(PENDING); return null; });
+  }
+  submitSeason();
+  let gBack = 'title';
+  function openGlobal() {
+    const cur = document.querySelector('.screen:not([hidden])'); gBack = cur && cur.id !== 'global' ? cur.id : 'title';
+    show('global');
+    const tb = $('#gTable'), note = $('#gNote');
+    tb.innerHTML = ''; $('#gCount').textContent = '';
+    if (!ON) { note.textContent = 'The global table lives at dangent.uk/five-a-sold. Finish a campaign there and your season goes in automatically.'; return; }
+    note.textContent = 'Loading...';
+    submitSeason().then(() => post('/api/seasons', { p_id: ls.get(MINE) })).then(rows => {
+      if (!rows.length) { note.textContent = 'No completed seasons yet. Finish a campaign to be the first.'; return; }
+      const me = ls.get(MINE), n = rows[0].total;
+      $('#gCount').textContent = `${n} season${n === 1 ? '' : 's'}`;
+      note.textContent = 'Every completed campaign, ranked on points, then goal difference, then goals scored. Every season is 15 games. Fin is where the side finished in its own campaign.';
+      let last = 0;
+      tb.innerHTML = '<thead><tr><th>Pos</th><th>Team</th><th>W</th><th>D</th><th>L</th><th>F</th><th>A</th><th>GD</th><th>Pts</th><th>Fin</th><th>Top scorer</th></tr></thead><tbody>' +
+        rows.map(x => {
+          const gap = x.rank > last + 1 ? '<tr class="gap"><td colspan="11">...</td></tr>' : ''; last = x.rank;
+          const gd = x.gf - x.ga;
+          return gap + `<tr class="${x.id === me ? 'you' : ''}"><td>${x.rank}</td><td>${esc(x.name)}</td><td>${x.w}</td><td>${x.d}</td><td>${x.l}</td><td>${x.gf}</td><td>${x.ga}</td><td>${gd > 0 ? '+' + gd : gd}</td><td class="pts">${x.pts}</td><td>${ord(x.pos)}</td><td>${x.scorer ? `<span class="full">${esc(x.scorer)}</span><span class="short">${esc(x.scorer.includes(' ') ? x.scorer.slice(x.scorer.indexOf(' ') + 1) : x.scorer)}</span> ${x.goals}` : '-'}</td></tr>`;
+        }).join('') + '</tbody>';
+    }).catch(() => { note.textContent = 'Could not load the global table. Try again in a moment.'; });
+  }
+  $('#globalBtn').addEventListener('click', openGlobal);
+  $('#globalBtn2').addEventListener('click', openGlobal);
+  $('#gBack').addEventListener('click', () => { show(gBack); if (gBack !== 'title' && !$('#campWin').hidden) $('#campWin').scrollIntoView({ block: 'start' }); });
+
   let confirmNew = false;
   $('#campBtn').addEventListener('click', () => {
     const s = store.get();
@@ -1318,7 +1390,7 @@ if (typeof module !== 'undefined') module.exports = AD;
     for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
     // eight decks dealt from one pool, so a player can only ever be at one club; your deck is one of the eight at random
     const decks = AD.buildDecks(8), mine = Math.floor(Math.random() * 8);
-    C = { v: 1, name, order, round: 0, phase: 'draft', squads: {}, results: [], goals: {}, deck: decks.splice(mine, 1)[0] };
+    C = { v: 1, name, order, round: 0, phase: 'draft', squads: {}, results: [], goals: {}, deck: decks.splice(mine, 1)[0], cid: rid() };
     // the other 14 managers draft against each other in pairs, out of sight
     const rest = order.slice(1);
     for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
@@ -1376,7 +1448,10 @@ if (typeof module !== 'undefined') module.exports = AD;
     store.set(C);
     const out = res.winner == null ? 'D' : res.winner === 0 ? 'W' : 'L';
     track('five-a-sold', 'finish', `R${r + 1} ${out} ${res.score[0]}-${res.score[1]} v ${AD.managers[C.order[r]].name}`);
-    if (C.phase === 'done') { const pos = table().findIndex(t => t.key === 'U') + 1; track('five-a-sold', 'finish', `campaign ${pos} of 16`); }
+    if (C.phase === 'done') {
+      const pos = table().findIndex(t => t.key === 'U') + 1; track('five-a-sold', 'finish', `campaign ${pos} of 16`);
+      ls.set(PENDING, seasonEntry()); store.set(C); submitSeason();
+    }
   }
   function renderCampaign() {
     const r = C.round - 1, done = C.phase === 'done';
@@ -1395,6 +1470,7 @@ if (typeof module !== 'undefined') module.exports = AD;
       champ.innerHTML = `<div class="champ">${w.key === 'U' ? 'Champions !!' : esc(mgrName(w.key)) + ' win the league'}</div><p class="note" style="margin:6px 0 0">You finished ${ord(you)} of 16 with ${t[you - 1].pts} points.</p>`;
       const top = Object.entries(C.goals).sort((a, b) => b[1] - a[1]).slice(0, 5);
       $('#boot').innerHTML = top.map(([k, g]) => { const [team, n] = k.split('|'); return `<div class="${team === 'U' ? 'you' : ''}"><span>${esc(n)}</span><span>${g}</span><span>${esc(mgrName(team))}</span></div>`; }).join('');
+      $('#gDone').textContent = ON ? 'Your season has gone into the global table.' : 'Play on dangent.uk to get your season into the global table.';
       $('#nextBtn').textContent = 'Finish and start again';
     } else {
       $('#nextBtn').textContent = `Next match: v ${AD.managers[C.order[C.round]].name}`;
