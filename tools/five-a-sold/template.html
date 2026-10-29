@@ -119,6 +119,21 @@ input[type=text] { font: 16px var(--f-ui); padding: 8px; border: 2px solid; bord
 .speed { display: flex; gap: 6px; }
 .speed .btn { flex: 1; min-height: 40px; font-size: 13px; }
 .speed .btn[aria-pressed=true] { border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); background: var(--well); }
+table.lt { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+table.lt th, table.lt td { padding: 3px 4px; text-align: right; border-bottom: 1px solid var(--panel-lo); }
+table.lt th:nth-child(2), table.lt td:nth-child(2) { text-align: left; }
+table.lt tr.you td { background: var(--well); font-weight: bold; }
+table.lt td.pts { font-weight: bold; }
+.sw { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--panel-lo); }
+.fx { display: grid; gap: 2px; font-size: 13px; }
+.fx div { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; }
+.fx div span:first-child { text-align: right; }
+.fx div span:nth-child(2) { font-weight: bold; font-variant-numeric: tabular-nums; }
+.fx div.you { font-weight: bold; background: var(--well); }
+#boot div { grid-template-columns: minmax(0, 1fr) auto auto; }
+#boot div span:first-child { text-align: left; }
+#boot div span:nth-child(3) { color: var(--muted); min-width: 80px; }
+.champ { font-family: var(--f-crt); font-size: 30px; line-height: 1; }
 table.rt { width: 100%; border-collapse: collapse; font-size: 12px; }
 table.rt th, table.rt td { padding: 3px 4px; text-align: left; border-bottom: 1px solid var(--panel-lo); }
 table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-nums; }
@@ -142,17 +157,22 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 
   <section class="screen" id="title">
     <div class="win">
-      <div class="logo">Five-a-Sold<span>5-A-SIDE · £20M · ONE MATCH</span></div>
+      <div class="logo">Five-a-Sold<span>5-A-SIDE · £20M · AUCTION</span></div>
       <div class="pad">
         <ol class="rules">
           <li>Players come up one at a time, blind. You and a rival manager bid in £1m steps.</li>
           <li>Build a five: one keeper and four outfield. Out-of-position players suffer.</li>
           <li>You can't bid money you'll need: keep £1m back for every empty slot.</li>
           <li>Then it's kick-off. No ratings until the final whistle.</li>
+          <li>Quick match: one auction, one game. Campaign: one auction, then a full season against all 15 managers.</li>
         </ol>
         <label class="field" for="teamName"><span class="lbl">Your team name</span>
           <input type="text" id="teamName" value="Mariners" maxlength="20" autocomplete="off"></label>
-        <button class="btn go" id="startBtn" type="button">New game</button>
+        <div class="row">
+          <button class="btn go" id="startBtn" type="button">Quick match</button>
+          <button class="btn go" id="campBtn" type="button">New campaign</button>
+        </div>
+        <button class="btn" id="contBtn" type="button" hidden></button>
       </div>
     </div>
   </section>
@@ -170,9 +190,11 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
           </div>
         </div>
         <div class="well row" id="kitRow"></div>
+        <p class="note" id="campNote" style="margin:0" hidden></p>
+        <button class="btn go" id="preTeamsBtn" type="button" hidden>See the team sheets</button>
       </div>
     </div>
-    <div class="win">
+    <div class="win" id="deckWin">
       <div class="bar"><span>Today's deck</span><span>18 cards, order hidden</span></div>
       <div class="pad">
         <div class="counts" id="deckCounts"></div>
@@ -249,6 +271,19 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
         <button class="btn go" id="againBtn" type="button">Play again</button>
       </div>
     </div>
+    <div class="win" id="campWin" hidden>
+      <div class="bar"><span id="campTitle">League table</span><span id="campRound"></span></div>
+      <div class="pad">
+        <div id="campChamp" hidden></div>
+        <div class="lbl" id="fxLbl">Results</div>
+        <div class="fx" id="fixtures"></div>
+        <div class="lbl">Table</div>
+        <div style="overflow-x:auto"><table class="lt" id="table"></table></div>
+        <div id="bootWrap" hidden><div class="lbl">Golden boot</div><div class="fx" id="boot"></div></div>
+        <button class="btn go" id="nextBtn" type="button">Next match</button>
+        <button class="btn" id="titleBtn" type="button">Back to the title screen</button>
+      </div>
+    </div>
   </section>
   <footer class="sitefoot"><a href="https://dangent.uk/">More games at dangent.uk</a></footer>
 </div>
@@ -264,7 +299,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   const $ = s => document.querySelector(s);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const HUMAN_KIT = { p: '#111111', s: '#ffffff', t: '#ffffff', style: 'stripes' };
-  let G = null, tmr = null, tick = null, speed = 'normal', playToken = 0;
+  let G = null, C = null, tmr = null, tick = null, speed = 'normal', playToken = 0;
 
   function show(id) { document.querySelectorAll('.screen').forEach(s => { s.hidden = s.id !== id; }); window.scrollTo(0, 0); }
   function kitBg(k) {
@@ -312,6 +347,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   // ---------- title
   $('#startBtn').addEventListener('click', () => {
     const name = ($('#teamName').value || '').trim() || 'Mariners';
+    C = null;
     G = AD.newGame({ humanName: name });
     revealScreen();
   });
@@ -323,10 +359,16 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     $('#mgrName').textContent = m.name;
     $('#mgrTitle').textContent = m.title;
     $('#mgrTeaser').textContent = m.teaser;
-    $('#tierHint').textContent = G.A.name;
+    $('#tierHint').textContent = C ? `Campaign · Round ${C.round + 1} of 15` : G.A.name;
+    const later = !!(C && C.round > 0);
+    $('#deckWin').hidden = later; $('#preTeamsBtn').hidden = !later;
+    $('#campNote').hidden = !C;
+    if (C) $('#campNote').textContent = C.round === 0
+      ? 'You draft against him, and he is also your first opponent. The other 14 managers are drafting against each other at the same time. Keep your five all season.'
+      : `${tableLine()} His squad was drafted at the start of the season.`;
     $('#kitRow').innerHTML = `${shirt(HUMAN_KIT, '', 40)}<span><b>${esc(G.H.name)}</b><br><span class="note">Black and white stripes</span></span>
       <span style="flex:1"></span>${shirt(m.kit, '', 40)}<span><b>${esc(G.A.name)}</b><br><span class="note">${esc(m.kitName)}</span></span>`;
-    const c = AD.deckCounts(G);
+    const c = G.deck ? AD.deckCounts(G) : { GK: 0, DEF: 0, MID: 0, FWD: 0 };
     $('#deckCounts').innerHTML = ['GK', 'DEF', 'MID', 'FWD'].map(p => `<div>${c[p]}<span>${p}</span></div>`).join('');
     show('reveal');
   }
@@ -438,7 +480,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
       <div class="pad"><div class="lbl">Shape ${team.shape}</div><div class="sheet">${rows}</div></div>`;
   }
   function teamsScreen() {
-    track('five-a-sold','auction_done',G.A.mgr.name);
+    if (C && C.phase === 'draft') captureDraft(); else if (!C) track('five-a-sold','auction_done',G.A.mgr.name);
     const tH = AD.makeTeam(G.H, true, null), tA = AD.makeTeam(G.A, false, G.A.mgr);
     $('#sheetH').innerHTML = sheetHTML(tH, HUMAN_KIT, G.H.name);
     $('#sheetA').innerHTML = sheetHTML(tA, G.A.mgr.kit, G.A.name);
@@ -475,10 +517,11 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     const token = ++playToken;
     speed = 'normal';
     document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.speed === 'normal')));
-    const res = AD.match(G);
+    const res = AD.match(G, C ? { league: true } : undefined);
+    if (C) recordRound(res);
     track('five-a-sold','kickoff',G.A.mgr.name);
     show('match');
-    $('#resultWin').hidden = true;
+    $('#resultWin').hidden = true; $('#campWin').hidden = true;
     const cH = sideColours(0), cA = sideColours(1);
     $('#nameH').textContent = G.H.name; $('#nameH').style.background = cH.bg; $('#nameH').style.color = cH.fg;
     $('#nameA').textContent = G.A.mgr.name; $('#nameA').style.background = cA.bg; $('#nameA').style.color = cA.fg;
@@ -528,8 +571,8 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   function finishMatch(res) {
     const [H, A] = res.teams, s = res.score, w = res.winner;
     const youWin = w === 0;
-    track('five-a-sold','finish',`${youWin ? 'W' : 'L'} ${s[0]}-${s[1]}${res.pens ? ' pens' : ''} v ${G.A.mgr.name}`);
-    $('#resultTag').textContent = youWin ? 'You win' : `${G.A.mgr.name} wins`;
+    if (!C) track('five-a-sold','finish',`${youWin ? 'W' : 'L'} ${s[0]}-${s[1]}${res.pens ? ' pens' : ''} v ${G.A.mgr.name}`);
+    $('#resultTag').textContent = w == null ? 'Draw' : youWin ? 'You win' : `${G.A.mgr.name} wins`;
     $('#resultLine').textContent = `${H.name} ${s[0]} - ${s[1]} ${A.name}` + (res.pens ? ` (${res.pens.score[0]}-${res.pens.score[1]} pens)` : '');
     const ogs = res.ratings.flat().filter(x => x.stats.og).map(x => `${x.p.n}${x.stats.og > 1 ? ' ' + x.stats.og : ''}`);
     $('#scorers').textContent = ogs.length ? `Own goals: ${ogs.join(', ')}.` : '';
@@ -541,8 +584,137 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     $('#ratings').innerHTML = `<thead><tr><th>Player</th><th>Slot</th><th class="n">OVR</th><th class="n">G</th><th class="n">A</th><th class="n">Rating</th><th class="n">Paid</th></tr></thead>
       <tbody><tr><th colspan="7">${esc(H.name)}</th></tr>${rows(res.ratings[0])}<tr><th colspan="7">${esc(A.name)}</th></tr>${rows(res.ratings[1])}</tbody>`;
     $('#resultWin').hidden = false;
+    $('#againBtn').hidden = !!C;
+    $('#campWin').hidden = !C;
+    if (C) renderCampaign();
     $('#resultWin').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   $('#againBtn').addEventListener('click', () => { playToken++; G = AD.newGame({ humanName: G.H.name }); revealScreen(); });
+
+  // ---------- campaign
+  const SAVE = 'fiveasold.campaign.v1';
+  const store = {
+    get() { try { const s = localStorage.getItem(SAVE); return s ? JSON.parse(s) : null; } catch (_) { return null; } },
+    set(v) { try { localStorage.setItem(SAVE, JSON.stringify(v)); } catch (_) {} },
+    clear() { try { localStorage.removeItem(SAVE); } catch (_) {} }
+  };
+  const byName = new Map(AD.players.map(p => [p.n, p]));
+  const toSave = list => list.map(e => ({ n: e.p.fa ? 'FA|' + e.p.pos : e.p.n, price: e.price }));
+  const fromSave = list => list.map(e => ({ p: e.n.startsWith('FA|') ? AD.freeAgent(e.n.slice(3)) : (byName.get(e.n) || AD.freeAgent('MID')), price: e.price }));
+  const mgrName = k => k === 'U' ? C.name : AD.managers[k].name;
+  const kitOf = k => k === 'U' ? HUMAN_KIT : AD.managers[k].kit;
+  const keys = () => ['U', ...C.order];
+  function table() { return AD.leagueTable(C.results, keys()); }
+  const ord = n => n + ((n % 100 > 10 && n % 100 < 14) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
+  function tableLine() {
+    const t = table(), i = t.findIndex(r => r.key === 'U'), r = t[i];
+    return `You are ${ord(i + 1)} on ${r.pts} point${r.pts === 1 ? '' : 's'} after ${r.p} game${r.p === 1 ? '' : 's'}.`;
+  }
+  function refreshContinue() {
+    const s = store.get();
+    const b = $('#contBtn');
+    if (s && s.phase !== 'done') { b.hidden = false; b.textContent = `Continue campaign · ${s.name} · Round ${s.round + 1} of 15`; }
+    else b.hidden = true;
+  }
+  refreshContinue();
+  let confirmNew = false;
+  $('#campBtn').addEventListener('click', () => {
+    const s = store.get();
+    if (s && s.phase !== 'done' && !confirmNew) { confirmNew = true; $('#campBtn').textContent = 'Start over? Tap again'; return; }
+    confirmNew = false; $('#campBtn').textContent = 'New campaign';
+    newCampaign();
+  });
+  $('#contBtn').addEventListener('click', () => { C = store.get(); if (C) beginRound(); });
+  $('#titleBtn').addEventListener('click', () => { playToken++; refreshContinue(); show('title'); });
+  $('#preTeamsBtn').addEventListener('click', teamsScreen);
+  $('#nextBtn').addEventListener('click', () => {
+    playToken++;
+    if (C.phase === 'done') { store.clear(); C = null; refreshContinue(); show('title'); return; }
+    beginRound();
+  });
+
+  function newCampaign() {
+    const name = ($('#teamName').value || '').trim() || 'Mariners';
+    const order = [...Array(15).keys()];
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    C = { v: 1, name, order, round: 0, phase: 'draft', squads: {}, results: [], goals: {} };
+    // the other 14 managers draft against each other in pairs, out of sight
+    const rest = order.slice(1);
+    for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+    for (let i = 0; i < rest.length; i += 2) {
+      const [a, b] = AD.draftAI(rest[i], rest[i + 1]);
+      C.squads[rest[i]] = toSave(a); C.squads[rest[i + 1]] = toSave(b);
+    }
+    store.set(C);
+    track('five-a-sold', 'start', 'campaign');
+    beginRound();
+  }
+  function beginRound() {
+    const opp = C.order[C.round];
+    if (C.phase === 'draft') {
+      G = AD.newGame({ humanName: C.name, manager: opp });
+    } else {
+      const mine = fromSave(C.squads.U), his = fromSave(C.squads[opp]);
+      const mgr = JSON.parse(JSON.stringify(AD.managers[opp]));
+      G = { H: { name: C.name, isAI: false, squad: mine.map(e => e.p) }, A: { name: mgr.name + "'s XI", isAI: true, mgr, squad: his.map(e => e.p) },
+        log: [...mine.map(e => ({ card: e.p, who: 'H', price: e.price })), ...his.map(e => ({ card: e.p, who: 'A', price: e.price }))] };
+    }
+    revealScreen();
+  }
+  function captureDraft() {
+    const side = (m, who) => m.squad.map(p => { const e = G.log.find(x => x.card === p && x.who === who); return { p, price: e ? e.price : 0 }; });
+    C.squads.U = toSave(side(G.H, 'H'));
+    C.squads[C.order[0]] = toSave(side(G.A, 'A'));
+    C.phase = 'season';
+    store.set(C);
+    track('five-a-sold', 'auction_done', 'campaign');
+  }
+  function addGoals(res, ka, kb) {
+    res.ratings.forEach((list, ti) => list.forEach(x => {
+      if (!x.stats.g || x.p.fa) return;
+      const k = (ti === 0 ? ka : kb) + '|' + x.p.n; C.goals[k] = (C.goals[k] || 0) + x.stats.g;
+    }));
+  }
+  function recordRound(res) {
+    // saved at kick-off, so leaving mid-match can't replay a result
+    const r = C.round, fixtures = AD.campaignSchedule(C.order)[r];
+    C.results.push({ a: 'U', b: C.order[r], ga_: res.score[0], gb_: res.score[1], r });
+    addGoals(res, 'U', C.order[r]);
+    fixtures.forEach(([a, b]) => {
+      if (a === 'U' || b === 'U') return;
+      const team = (k, home) => AD.makeTeam({ name: AD.managers[k].name, squad: fromSave(C.squads[k]).map(e => e.p) }, home, AD.managers[k]);
+      const rr = AD.simulate(team(a, true), team(b, false), { league: true });
+      C.results.push({ a, b, ga_: rr.score[0], gb_: rr.score[1], r });
+      addGoals(rr, a, b);
+    });
+    C.round++;
+    if (C.round >= 15) C.phase = 'done';
+    store.set(C);
+    const out = res.winner == null ? 'D' : res.winner === 0 ? 'W' : 'L';
+    track('five-a-sold', 'finish', `R${r + 1} ${out} ${res.score[0]}-${res.score[1]} v ${AD.managers[C.order[r]].name}`);
+    if (C.phase === 'done') { const pos = table().findIndex(t => t.key === 'U') + 1; track('five-a-sold', 'finish', `campaign ${pos} of 16`); }
+  }
+  function renderCampaign() {
+    const r = C.round - 1, done = C.phase === 'done';
+    const t = table(), you = t.findIndex(x => x.key === 'U') + 1;
+    $('#campTitle').textContent = done ? 'Final table' : 'League table';
+    $('#campRound').textContent = `After round ${C.round} of 15`;
+    $('#fxLbl').textContent = `Round ${r + 1} results`;
+    $('#fixtures').innerHTML = C.results.filter(f => f.r === r).map(f => `<div class="${f.a === 'U' || f.b === 'U' ? 'you' : ''}"><span>${esc(mgrName(f.a))}</span><span>${f.ga_} - ${f.gb_}</span><span>${esc(mgrName(f.b))}</span></div>`).join('');
+    $('#table').innerHTML = `<thead><tr><th>Pos</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>` +
+      t.map((x, i) => { const k = kitOf(x.key); const gd = x.gf - x.ga;
+        return `<tr class="${x.key === 'U' ? 'you' : ''}"><td>${i + 1}</td><td><span class="sw" style="background:${kitBg(k)}"></span>${esc(mgrName(x.key))}</td><td>${x.p}</td><td>${x.w}</td><td>${x.d}</td><td>${x.l}</td><td>${gd > 0 ? '+' + gd : gd}</td><td class="pts">${x.pts}</td></tr>`; }).join('') + '</tbody>';
+    const champ = $('#campChamp'), boot = $('#bootWrap');
+    champ.hidden = !done; boot.hidden = !done;
+    if (done) {
+      const w = t[0];
+      champ.innerHTML = `<div class="champ">${w.key === 'U' ? 'Champions !!' : esc(mgrName(w.key)) + ' win the league'}</div><p class="note" style="margin:6px 0 0">You finished ${ord(you)} of 16 with ${t[you - 1].pts} points.</p>`;
+      const top = Object.entries(C.goals).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      $('#boot').innerHTML = top.map(([k, g]) => { const [team, n] = k.split('|'); return `<div class="${team === 'U' ? 'you' : ''}"><span>${esc(n)}</span><span>${g}</span><span>${esc(mgrName(team))}</span></div>`; }).join('');
+      $('#nextBtn').textContent = 'Finish and start again';
+    } else {
+      $('#nextBtn').textContent = `Next match: v ${AD.managers[C.order[C.round]].name}`;
+    }
+  }
 })();
 </script>

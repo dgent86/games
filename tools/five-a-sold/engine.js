@@ -105,24 +105,26 @@ const AD = (() => {
 
   // ---------------- Auction
   const BUDGET = 20, TIMER = 10;
+  function aiSide(mgrIndex, name) {
+    const mgr = JSON.parse(JSON.stringify(MANAGERS[mgrIndex]));
+    const m = { name: name || mgr.name + "'s XI", isAI: true, budget: BUDGET, squad: [], refusals: 1, mgr, mi: mgrIndex,
+      ai: { perceived: {}, momentum: 0, tilt: false, starUsed: false, rerollAt: 6 + Math.floor(rand() * 7), rerolled: false } };
+    if (mgr.name === 'Ranieri') reroll(m);
+    return m;
+  }
   function newGame(opts) {
-    if (opts && opts.seed != null) seed(opts.seed);
-    const mgr = JSON.parse(JSON.stringify(opts && opts.manager != null ? MANAGERS[opts.manager] : pick(MANAGERS)));
-    const g = {
-      deck: buildDeck(), idx: 0, lotNo: 0, contested: 0, log: [],
-      H: { name: (opts && opts.humanName) || 'Mariners', isAI: false, budget: BUDGET, squad: [], refusals: 1 },
-      A: { name: mgr.name + "'s XI", isAI: true, budget: BUDGET, squad: [], refusals: 1, mgr },
-      ai: { perceived: {}, momentum: 0, tilt: false, starUsed: false, rerollAt: 6 + Math.floor(rand() * 7), rerolled: false },
-      lot: null, done: false
-    };
-    if (mgr.name === 'Ranieri') reroll(g);
+    opts = opts || {};
+    if (opts.seed != null) seed(opts.seed);
+    const ai = opts.manager != null ? opts.manager : Math.floor(rand() * MANAGERS.length);
+    const H = opts.homeManager != null ? aiSide(opts.homeManager) : { name: opts.humanName || 'Mariners', isAI: false, budget: BUDGET, squad: [], refusals: 1 };
+    const g = { deck: buildDeck(), idx: 0, lotNo: 0, contested: 0, log: [], H, A: aiSide(ai), lot: null, done: false };
     return g;
   }
-  function reroll(g) {
-    const m = g.A.mgr;
-    m.bias = [0, 0, 0].map(() => +(0.85 + rand() * 0.4).toFixed(2));
+  function reroll(m) {
+    const mg = m.mgr;
+    mg.bias = [0, 0, 0].map(() => +(0.85 + rand() * 0.4).toFixed(2));
     const all = ['Pace', 'Technique', 'Physical', 'Work rate', 'Youth', 'Experience'];
-    m.likes = [pick(all)]; m.dislikes = [pick(all.filter(x => x !== m.likes[0]))];
+    mg.likes = [pick(all)]; mg.dislikes = [pick(all.filter(x => x !== mg.likes[0]))];
   }
   const hasGK = m => m.squad.some(p => p.pos === 'GK');
   const outCount = m => m.squad.filter(p => p.pos !== 'GK').length;
@@ -134,20 +136,22 @@ const AD = (() => {
   const other = (g, m) => m === g.H ? g.A : g.H;
   function deckCounts(g) { const c = { GK: 0, DEF: 0, MID: 0, FWD: 0 }; for (let i = g.idx; i < g.deck.length; i++) c[g.deck[i].pos]++; return c; }
 
-  function perceive(g, p, m) {
-    // AI perception of a player, rolled once per card
-    if (g.ai.perceived[p.id] != null) return g.ai.perceived[p.id];
+  function perceive(A, p) {
+    // an AI manager's view of a player, rolled once per card
+    const m = A.mgr;
+    if (A.ai.perceived[p.id] != null) return A.ai.perceived[p.id];
     let bk = m.bk;
     if (m.name === 'Pochettino' && p.age <= 23) bk += 3;
     if (m.name === 'Redknapp' && m.clubs.includes(p.club)) bk += 2;
     const sd = Math.max(0, (11 - Math.min(bk, 10)) * 1.5);
     const v = p.ovr + gauss() * sd;
-    g.ai.perceived[p.id] = v;
+    A.ai.perceived[p.id] = v;
     return v;
   }
-  function aiValue(g, c) {
-    const A = g.A, m = A.mgr;
-    const per = perceive(g, c, m);
+  function aiValue(g, c, A) {
+    A = A || g.A;
+    const m = A.mgr, O = other(g, A);
+    const per = perceive(A, c);
     const slotsLeft = 5 - A.squad.length;
     const target = A.budget / slotsLeft;
     const q = Math.pow(2, (per - 80) / 7);
@@ -157,37 +161,34 @@ const AD = (() => {
     if (tg.some(t => m.likes.includes(t))) S *= 1.15;
     if (tg.some(t => m.dislikes.includes(t))) S *= 0.85;
     let C = m.clubs.includes(c.club) ? (m.name === 'Redknapp' ? 1.5 : 1.25) : 1;
-    let aggr = m.aggr + (m.name === 'Klopp' ? g.ai.momentum : 0);
+    let aggr = m.aggr + (m.name === 'Klopp' ? A.ai.momentum : 0);
     if (m.name === 'Allardyce') {
-      const avg = s => s.length ? s.reduce((t, p) => t + perceive(g, p, m), 0) / s.length : 80;
-      if (A.squad.length && g.H.squad.length && avg(g.H.squad) - avg(A.squad) >= 5) aggr = 10;
+      const avg = s => s.length ? s.reduce((t, p) => t + perceive(A, p), 0) / s.length : 80;
+      if (A.squad.length && O.squad.length && avg(O.squad) - avg(A.squad) >= 5) aggr = 10;
     }
     const Af = 0.7 + 0.06 * Math.min(aggr, 12);
-    // patience
     let elig = 0; for (let i = g.idx + 1; i < g.deck.length; i++) if (canSign(A, g.deck[i])) elig++;
     const P = elig >= 2 * slotsLeft ? 1 + (5 - m.pat) * 0.05 : 1.2;
     let v = target * q * L * S * C * Af * P;
-    // line balance
     const lineCount = A.squad.filter(p => p.pos === c.pos).length;
     if (c.pos !== 'GK' && lineCount >= 2 && !(m.name === 'Guardiola' && c.pos === 'MID')) v *= 0.6;
-    // quirks
     if (m.name === 'Wenger' && g.idx >= g.deck.length * 2 / 3) v *= 1.2;
     if (m.name === 'Mourinho' && ((c.pos === 'GK' && !hasGK(A)) || (c.pos === 'DEF' && !A.squad.some(p => p.pos === 'DEF')))) v *= 1.3;
-    if (m.name === 'Ancelotti' && !g.ai.starUsed && per >= 90) v *= 1.3;
+    if (m.name === 'Ancelotti' && !A.ai.starUsed && per >= 90) v *= 1.3;
     if (m.name === 'Hodgson' && c.pos === 'DEF' && A.squad.filter(p => p.pos === 'DEF').length < 2) v *= 1.2;
-    if (m.name === 'Keegan' && g.ai.tilt) v *= 1.3;
+    if (m.name === 'Keegan' && A.ai.tilt) v *= 1.3;
     if (m.name === 'Dyche' && per < 82) v *= 1.3;
     if (m.name === 'Redknapp' && g.idx + 1 < g.deck.length) {
       const nx = g.deck[g.idx + 1];
       if (nx.pos === c.pos && canSign(A, nx)) {
-        const pn = perceive(g, nx, m);
+        const pn = perceive(A, nx);
         if (pn > per + 3) v *= 0.75; else if (pn < per - 3) v *= 1.15;
       }
     }
     let max = Math.floor(v);
     if (m.name === 'Benítez') max = Math.min(max, 7);
     if (m.name === 'Dyche') max = Math.min(max, 5);
-    if (m.name === 'Ferguson' && per >= 88) max = Math.max(max, Math.floor(maxBid(g.H) / 2));
+    if (m.name === 'Ferguson' && per >= 88) max = Math.max(max, Math.floor(maxBid(O) / 2));
     if (aggr >= 8 && m.name !== 'Wenger' && rand() < 0.10) max += 1;
     max = Math.min(max, maxBid(A));
     return { raw: v, max, per, target, aggr };
@@ -198,9 +199,9 @@ const AD = (() => {
     if ((full(g.H) && full(g.A)) || g.idx >= g.deck.length) return finish(g);
     const c = g.deck[g.idx];
     const eH = canSign(g.H, c), eA = canSign(g.A, c);
-    const lot = { card: c, no: ++g.lotNo, lastGK: isLastGK(g, c), high: 0, highBy: null, toAct: null, passes: 0, mode: null, result: null };
+    const lot = { card: c, no: ++g.lotNo, lastGK: isLastGK(g, c), high: 0, highBy: null, toAct: null, passes: 0, mode: null, result: null, bidders: new Set() };
     g.lot = lot;
-    if (g.A.mgr.name === 'Ranieri' && !g.ai.rerolled && g.lotNo >= g.ai.rerollAt) { reroll(g); g.ai.rerolled = true; }
+    [g.H, g.A].forEach(m => { if (m.isAI && m.mgr.name === 'Ranieri' && !m.ai.rerolled && g.lotNo >= m.ai.rerollAt) { reroll(m); m.ai.rerolled = true; } });
     if (!eH && !eA) { lot.mode = 'skip'; lot.result = { type: 'skip', text: 'Neither side can sign him' }; return lot; }
     if (full(g.H) || full(g.A)) {
       const m = full(g.H) ? g.A : g.H;
@@ -216,9 +217,9 @@ const AD = (() => {
   function sign(g, m, price, how) {
     const lot = g.lot, c = lot.card;
     m.squad.push(c); m.budget -= price;
-    if (m.isAI && g.A.mgr.name === 'Ancelotti' && perceive(g, c, g.A.mgr) >= 90) g.ai.starUsed = true;
+    if (m.isAI && m.mgr.name === 'Ancelotti' && perceive(m, c) >= 90) m.ai.starUsed = true;
     lot.result = { type: 'sign', who: m, price, how };
-    g.log.push({ card: c, who: m.isAI ? 'A' : 'H', price });
+    g.log.push({ card: c, who: m === g.A ? 'A' : 'H', price });
     return lot;
   }
   function discard(g, text) { g.lot.result = { type: 'discard', text }; g.log.push({ card: g.lot.card, who: null, price: 0 }); return g.lot; }
@@ -239,13 +240,11 @@ const AD = (() => {
       if (lot.mode === 'endgame') m.refusals--;
       return discard(g, m.name + (lot.mode === 'endgame' ? ' refuses him' : ' passes'));
     }
-    // auction
     const o = other(g, m);
     if (action.type === 'bid') {
       const amt = Math.floor(action.amount);
       if (amt > lot.high && amt <= maxBid(m)) {
-        lot.high = amt; lot.highBy = m; lot.toAct = o; lot.lastBid = { m, amt };
-        if (lot.high >= maxBid(o) && !(lot.lastGK && !hasGK(o) && false)) { /* other cannot raise: still gets turn to pass */ }
+        lot.high = amt; lot.highBy = m; lot.toAct = o; lot.lastBid = { m, amt }; lot.bidders.add(m);
         return lot;
       }
       action = { type: 'pass' };
@@ -253,18 +252,22 @@ const AD = (() => {
     if (!canPass(g, m)) { return act(g, m, { type: 'bid', amount: Math.max(1, lot.high + 1) }); }
     if (lot.highBy) {
       const w = lot.highBy;
-      if (g.A.mgr.name === 'Klopp') g.ai.momentum = w.isAI ? g.ai.momentum + 1 : 0;
-      if (g.A.mgr.name === 'Keegan') g.ai.tilt = !w.isAI && lot.aiBid ? true : false;
+      [g.H, g.A].forEach(x => {
+        if (!x.isAI) return;
+        if (x.mgr.name === 'Klopp') x.ai.momentum = w === x ? x.ai.momentum + 1 : 0;
+        if (x.mgr.name === 'Keegan') x.ai.tilt = w !== x && lot.bidders.has(x);
+      });
       return sign(g, w, lot.high, 'auction');
     }
     lot.passes++;
     if (lot.passes >= 2) return discard(g, 'Both sides pass');
     lot.toAct = o; return lot;
   }
-  function aiAct(g) {
-    const lot = g.lot, A = g.A;
-    if (!lot || lot.result || lot.toAct !== A) return lot;
-    const v = aiValue(g, lot.card);
+  function aiAct(g, A) {
+    const lot = g.lot;
+    A = A || (lot && lot.toAct && lot.toAct.isAI ? lot.toAct : g.A);
+    if (!lot || lot.result || lot.toAct !== A || !A.isAI) return lot;
+    const v = aiValue(g, lot.card, A);
     const forced = !canPass(g, A);
     if (lot.mode === 'offer') return act(g, A, { type: (forced || v.raw >= 0.6 * v.target) ? 'take' : 'pass' });
     if (lot.mode === 'endgame') {
@@ -276,7 +279,6 @@ const AD = (() => {
     if (lot.highBy == null) {
       if (!forced && A.mgr.name === 'Moyes' && v.per >= 88) return act(g, A, { type: 'pass' });
       if (cap >= 1) {
-        lot.aiBid = true;
         const open = Math.max(1, Math.min(cap, Math.round((0.2 + 0.05 * v.aggr) * cap)));
         return act(g, A, { type: 'bid', amount: open });
       }
@@ -284,7 +286,6 @@ const AD = (() => {
     }
     const need = lot.high + 1;
     if (need <= cap) {
-      lot.aiBid = true;
       let amt = need;
       if (v.aggr >= 8 && cap - need >= 3 && rand() < 0.3) amt = need + 1;
       return act(g, A, { type: 'bid', amount: amt });
@@ -298,6 +299,49 @@ const AD = (() => {
     });
     g.done = true; g.lot = null;
     return null;
+  }
+  // Two AI managers draft against each other in the background; returns both squads with prices.
+  function draftAI(miA, miB) {
+    const g = newGame({ homeManager: miA, manager: miB });
+    let lot = startLot(g), guard = 0;
+    while (lot && guard++ < 400) {
+      let k = 0;
+      while (!lot.result && k++ < 100) aiAct(g, lot.toAct);
+      lot = nextLot(g);
+    }
+    const price = (side, p) => { const e = g.log.find(x => x.card === p && x.who === side); return e ? e.price : 0; };
+    return [g.H.squad.map(p => ({ p, price: price('H', p) })), g.A.squad.map(p => ({ p, price: price('A', p) }))];
+  }
+
+  // ---------------- Campaign helpers
+  // Round-robin for 16 sides: index 0 is the player, 1..15 are managers in the player's opponent order.
+  function roundRobin(n) {
+    const t = [...Array(n).keys()], rounds = [];
+    for (let r = 0; r < n - 1; r++) {
+      const pairs = [];
+      for (let i = 0; i < n / 2; i++) pairs.push([t[i], t[n - 1 - i]]);
+      rounds.push(pairs);
+      t.splice(1, 0, t.pop());
+    }
+    return rounds;
+  }
+  function campaignSchedule(order) {
+    // order: manager indices in the order the player meets them. Returns rounds of [teamKeyA, teamKeyB].
+    const rr = roundRobin(16);
+    const opp = rr.map(r => { const p = r.find(x => x[0] === 0 || x[1] === 0); return p[0] === 0 ? p[1] : p[0]; });
+    const map = { 0: 'U' };
+    opp.forEach((abs, r) => { map[abs] = order[r]; });
+    return rr.map(r => r.map(([a, b]) => [map[a], map[b]]));
+  }
+  function leagueTable(results, keys) {
+    const T = {};
+    keys.forEach(k => T[k] = { key: k, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 });
+    results.forEach(f => {
+      const a = T[f.a], b = T[f.b];
+      a.p++; b.p++; a.gf += f.ga_; a.ga += f.gb_; b.gf += f.gb_; b.ga += f.ga_;
+      if (f.ga_ > f.gb_) { a.w++; b.l++; a.pts += 3; } else if (f.ga_ < f.gb_) { b.w++; a.l++; b.pts += 3; } else { a.d++; b.d++; a.pts++; b.pts++; }
+    });
+    return Object.values(T).sort((x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf);
   }
 
   // ---------------- Commentary
@@ -566,6 +610,8 @@ const AD = (() => {
     if (score[0] !== score[1]) {
       winner = score[0] > score[1] ? 0 : 1;
       push(['@FT', line('full_time_win', { team: teams[winner].name, scoreline: scoreline() })], null, { ft: true });
+    } else if (opts && opts.league) {
+      push(['@FT', line('full_time_league_draw', { scoreline: scoreline() })], null, { ft: true });
     } else {
       push(['@FT', line('full_time_draw', { scoreline: scoreline() })], null, { ft: true });
       pens = shootout();
@@ -610,7 +656,7 @@ const AD = (() => {
     const goalPts = g => { let t = 0; for (let i = 0; i < g; i++) t += Math.max(0.4, 1 - 0.2 * i); return t; };
     const rate = (t, ti) => [{ p: t.gk, line: 'GK' }, ...t.slots].map(x => {
       const s = st(x.p);
-      const res = winner === ti ? (pens ? 0.1 : 0.3) : (pens ? -0.1 : -0.3);
+      const res = winner == null ? 0 : winner === ti ? (pens ? 0.1 : 0.3) : (pens ? -0.1 : -0.3);
       const concW = x.line === 'GK' ? 0.35 : x.line === 'DEF' ? 0.15 : 0;
       let r = 6.0 + goalPts(s.g) + 0.5 * s.a + 0.12 * s.sot - 0.15 * s.miss + 0.15 * s.def + 0.12 * s.kp + 0.05 * s.drb
         + 0.3 * s.saves + 0.1 * s.claim - concW * s.conc - 0.8 * s.err - 1.0 * s.og + res + gauss() * 0.2;
@@ -621,7 +667,7 @@ const AD = (() => {
     return { events: ev, score, winner, pens, teams: [H, A], ratings };
   }
 
-  return { init, seed, rand, newGame, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
+  return { init, seed, rand, newGame, draftAI, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
     match, simulate, lineup, makeTeam, slotRating, tags, freeAgent, T, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;
