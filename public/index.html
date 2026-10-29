@@ -51,5 +51,6 @@ footer{margin-top:36px;color:var(--muted);font-size:13px}
   </div>
   <footer>Free to play. No sign-up needed.</footer>
 </main>
+<script>const track=(()=>{const on=/(^|\.)dangent\.uk$/.test(location.hostname),sid=Math.random().toString(36).slice(2,10);return (g,e,d)=>{if(!on)return;try{const body=JSON.stringify({g,e,d:d==null?'':String(d).slice(0,40),s:sid});if(navigator.sendBeacon)navigator.sendBeacon('/api/event',new Blob([body],{type:'application/json'}));else fetch('/api/event',{method:'POST',body,keepalive:true,headers:{'content-type':'application/json'}}).catch(()=>{});}catch(_){}}})();track('home','view');</script>
 </body>
 </html>

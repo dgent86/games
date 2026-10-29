@@ -2,6 +2,7 @@
 //   POST /api/submit_score  {p_name, p_streak, p_mode, p_secs}       -> new row id
 //   POST /api/board         {p_mode, p_id?, p_streak?}               -> top 5 plus two either side of you
 //   POST /api/all           {p_mode}                                 -> the whole board (top 500)
+//   POST /api/event         {g, e, d, s}                             -> 204; private play counter, never read back by the site
 // Scores can only be added or read here. Edit or delete rows in the Cloudflare dashboard (D1 > dangent-scores > Console).
 
 const SCHEMA = [
@@ -13,6 +14,15 @@ const SCHEMA = [
      secs INTEGER NOT NULL,
      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`,
   `CREATE INDEX IF NOT EXISTS scores_board ON scores (mode, streak DESC, created_at, id)`,
+  // Private usage counter: no names, no IP addresses, no cookies. s is a random id made fresh on each page load.
+  `CREATE TABLE IF NOT EXISTS events (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     game TEXT NOT NULL,
+     event TEXT NOT NULL,
+     detail TEXT NOT NULL DEFAULT '',
+     sid TEXT NOT NULL DEFAULT '',
+     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`,
+  `CREATE INDEX IF NOT EXISTS events_game ON events (game, event, created_at)`,
 ];
 let ready = null;
 const init = (db) => (ready ||= db.batch(SCHEMA.map((s) => db.prepare(s))).catch((e) => { ready = null; throw e; }));
@@ -20,6 +30,8 @@ const init = (db) => (ready ||= db.batch(SCHEMA.map((s) => db.prepare(s))).catch
 const BLOCK = /\b(fuck\w*|f\*ck|cunts?|nigg\w*|nigga|faggots?|fags?|rape|raped|rapist|wank\w*|paki|spastic|spaz|retard\w*|nonce|kike|shit\w*|twat|bellend|knobhead|dickhead)\b/i;
 const MODES = new Set(['all', 'pl']);
 const SECS = new Set([15, 30, 45, 60]);
+const GAMES = new Set(['home', 'streaker', 'five-a-sold']);
+const EVENTS = new Set(['view', 'start', 'auction_done', 'kickoff', 'finish']);
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
@@ -47,6 +59,14 @@ async function api(fn, request, env) {
   let b;
   try { b = await request.json(); } catch { return json({ message: 'Bad JSON' }, 400); }
   await init(env.DB);
+  if (fn === 'event') {
+    const g = String(b.g ?? ''), e = String(b.e ?? '');
+    if (!GAMES.has(g) || !EVENTS.has(e)) return new Response(null, { status: 204 });
+    const d = String(b.d ?? '').replace(/[^\p{L}\p{N} '.:+\/-]/gu, '').slice(0, 40);
+    const s = String(b.s ?? '').replace(/[^a-z0-9]/g, '').slice(0, 12);
+    await env.DB.prepare('INSERT INTO events (game, event, detail, sid) VALUES (?1, ?2, ?3, ?4)').bind(g, e, d, s).run();
+    return new Response(null, { status: 204 });
+  }
   if (fn === 'board') {
     const mode = String(b.p_mode);
     if (!MODES.has(mode)) return json({ message: 'Bad mode' }, 400);
@@ -78,7 +98,7 @@ async function api(fn, request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const m = url.pathname.match(/^\/api\/(board|all|submit_score)\/?$/);
+    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event)\/?$/);
     if (m) {
       try { return await api(m[1], request, env); }
       catch (e) { return json({ message: 'Server error' }, 500); }

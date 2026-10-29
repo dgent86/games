@@ -357,6 +357,7 @@ summary{cursor:pointer;font-family:var(--cond);font-weight:700;letter-spacing:.1
 </div>
 
 <script>
+const track=(()=>{const on=/(^|\.)dangent\.uk$/.test(location.hostname),sid=Math.random().toString(36).slice(2,10);return (g,e,d)=>{if(!on)return;try{const body=JSON.stringify({g,e,d:d==null?'':String(d).slice(0,40),s:sid});if(navigator.sendBeacon)navigator.sendBeacon('/api/event',new Blob([body],{type:'application/json'}));else fetch('/api/event',{method:'POST',body,keepalive:true,headers:{'content-type':'application/json'}}).catch(()=>{});}catch(_){}}})();
 const DATA = __DATA__;
 const ALL = DATA.players, CONT = DATA.cont;
 const SPECIAL={'ø':'o','Ø':'O','æ':'ae','Æ':'Ae','ß':'ss','đ':'d','Đ':'D','ł':'l','Ł':'L','ı':'i','ð':'d'};
@@ -489,6 +490,7 @@ function start(){
   slots=freshDeal(); renderTable();
   setMode('live'); window.scrollTo(0,0);
   setTyped(''); msg('',''); live=true; resetClock();
+  track('streaker','start',limit+'s');
 }
 function msg(t,cls){ $('msg').textContent=t; $('msg').className='msg '+(cls||''); if(live&&t){ shown=[]; hl=-1; $('list').innerHTML=`<li class="hint ${cls||''}">${esc(t)}</li>`; } }
 
@@ -533,6 +535,7 @@ function resume(){
 function end(p,why,ok){
   if(why!=='empty'&&!booked) return caution(p,why,ok);
   live=false; clearInterval(timer);
+  track('streaker','finish','streak '+streak);
   $('sashTitle').innerHTML=why==='empty'?'Streak over <em id="sashNum"></em>':'<span class="cardicon"></span>Red card <em id="sashNum"></em>';
   const valid=answers(slots).sort(()=>Math.random()-.5);
   if(why==='wrong'){
@@ -777,5 +780,6 @@ $('cntAll').textContent=ALL.length.toLocaleString('en-GB')+' players';
 $('cntPL').textContent=ALL.filter(p=>p.l).length.toLocaleString('en-GB')+' players';
 let m0='all'; try{ if(localStorage.getItem('bk_mode')==='pl') m0='pl'; }catch(e){}
 setPool(m0); renderTable([]); draw(); setMode('idle');
+track('streaker','view');
 </script>
 

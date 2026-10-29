@@ -257,6 +257,8 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 <script>__ENGINE__</script>
 <script>
 (() => {
+  const track=(()=>{const on=/(^|\.)dangent\.uk$/.test(location.hostname),sid=Math.random().toString(36).slice(2,10);return (g,e,d)=>{if(!on)return;try{const body=JSON.stringify({g,e,d:d==null?'':String(d).slice(0,40),s:sid});if(navigator.sendBeacon)navigator.sendBeacon('/api/event',new Blob([body],{type:'application/json'}));else fetch('/api/event',{method:'POST',body,keepalive:true,headers:{'content-type':'application/json'}}).catch(()=>{});}catch(_){}}})();
+  track('five-a-sold','view');
   const DATA = JSON.parse(document.getElementById('data').textContent);
   AD.init(DATA);
   const $ = s => document.querySelector(s);
@@ -316,6 +318,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 
   function revealScreen() {
     const m = G.A.mgr;
+    track('five-a-sold','start',m.name);
     $('#mgrPic').innerHTML = ''; $('#mgrPic').appendChild(managerPic(m));
     $('#mgrName').textContent = m.name;
     $('#mgrTitle').textContent = m.title;
@@ -435,6 +438,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
       <div class="pad"><div class="lbl">Shape ${team.shape}</div><div class="sheet">${rows}</div></div>`;
   }
   function teamsScreen() {
+    track('five-a-sold','auction_done',G.A.mgr.name);
     const tH = AD.makeTeam(G.H, true, null), tA = AD.makeTeam(G.A, false, G.A.mgr);
     $('#sheetH').innerHTML = sheetHTML(tH, HUMAN_KIT, G.H.name);
     $('#sheetA').innerHTML = sheetHTML(tA, G.A.mgr.kit, G.A.name);
@@ -472,6 +476,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     speed = 'normal';
     document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.speed === 'normal')));
     const res = AD.match(G);
+    track('five-a-sold','kickoff',G.A.mgr.name);
     show('match');
     $('#resultWin').hidden = true;
     const cH = sideColours(0), cA = sideColours(1);
@@ -523,6 +528,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   function finishMatch(res) {
     const [H, A] = res.teams, s = res.score, w = res.winner;
     const youWin = w === 0;
+    track('five-a-sold','finish',`${youWin ? 'W' : 'L'} ${s[0]}-${s[1]}${res.pens ? ' pens' : ''} v ${G.A.mgr.name}`);
     $('#resultTag').textContent = youWin ? 'You win' : `${G.A.mgr.name} wins`;
     $('#resultLine').textContent = `${H.name} ${s[0]} - ${s[1]} ${A.name}` + (res.pens ? ` (${res.pens.score[0]}-${res.pens.score[1]} pens)` : '');
     const ogs = res.ratings.flat().filter(x => x.stats.og).map(x => `${x.p.n}${x.stats.og > 1 ? ' ' + x.stats.og : ''}`);
