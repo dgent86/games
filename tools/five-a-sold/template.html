@@ -1,0 +1,538 @@
+<title>Five-a-Sold</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+<style>
+/* Layout: one narrow column of 90s management-sim windows on a mown pitch; single deliberate theme. */
+:root {
+  --pitch: #1d4a2d; --pitch-2: #1a4229;
+  --panel: #c4c4bc; --panel-hi: #f4f4ee; --panel-lo: #6f6f67; --well: #e2e2db;
+  --ink: #151513; --muted: #4b4b45;
+  --navy: #14245e; --navy-hi: #4b5aa0; --navy-lo: #060f2c; --on-navy: #ffffff;
+  --crt: #060907; --crt-ink: #e7f0e6; --crt-dim: #8fa38d;
+  --amber: #ffd23f; --cyan: #7fe3ff; --alarm: #c62828; --good: #1f7a3a;
+  --f-crt: 'VT323', ui-monospace, 'Courier New', monospace;
+  --f-ui: Verdana, Tahoma, 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+[hidden] { display: none !important; }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { min-height: 100%; margin: 0; }
+body {
+  background: var(--pitch) repeating-linear-gradient(180deg, var(--pitch) 0 56px, var(--pitch-2) 56px 112px);
+  color: var(--ink); font: 14px/1.45 var(--f-ui);
+}
+.wrap {
+  max-width: 560px; margin: 0 auto; display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr);
+  padding-block: 16px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.screen { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.win { background: var(--panel); border: 2px solid; border-color: var(--panel-hi) var(--panel-lo) var(--panel-lo) var(--panel-hi); min-width: 0; }
+.bar { background: var(--navy); color: var(--on-navy); font-weight: bold; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; padding: 5px 8px; display: flex; justify-content: space-between; gap: 8px; }
+.pad { padding: 12px; display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+.well { background: var(--well); border: 2px solid; border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); padding: 8px 10px; }
+.btn {
+  font: bold 14px var(--f-ui); color: var(--ink); background: var(--panel);
+  border: 2px solid; border-color: var(--panel-hi) var(--panel-lo) var(--panel-lo) var(--panel-hi);
+  padding: 8px 12px; min-height: 44px; cursor: pointer; touch-action: manipulation;
+}
+.btn:active:not(:disabled) { border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); }
+.btn:disabled { color: var(--panel-lo); cursor: default; }
+.btn:focus-visible { outline: 2px dashed var(--navy); outline-offset: 2px; }
+.btn.go { background: var(--navy); color: var(--on-navy); border-color: var(--navy-hi) var(--navy-lo) var(--navy-lo) var(--navy-hi); }
+.btn.go:focus-visible { outline-color: var(--amber); }
+.btn small { display: block; font-weight: normal; font-size: 11px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.row > .btn { flex: 1 1 0; }
+.lbl { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.crt-font { font-family: var(--f-crt); }
+h1, h2 { margin: 0; text-wrap: balance; }
+
+/* Title */
+.logo { font-family: var(--f-crt); font-size: 64px; line-height: .9; color: var(--crt-ink); background: var(--crt); padding: 14px 14px 10px; letter-spacing: .02em; }
+.logo span { color: var(--amber); display: block; font-size: 30px; letter-spacing: .12em; }
+.rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+label.field { display: grid; gap: 4px; }
+input[type=text] { font: 16px var(--f-ui); padding: 8px; border: 2px solid; border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); background: #fff; color: var(--ink); min-width: 0; }
+
+/* Manager reveal */
+.px { image-rendering: pixelated; image-rendering: crisp-edges; display: block; width: 96px; height: auto; max-width: 100%; }
+.mgr { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; }
+.mgr-name { font-family: var(--f-crt); font-size: 40px; line-height: 1; }
+.mgr-title { font-family: var(--f-crt); font-size: 26px; color: var(--navy); }
+.mgr-teaser { margin: 0; font-style: italic; }
+.counts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; }
+.counts div { background: var(--crt); color: var(--crt-ink); font-family: var(--f-crt); font-size: 26px; line-height: 1; padding: 6px 0 4px; }
+.counts div span { display: block; font-size: 16px; color: var(--crt-dim); }
+
+/* Auction */
+.sides { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.side { display: grid; gap: 6px; min-width: 0; }
+.side-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.side-name { font-weight: bold; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.money { font-family: var(--f-crt); font-size: 28px; line-height: 1; font-variant-numeric: tabular-nums; }
+.slots { display: grid; gap: 3px; }
+.slot { display: grid; grid-template-columns: 34px 1fr auto; gap: 6px; align-items: center; background: var(--well); padding: 2px 6px; font-size: 12px; min-height: 22px; }
+.slot .pos { font-weight: bold; font-size: 10px; }
+.slot .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slot.empty { color: var(--muted); }
+.card { background: var(--crt); color: var(--crt-ink); padding: 14px; display: grid; gap: 4px; border: 2px solid; border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); }
+.card .pos { font-family: var(--f-crt); font-size: 22px; color: var(--cyan); letter-spacing: .1em; }
+.card .nm { font-family: var(--f-crt); font-size: 42px; line-height: .95; color: #fff; overflow-wrap: anywhere; }
+.card .meta { font-family: var(--f-crt); font-size: 22px; color: var(--crt-dim); }
+.card .bid { font-family: var(--f-crt); font-size: 28px; color: var(--amber); min-height: 28px; }
+.status { font-weight: bold; min-height: 20px; }
+.timer { height: 8px; background: var(--well); border: 1px solid var(--panel-lo); }
+.timer i { display: block; height: 100%; width: 100%; background: var(--navy); transform-origin: left; }
+.timer.low i { background: var(--alarm); }
+.log { font-family: var(--f-crt); font-size: 20px; line-height: 1.1; max-height: 132px; overflow: auto; background: var(--crt); color: var(--crt-dim); padding: 6px 10px; }
+.log div:last-child { color: var(--crt-ink); }
+.note { font-size: 12px; color: var(--muted); }
+
+/* Team sheets */
+.banner { display: flex; align-items: center; gap: 10px; padding: 8px; min-height: 48px; }
+.plate { background: var(--panel-hi); color: var(--ink); font-weight: bold; padding: 4px 8px; border: 1px solid var(--panel-lo); }
+.sheet { display: grid; gap: 4px; }
+.sheet .ln { display: grid; grid-template-columns: 30px 1fr; gap: 8px; align-items: center; }
+.sheet .who { min-width: 0; }
+.sheet .who b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet .who span { font-size: 11px; color: var(--muted); }
+
+/* Match: one CRT screen; team names with yellow scorers above, a solid commentary band across the centre */
+.screenbox { min-width: 0; background: var(--crt); color: var(--crt-ink); font-family: var(--f-crt); border: 2px solid; border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr); min-height: 360px; }
+.sb-top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; padding: 10px 10px 4px; align-items: start; }
+.sb-team { min-width: 0; display: grid; gap: 4px; align-content: start; }
+.sb-team.r { text-align: right; }
+.sb-name { font-size: 24px; line-height: 1; padding: 4px 6px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-kit { height: 5px; }
+.sb-goals { color: var(--amber); font-size: 20px; line-height: 1.05; overflow-wrap: break-word; display: grid; gap: 1px; }
+.sb-score { text-align: center; font-size: 46px; line-height: .9; color: var(--amber); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.sb-score small { display: block; font-size: 24px; color: var(--cyan); margin-top: 4px; }
+.band { --fa: var(--amber); --fb: var(--crt); display: grid; place-items: center; text-align: center; align-self: center; min-height: 118px; padding: 10px 14px; margin-block: 8px; font-size: 28px; line-height: 1.1; background: var(--navy); color: var(--on-navy); overflow-wrap: anywhere; }
+.band > span { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.band.lull { font-style: italic; }
+.band.ht { color: var(--cyan); letter-spacing: .14em; font-size: 34px; }
+.band.blink { font-size: 68px; letter-spacing: .06em; background: var(--fb); color: var(--fa); animation: blink .32s steps(1) infinite; }
+@keyframes blink { 50% { color: var(--fb); background: var(--fa); } }
+.sb-foot { padding: 0 10px 10px; font-size: 19px; color: var(--crt-dim); display: flex; justify-content: space-between; gap: 10px; min-height: 30px; }
+.sb-foot span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.speed { display: flex; gap: 6px; }
+.speed .btn { flex: 1; min-height: 40px; font-size: 13px; }
+.speed .btn[aria-pressed=true] { border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); background: var(--well); }
+table.rt { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.rt th, table.rt td { padding: 3px 4px; text-align: left; border-bottom: 1px solid var(--panel-lo); }
+table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-nums; }
+.result-line { font-family: var(--f-crt); font-size: 34px; line-height: 1; }
+@media (max-width: 420px) {
+  .card .nm { font-size: 36px; }
+  .logo { font-size: 54px; }
+  .band.blink { font-size: 52px; }
+  .sb-name { font-size: 20px; }
+  .sb-goals { font-size: 18px; }
+  .sb-score { font-size: 38px; }
+  .band { font-size: 25px; min-height: 104px; }
+}
+@media (prefers-reduced-motion: reduce) { .band.blink { animation: none; } }
+</style>
+
+<div class="wrap">
+
+  <section class="screen" id="title">
+    <div class="win">
+      <div class="logo">Five-a-Sold<span>5-A-SIDE · £20M · ONE MATCH</span></div>
+      <div class="pad">
+        <ol class="rules">
+          <li>Players come up one at a time, blind. You and a rival manager bid in £1m steps.</li>
+          <li>Build a five: one keeper and four outfield. Out-of-position players suffer.</li>
+          <li>You can't bid money you'll need: keep £1m back for every empty slot.</li>
+          <li>Then it's kick-off. No ratings until the final whistle.</li>
+        </ol>
+        <label class="field" for="teamName"><span class="lbl">Your team name</span>
+          <input type="text" id="teamName" value="Mariners" maxlength="20" autocomplete="off"></label>
+        <button class="btn go" id="startBtn" type="button">New game</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="reveal" hidden>
+    <div class="win">
+      <div class="bar"><span>Your opponent</span><span id="tierHint"></span></div>
+      <div class="pad">
+        <div class="mgr">
+          <div id="mgrPic"></div>
+          <div style="display:grid;gap:4px;min-width:0">
+            <div class="mgr-name" id="mgrName"></div>
+            <div class="mgr-title" id="mgrTitle"></div>
+            <p class="mgr-teaser" id="mgrTeaser"></p>
+          </div>
+        </div>
+        <div class="well row" id="kitRow"></div>
+      </div>
+    </div>
+    <div class="win">
+      <div class="bar"><span>Today's deck</span><span>18 cards, order hidden</span></div>
+      <div class="pad">
+        <div class="counts" id="deckCounts"></div>
+        <div class="lbl">Rules</div>
+        <ul class="rules">
+          <li>£20m each. You open the bidding on the first player, then you take it in turns to open.</li>
+          <li>Bids go up in £1m steps. Keep £1m back for every empty slot.</li>
+          <li>Each team needs exactly one goalkeeper. If the last keeper comes up and you have none, you must sign him.</li>
+          <li>Players out of position are penalised, some far more than others.</li>
+          <li>Your formation is picked automatically to suit your squad: 2-1-1, 1-2-1 or 1-1-2.</li>
+          <li>Once one squad is full, the other side gets each player for £1m, with one refusal.</li>
+          <li>You have 10 seconds to bid, or it counts as a pass.</li>
+          <li>Ratings stay hidden until the final whistle.</li>
+        </ul>
+        <button class="btn go" id="beginBtn" type="button">Start the auction</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="auction" hidden>
+    <div class="win">
+      <div class="bar"><span id="lotNo">Lot 1</span><span id="deckLeft"></span></div>
+      <div class="pad">
+        <div class="sides">
+          <div class="side" id="sideH"></div>
+          <div class="side" id="sideA"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="card" aria-live="polite"></div>
+    <div class="win">
+      <div class="pad">
+        <div class="status" id="status" aria-live="polite"></div>
+        <div class="timer" id="timer" hidden><i id="timerFill"></i></div>
+        <div class="row" id="controls"></div>
+        <div class="note" id="maxNote"></div>
+      </div>
+    </div>
+    <div class="log" id="log" aria-label="Auction log"></div>
+  </section>
+
+  <section class="screen" id="teams" hidden>
+    <div class="win" id="sheetH"></div>
+    <div class="win" id="sheetA"></div>
+    <button class="btn go" id="kickBtn" type="button">Kick off</button>
+  </section>
+
+  <section class="screen" id="match" hidden>
+    <div class="win">
+      <div class="pad">
+        <div class="screenbox">
+          <div class="sb-top">
+            <div class="sb-team"><div class="sb-name" id="nameH"></div><div class="sb-kit" id="kitH"></div><div class="sb-goals" id="goalsH"></div></div>
+            <div class="sb-score"><span id="scoreTxt">0 - 0</span><small id="clock">0'</small></div>
+            <div class="sb-team r"><div class="sb-name" id="nameA"></div><div class="sb-kit" id="kitA"></div><div class="sb-goals" id="goalsA"></div></div>
+          </div>
+          <div class="band" id="band" aria-live="polite"><span id="bandTxt"></span></div>
+          <div class="sb-foot"><span id="prevLine"></span><span id="footRight"></span></div>
+        </div>
+        <div class="speed" role="group" aria-label="Commentary speed">
+          <button class="btn" type="button" data-speed="normal" aria-pressed="true">Normal</button>
+          <button class="btn" type="button" data-speed="fast" aria-pressed="false">Fast</button>
+          <button class="btn" type="button" data-speed="skip" aria-pressed="false">Skip to end</button>
+        </div>
+      </div>
+    </div>
+    <div class="win" id="resultWin" hidden>
+      <div class="bar"><span>Full time</span><span id="resultTag"></span></div>
+      <div class="pad">
+        <div class="result-line" id="resultLine"></div>
+        <div id="scorers" class="note"></div>
+        <div class="lbl">Ratings revealed · match rating out of 10 · * out of position</div>
+        <div style="overflow-x:auto"><table class="rt" id="ratings"></table></div>
+        <button class="btn go" id="againBtn" type="button">Play again</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>__ENGINE__</script>
+<script>
+(() => {
+  const DATA = JSON.parse(document.getElementById('data').textContent);
+  AD.init(DATA);
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const HUMAN_KIT = { p: '#111111', s: '#ffffff', t: '#ffffff', style: 'stripes' };
+  let G = null, tmr = null, tick = null, speed = 'normal', playToken = 0;
+
+  function show(id) { document.querySelectorAll('.screen').forEach(s => { s.hidden = s.id !== id; }); window.scrollTo(0, 0); }
+  function kitBg(k) {
+    if (k.style === 'stripes') return `repeating-linear-gradient(90deg, ${k.p} 0 12px, ${k.s} 12px 24px)`;
+    if (k.style === 'sleeves') return `linear-gradient(90deg, ${k.s} 0 14%, ${k.p} 14% 86%, ${k.s} 86%)`;
+    return k.p;
+  }
+  let pid = 0;
+  function shirt(k, label, size) {
+    size = size || 30; const id = 'pt' + (pid++); let fill = k.p, defs = '';
+    if (k.style === 'stripes') { defs = `<defs><pattern id="${id}" width="8" height="40" patternUnits="userSpaceOnUse"><rect width="4" height="40" fill="${k.p}"/><rect x="4" width="4" height="40" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
+    const sl = k.style === 'sleeves' ? `<path d="M12 4 L4 9 L7 16 L11 14 Z M28 4 L36 9 L33 16 L29 14 Z" fill="${k.s}" stroke="#222" stroke-width="1"/>` : '';
+    const st = k.style === 'stripes';
+    const tx = label ? `<text x="20" y="27" text-anchor="middle" font-family="Verdana,sans-serif" font-size="9" font-weight="bold" fill="${st ? '#111' : k.t}" ${st ? 'stroke="#fff" stroke-width="3" paint-order="stroke"' : ''}>${esc(label)}</text>` : '';
+    return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true">${defs}<path d="M12 4 L4 9 L7 16 L11 14 L11 36 L29 36 L29 14 L33 16 L36 9 L28 4 Q20 9 12 4 Z" fill="${fill}" stroke="#222" stroke-width="1"/>${sl}${tx}</svg>`;
+  }
+  const initials = n => n === 'Free agent' ? 'FA' : n.split(/[\s-]+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  function managerPic(m) {
+    if (m.avatar) { const im = new Image(96, 96); im.src = m.avatar; im.alt = 'Portrait of ' + m.name; im.className = 'px'; return im; }
+    // Generic phosphor-style pixel manager: outfit varies, no likeness of any real person.
+    const idx = AD.managers.findIndex(x => x.name === m.name);
+    const W = 22, H = 24, S = 4, c = document.createElement('canvas');
+    c.width = W * S; c.height = H * S; c.className = 'px'; c.setAttribute('role', 'img'); c.setAttribute('aria-label', 'Pixel portrait of the opposition manager');
+    const g = c.getContext('2d');
+    const P = { bg: '#060907', d: '#1d2b1f', m: '#3b5a3c', l: '#6f8f6d', s: '#a8c4a4', w: '#e7f0e6', k: m.kit.p, k2: m.kit.s };
+    const px = (x, y, col) => { g.fillStyle = col; g.fillRect(x * S, y * S, S, S); };
+    g.fillStyle = P.bg; g.fillRect(0, 0, c.width, c.height);
+    const outfit = idx % 4, hair = idx % 3;
+    // body
+    for (let y = 16; y < H; y++) for (let x = 3; x < 19; x++) { const edge = Math.abs(x - 10.5) > (y - 16) * 0.9 + 4; if (!edge) px(x, y, outfit === 1 ? P.k : outfit === 2 ? P.d : P.m); }
+    if (outfit === 0) { for (let y = 16; y < H; y++) { const half = Math.max(0, 3 - (y - 16) * 0.5); for (let x = Math.round(11 - half); x <= Math.round(10 + half); x++) px(x, y, P.w); px(10, y, P.k); px(11, y, P.k); } }
+    if (outfit === 1) { for (let y = 16; y < H; y++) px(10, y, P.w); for (let x = 7; x < 15; x++) px(x, 16, P.k2); }
+    if (outfit === 2) { for (let x = 6; x < 16; x++) { px(x, 16, P.k); px(x, 17, P.k); } for (let y = 18; y < 23; y++) px(13, y, P.k); for (let y = 18; y < 23; y++) px(14, y, P.k2); }
+    if (outfit === 3) { for (let y = 17; y < H; y++) { px(4, y, P.l); px(5, y, P.l); px(16, y, P.l); px(17, y, P.l); } for (let y = 16; y < H; y++) px(10, y, P.k); }
+    // neck and head
+    for (let y = 14; y < 16; y++) for (let x = 9; x < 13; x++) px(x, y, P.l);
+    for (let y = 2; y < 15; y++) for (let x = 5; x < 17; x++) { const dx = (x - 10.5) / 5.5, dy = (y - 8) / 6.5; if (dx * dx + dy * dy <= 1) px(x, y, x > 12 ? P.l : P.s); }
+    const hc = hair === 2 ? P.w : P.m;
+    for (let y = 2; y < 5; y++) for (let x = 5; x < 17; x++) { const dx = (x - 10.5) / 5.5, dy = (y - 8) / 6.5; if (dx * dx + dy * dy <= 1 && !(hair === 1 && y < 4 && x > 7 && x < 14)) px(x, y, hc); }
+    if (hair !== 1) { px(5, 6, hc); px(16, 6, hc); }
+    px(8, 8, P.d); px(13, 8, P.d); px(9, 11, P.m); px(10, 12, P.m); px(11, 12, P.m); px(12, 11, P.m);
+    return c;
+  }
+
+  // ---------- title
+  $('#startBtn').addEventListener('click', () => {
+    const name = ($('#teamName').value || '').trim() || 'Mariners';
+    G = AD.newGame({ humanName: name });
+    revealScreen();
+  });
+
+  function revealScreen() {
+    const m = G.A.mgr;
+    $('#mgrPic').innerHTML = ''; $('#mgrPic').appendChild(managerPic(m));
+    $('#mgrName').textContent = m.name;
+    $('#mgrTitle').textContent = m.title;
+    $('#mgrTeaser').textContent = m.teaser;
+    $('#tierHint').textContent = G.A.name;
+    $('#kitRow').innerHTML = `${shirt(HUMAN_KIT, '', 40)}<span><b>${esc(G.H.name)}</b><br><span class="note">Black and white stripes</span></span>
+      <span style="flex:1"></span>${shirt(m.kit, '', 40)}<span><b>${esc(G.A.name)}</b><br><span class="note">${esc(m.kitName)}</span></span>`;
+    const c = AD.deckCounts(G);
+    $('#deckCounts').innerHTML = ['GK', 'DEF', 'MID', 'FWD'].map(p => `<div>${c[p]}<span>${p}</span></div>`).join('');
+    show('reveal');
+  }
+  $('#beginBtn').addEventListener('click', () => { show('auction'); $('#log').innerHTML = ''; G.lot = AD.startLot(G); step(); });
+
+  // ---------- auction
+  const fmt = n => `£${n}m`;
+  function log(t) { const d = document.createElement('div'); d.textContent = t; const L = $('#log'); L.appendChild(d); L.scrollTop = L.scrollHeight; }
+  function sideHTML(m, kit, isH) {
+    const sq = [...m.squad].sort((a, b) => ['GK', 'DEF', 'MID', 'FWD'].indexOf(a.pos) - ['GK', 'DEF', 'MID', 'FWD'].indexOf(b.pos));
+    let rows = sq.map(p => `<div class="slot"><span class="pos">${p.pos}</span><span class="nm">${esc(p.n)}</span><span>${isH || true ? fmt(priceOf(p, m)) : ''}</span></div>`);
+    const hasGK = sq.some(p => p.pos === 'GK');
+    for (let i = sq.length; i < 5; i++) rows.push(`<div class="slot empty"><span class="pos">${!hasGK && i === sq.length ? 'GK?' : ''}</span><span class="nm">empty</span><span></span></div>`);
+    return `<div class="side-head"><span class="side-name">${shirt(kit, '', 18)} ${esc(m.isAI ? m.mgr.name : m.name)}</span><span class="money">${fmt(m.budget)}</span></div><div class="slots">${rows.join('')}</div>`;
+  }
+  function priceOf(p, m) { const e = G.log.find(x => x.card === p && x.who === (m.isAI ? 'A' : 'H')); return e ? e.price : 0; }
+  function render() {
+    const lot = G.lot;
+    $('#sideH').innerHTML = sideHTML(G.H, HUMAN_KIT, true);
+    $('#sideA').innerHTML = sideHTML(G.A, G.A.mgr.kit, false);
+    if (!lot) return;
+    const c = lot.card, left = G.deck.length - G.idx;
+    const cnt = AD.deckCounts(G);
+    $('#lotNo').textContent = `Lot ${lot.no}`;
+    $('#deckLeft').textContent = `${left} left · GK ${cnt.GK} DEF ${cnt.DEF} MID ${cnt.MID} FWD ${cnt.FWD}`;
+    const hi = lot.highBy ? `${fmt(lot.high)} · ${lot.highBy === G.H ? 'your bid' : G.A.mgr.name}` : '';
+    $('#card').innerHTML = `<div class="pos">${c.pos}${c.sec ? ' / ' + c.sec : ''}${lot.lastGK ? ' · LAST KEEPER' : ''}</div>
+      <div class="nm">${esc(c.n)}</div><div class="meta">${esc(c.club)} · ${esc(c.season)}</div><div class="bid">${hi}</div>`;
+    $('#maxNote').textContent = `Your max bid: ${fmt(Math.max(0, AD.maxBid(G.H)))} · ${G.A.mgr.name}'s max: ${fmt(Math.max(0, AD.maxBid(G.A)))}`;
+  }
+  function setStatus(t) { $('#status').textContent = t; }
+  function clearTimers() { clearTimeout(tmr); clearInterval(tick); $('#timer').hidden = true; }
+  function resultText(lot) {
+    const r = lot.result;
+    if (r.type === 'sign') return `${r.how === 'auction' ? 'SOLD! ' : ''}${r.who === G.H ? 'You sign' : G.A.mgr.name + ' signs'} ${lot.card.n} for ${fmt(r.price)}`;
+    return r.text;
+  }
+  function step() {
+    clearTimers();
+    const lot = G.lot;
+    if (!lot) { render(); return teamsScreen(); }
+    render();
+    $('#controls').innerHTML = '';
+    if (lot.result) {
+      const t = resultText(lot); setStatus(t); log(t);
+      tmr = setTimeout(() => { G.lot = AD.nextLot(G); step(); }, 1500);
+      return;
+    }
+    if (lot.toAct === G.A) {
+      setStatus(`${G.A.mgr.name} is thinking...`);
+      tmr = setTimeout(() => doAct(G.A), 650 + Math.random() * 700);
+      return;
+    }
+    humanTurn();
+  }
+  function doAct(m, action) {
+    const lot = G.lot, before = lot.high;
+    if (m === G.A) AD.aiAct(G); else AD.act(G, m, action);
+    const who = m === G.H ? 'You' : G.A.mgr.name;
+    if (lot.high > before) log(`${who} ${m === G.H ? 'bid' : 'bids'} ${fmt(lot.high)}`);
+    else if (!(lot.result && lot.result.type === 'sign' && lot.result.who === m)) log(`${who} ${m === G.H ? 'pass' : 'passes'}`);
+    step();
+  }
+  function btn(label, sub, fn, opts) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (opts && opts.go ? ' go' : '');
+    b.innerHTML = esc(label) + (sub ? `<small>${esc(sub)}</small>` : ''); b.disabled = !!(opts && opts.disabled);
+    b.addEventListener('click', () => { clearTimers(); fn(); });
+    $('#controls').appendChild(b); return b;
+  }
+  function humanTurn() {
+    const lot = G.lot, H = G.H, mx = AD.maxBid(H), cp = AD.canPass(G, H);
+    if (lot.mode === 'auction') {
+      if (!lot.highBy) setStatus(lot.passes ? `${G.A.mgr.name} passed. Bid or pass.` : 'Your opening bid.');
+      else setStatus(`${G.A.mgr.name} bids ${fmt(lot.high)}. Raise or pass.`);
+      [1, 2, 5].forEach(inc => {
+        const amt = lot.high + inc;
+        btn(inc === 1 && !lot.highBy ? `Bid ${fmt(amt)}` : `${fmt(amt)}`, `+${fmt(inc)}`, () => doAct(H, { type: 'bid', amount: amt }), { disabled: amt > mx, go: inc === 1 });
+      });
+      btn('Pass', cp ? '' : 'You need a keeper', () => doAct(H, { type: 'pass' }), { disabled: !cp });
+      if (lot.high + 1 > mx) setStatus(`${G.A.mgr.name} bids ${fmt(lot.high)}. That's beyond your limit.`);
+    } else if (lot.mode === 'offer') {
+      setStatus(`${G.A.mgr.name} can't sign him. Take him for £1m?`);
+      btn('Sign for £1m', '', () => doAct(H, { type: 'take' }), { go: true });
+      btn('Pass', cp ? '' : 'Last keeper', () => doAct(H, { type: 'pass' }), { disabled: !cp });
+    } else if (lot.mode === 'endgame') {
+      setStatus(`${G.A.mgr.name}'s squad is full. He's yours for £1m unless you refuse.`);
+      btn('Sign for £1m', '', () => doAct(H, { type: 'take' }), { go: true });
+      btn('Refuse', `${H.refusals} left`, () => doAct(H, { type: 'pass' }), { disabled: !cp });
+    }
+    // timer
+    const total = AD.TIMER * 1000, t0 = Date.now();
+    const bar = $('#timer'), fill = $('#timerFill'); bar.hidden = false; bar.classList.remove('low');
+    tick = setInterval(() => {
+      const f = Math.max(0, 1 - (Date.now() - t0) / total);
+      fill.style.transform = `scaleX(${f})`; bar.classList.toggle('low', f < 0.3);
+    }, 100);
+    tmr = setTimeout(() => {
+      clearTimers();
+      if (lot.mode === 'auction') doAct(H, cp ? { type: 'pass' } : { type: 'bid', amount: lot.high + 1 });
+      else doAct(H, cp && lot.mode !== 'endgame' ? { type: 'pass' } : { type: 'take' });
+    }, total);
+  }
+
+  // ---------- team sheets
+  function sheetHTML(team, kit, title) {
+    const lines = [{ p: team.gk, line: 'GK' }, ...team.slots.slice().sort((a, b) => ['DEF', 'MID', 'FWD'].indexOf(a.line) - ['DEF', 'MID', 'FWD'].indexOf(b.line))];
+    const rows = lines.map(s => `<div class="ln">${shirt(kit, initials(s.p.n), 30)}<div class="who"><b>${esc(s.p.n)}</b><span>${s.line}${s.p.pos !== s.line && s.line !== 'GK' ? ' (natural ' + s.p.pos + ')' : ''}${s.p.club ? ' · ' + esc(s.p.club) + ' ' + esc(s.p.season) : ''}</span></div></div>`).join('');
+    return `<div class="banner" style="background:${kitBg(kit)}"><span class="plate">${esc(title)}</span></div>
+      <div class="pad"><div class="lbl">Shape ${team.shape}</div><div class="sheet">${rows}</div></div>`;
+  }
+  function teamsScreen() {
+    const tH = AD.makeTeam(G.H, true, null), tA = AD.makeTeam(G.A, false, G.A.mgr);
+    $('#sheetH').innerHTML = sheetHTML(tH, HUMAN_KIT, G.H.name);
+    $('#sheetA').innerHTML = sheetHTML(tA, G.A.mgr.kit, G.A.name);
+    show('teams');
+  }
+  $('#kickBtn').addEventListener('click', playMatch);
+
+  // ---------- match
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => {
+    speed = b.dataset.speed;
+    document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+  function delay(text) {
+    if (speed === 'skip') return 0;
+    const base = speed === 'fast' ? 320 : 1150;
+    return /\.\.\.$/.test(text) ? base * 1.4 : base;
+  }
+  function sideColours(side) {
+    if (side === 0) return { bg: '#ffffff', fg: '#111111', a: '#ffffff', b: '#111111' };
+    if (side === 1) { const k = G.A.mgr.kit; return { bg: k.p, fg: k.t, a: k.s, b: k.p }; }
+    return null;
+  }
+  function say(text, side, cls) {
+    const band = $('#band'), cur = $('#bandTxt').textContent;
+    if (cur && !band.classList.contains('blink')) $('#prevLine').textContent = cur;
+    const c = sideColours(side);
+    band.className = 'band' + (cls ? ' ' + cls : '');
+    band.style.background = c ? c.bg : ''; band.style.color = c ? c.fg : '';
+    $('#bandTxt').textContent = text;
+  }
+  const short = n => n === 'Free agent' ? n : n.split(' ').slice(-1)[0];
+  async function playMatch() {
+    const token = ++playToken;
+    speed = 'normal';
+    document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.speed === 'normal')));
+    const res = AD.match(G);
+    show('match');
+    $('#resultWin').hidden = true;
+    const cH = sideColours(0), cA = sideColours(1);
+    $('#nameH').textContent = G.H.name; $('#nameH').style.background = cH.bg; $('#nameH').style.color = cH.fg;
+    $('#nameA').textContent = G.A.mgr.name; $('#nameA').style.background = cA.bg; $('#nameA').style.color = cA.fg;
+    $('#kitH').style.background = kitBg(HUMAN_KIT); $('#kitA').style.background = kitBg(G.A.mgr.kit);
+    $('#goalsH').innerHTML = ''; $('#goalsA').innerHTML = ''; $('#prevLine').textContent = ''; $('#footRight').textContent = '';
+    $('#scoreTxt').textContent = '0 - 0'; $('#clock').textContent = "0'";
+    $('#bandTxt').textContent = ''; $('#band').className = 'band'; $('#band').style.background = ''; $('#band').style.color = '';
+    const scorers = [new Map(), new Map()];
+    let clockMin = 0;
+    for (const ev of res.events) {
+      if (token !== playToken) return;
+      if (ev.quiet) continue;
+      if (ev.pen || ev.pens) $('#clock').textContent = 'PENS';
+      else {
+        while (clockMin < ev.min - 1 && speed !== 'skip') { clockMin++; $('#clock').textContent = `${clockMin}'`; await wait(speed === 'fast' ? 25 : 110); if (token !== playToken) return; }
+        clockMin = ev.min; $('#clock').textContent = ev.min > 90 ? `90+${ev.min - 90}'` : `${ev.min}'`;
+      }
+      for (const raw of ev.lines) {
+        if (token !== playToken) return;
+        if (raw === '@GOAL') {
+          $('#scoreTxt').textContent = `${ev.score[0]} - ${ev.score[1]}`;
+          const gl = ev.goal;
+          if (gl) {
+            const key = short(gl.n) + (gl.own ? ' (og)' : '');
+            const m = scorers[gl.ti]; m.set(key, (m.get(key) || []).concat(gl.min > 90 ? `90+${gl.min - 90}'` : `${gl.min}'`));
+            $(gl.ti === 0 ? '#goalsH' : '#goalsA').innerHTML = [...m].map(([n, mins]) => `<div>${esc(n)} ${mins.join(', ')}</div>`).join('');
+          }
+          if (speed !== 'skip') {
+            const c = sideColours(ev.team);
+            say('GOAL !!', null, 'blink');
+            const band = $('#band'); band.style.background = ''; band.style.color = '';
+            band.style.setProperty('--fa', c.a); band.style.setProperty('--fb', c.b);
+            await wait(speed === 'fast' ? 800 : 2400);
+          }
+          continue;
+        }
+        if (raw === '@HT') { say('HALF TIME', null, 'ht'); await wait(delay('') * 1.6); continue; }
+        if (raw === '@FT') { say('FULL TIME', null, 'ht'); await wait(delay('') * 1.6); continue; }
+        let text = raw, side = ev.team;
+        if (text.startsWith('#D')) { text = text.slice(2); side = side == null ? null : 1 - side; }
+        for (const b of text.split('|')) { say(b, side, ev.lull ? 'lull' : ''); await wait(delay(b)); }
+      }
+      if (ev.pscore) $('#footRight').textContent = `Penalties ${ev.pscore[0]}-${ev.pscore[1]}`;
+    }
+    finishMatch(res);
+  }
+  function finishMatch(res) {
+    const [H, A] = res.teams, s = res.score, w = res.winner;
+    const youWin = w === 0;
+    $('#resultTag').textContent = youWin ? 'You win' : `${G.A.mgr.name} wins`;
+    $('#resultLine').textContent = `${H.name} ${s[0]} - ${s[1]} ${A.name}` + (res.pens ? ` (${res.pens.score[0]}-${res.pens.score[1]} pens)` : '');
+    const ogs = res.ratings.flat().filter(x => x.stats.og).map(x => `${x.p.n}${x.stats.og > 1 ? ' ' + x.stats.og : ''}`);
+    $('#scorers').textContent = ogs.length ? `Own goals: ${ogs.join(', ')}.` : '';
+    const all = res.ratings.flat(), best = all.reduce((a, b) => b.rating > a.rating ? b : a);
+    const rows = list => list.map(x => {
+      const spent = G.log.find(e => e.card === x.p);
+      return `<tr><td>${esc(x.p.n)}${x === best ? ' <span class="motm">MOTM</span>' : ''}</td><td>${x.line}${x.p.pos !== x.line && x.line !== 'GK' ? '*' : ''}</td><td class="n">${x.p.ovr}</td><td class="n">${x.stats.g || ''}</td><td class="n">${x.stats.a || ''}</td><td class="n mr">${x.rating.toFixed(1)}</td><td class="n">${spent ? fmt(spent.price) : '£0m'}</td></tr>`;
+    }).join('');
+    $('#ratings').innerHTML = `<thead><tr><th>Player</th><th>Slot</th><th class="n">OVR</th><th class="n">G</th><th class="n">A</th><th class="n">Rating</th><th class="n">Paid</th></tr></thead>
+      <tbody><tr><th colspan="7">${esc(H.name)}</th></tr>${rows(res.ratings[0])}<tr><th colspan="7">${esc(A.name)}</th></tr>${rows(res.ratings[1])}</tbody>`;
+    $('#resultWin').hidden = false;
+    $('#resultWin').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  $('#againBtn').addEventListener('click', () => { playToken++; G = AD.newGame({ humanName: G.H.name }); revealScreen(); });
+})();
+</script>
