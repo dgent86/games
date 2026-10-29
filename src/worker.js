@@ -32,12 +32,12 @@ const SCHEMA = [
      cid TEXT NOT NULL UNIQUE,
      name TEXT NOT NULL,
      w INTEGER NOT NULL, d INTEGER NOT NULL, l INTEGER NOT NULL,
-     gf INTEGER NOT NULL, ga INTEGER NOT NULL, pts INTEGER NOT NULL,
+     gd INTEGER NOT NULL, gf INTEGER, ga INTEGER, pts INTEGER NOT NULL,
      pos INTEGER NOT NULL,
      scorer TEXT NOT NULL DEFAULT '',
      goals INTEGER NOT NULL DEFAULT 0,
      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`,
-  `CREATE INDEX IF NOT EXISTS seasons_board ON seasons (pts DESC, gf, ga)`,
+  `CREATE INDEX IF NOT EXISTS seasons_board ON seasons (pts DESC, gd DESC, gf DESC)`,
 ];
 let ready = null;
 const init = (db) => (ready ||= db.batch(SCHEMA.map((s) => db.prepare(s))).catch((e) => { ready = null; throw e; }));
@@ -67,8 +67,8 @@ const BOARD = `
 // Same rules as the campaign table: points, then goal difference, then goals scored; earlier seasons first after that.
 const SEASONS = `
   WITH r AS (
-    SELECT row_number() OVER (ORDER BY pts DESC, gf - ga DESC, gf DESC, created_at, id) AS rank,
-           id, name, w, d, l, gf, ga, pts, pos, scorer, goals, count(*) OVER () AS total
+    SELECT row_number() OVER (ORDER BY pts DESC, gd DESC, gf DESC NULLS LAST, created_at, id) AS rank,
+           id, name, w, d, l, gd, pts, pos, scorer, goals, count(*) OVER () AS total
     FROM seasons),
   me AS (SELECT (SELECT rank FROM r WHERE id = ?1) AS rk)
   SELECT r.* FROM r, me
@@ -103,9 +103,9 @@ async function api(fn, request, env) {
     if (!/^[a-z0-9]{8,16}$/.test(cid)) return json({ message: 'Bad id' }, 400);
     if (![w, d, l].every((v) => int(v, 0, 15)) || w + d + l !== 15) return json({ message: 'Bad record' }, 400);
     if (!int(gf, 0, 400) || !int(ga, 0, 400) || !int(pos, 1, 16) || !int(goals, 0, gf)) return json({ message: 'Bad record' }, 400);
-    await env.DB.prepare(`INSERT INTO seasons (cid, name, w, d, l, gf, ga, pts, pos, scorer, goals)
-      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11) ON CONFLICT(cid) DO NOTHING`)
-      .bind(cid, name, w, d, l, gf, ga, 3 * w + d, pos, scorer, scorer ? goals : 0).run();
+    await env.DB.prepare(`INSERT INTO seasons (cid, name, w, d, l, gd, gf, ga, pts, pos, scorer, goals)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12) ON CONFLICT(cid) DO NOTHING`)
+      .bind(cid, name, w, d, l, gf - ga, gf, ga, 3 * w + d, pos, scorer, scorer ? goals : 0).run();
     const row = await env.DB.prepare('SELECT id FROM seasons WHERE cid = ?1').bind(cid).first();
     return json({ id: row.id });
   }

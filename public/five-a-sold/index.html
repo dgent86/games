@@ -130,8 +130,8 @@ table.lt td.pts { font-weight: bold; }
 table.gt { font-size: 11px; }
 table.gt th, table.gt td { padding: 3px 3px; }
 @media (min-width: 560px) { table.gt { font-size: 12px; } }
-table.gt th:nth-child(11), table.gt td:nth-child(11) { text-align: left; white-space: nowrap; }
-table.gt th:nth-child(11) { white-space: normal; }
+table.gt th:nth-child(9), table.gt td:nth-child(9) { text-align: left; white-space: nowrap; }
+table.gt th:nth-child(9) { white-space: normal; }
 table.gt .full { display: none; }
 @media (min-width: 560px) { table.gt .full { display: inline; } table.gt .short { display: none; } }
 table.gt tr.gap td { text-align: center; color: var(--muted); border-bottom: 0; }
@@ -1359,11 +1359,10 @@ if (typeof module !== 'undefined') module.exports = AD;
       $('#gCount').textContent = `${n} season${n === 1 ? '' : 's'}`;
       note.textContent = 'Every completed campaign, ranked on points, then goal difference, then goals scored. Every season is 15 games. Fin is where the side finished in its own campaign.';
       let last = 0;
-      tb.innerHTML = '<thead><tr><th>Pos</th><th>Team</th><th>W</th><th>D</th><th>L</th><th>F</th><th>A</th><th>GD</th><th>Pts</th><th>Fin</th><th>Top scorer</th></tr></thead><tbody>' +
+      tb.innerHTML = '<thead><tr><th>Pos</th><th>Team</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th>Fin</th><th>Top scorer</th></tr></thead><tbody>' +
         rows.map(x => {
-          const gap = x.rank > last + 1 ? '<tr class="gap"><td colspan="11">...</td></tr>' : ''; last = x.rank;
-          const gd = x.gf - x.ga;
-          return gap + `<tr class="${x.id === me ? 'you' : ''}"><td>${x.rank}</td><td>${esc(x.name)}</td><td>${x.w}</td><td>${x.d}</td><td>${x.l}</td><td>${x.gf}</td><td>${x.ga}</td><td>${gd > 0 ? '+' + gd : gd}</td><td class="pts">${x.pts}</td><td>${ord(x.pos)}</td><td>${x.scorer ? `<span class="full">${esc(x.scorer)}</span><span class="short">${esc(x.scorer.includes(' ') ? x.scorer.slice(x.scorer.indexOf(' ') + 1) : x.scorer)}</span> ${x.goals}` : '-'}</td></tr>`;
+          const gap = x.rank > last + 1 ? '<tr class="gap"><td colspan="9">...</td></tr>' : ''; last = x.rank;
+          return gap + `<tr class="${x.id === me ? 'you' : ''}"><td>${x.rank}</td><td>${esc(x.name)}</td><td>${x.w}</td><td>${x.d}</td><td>${x.l}</td><td>${x.gd > 0 ? '+' + x.gd : x.gd}</td><td class="pts">${x.pts}</td><td>${ord(x.pos)}</td><td>${x.scorer ? `<span class="full">${esc(x.scorer)}</span><span class="short">${esc(x.scorer.includes(' ') ? x.scorer.slice(x.scorer.indexOf(' ') + 1) : x.scorer)}</span> ${x.goals}` : '-'}</td></tr>`;
         }).join('') + '</tbody>';
     }).catch(() => { note.textContent = 'Could not load the global table. Try again in a moment.'; });
   }
