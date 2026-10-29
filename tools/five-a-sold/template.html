@@ -53,6 +53,8 @@ h1, h2 { margin: 0; text-wrap: balance; }
 .logo span { color: var(--amber); display: block; font-size: 30px; letter-spacing: .12em; }
 .rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 label.field { display: grid; gap: 4px; }
+.nameErr { color: var(--alarm); font-weight: bold; margin: 6px 0 0; }
+input.bad { outline: 2px solid var(--alarm); }
 input[type=text] { font: 16px var(--f-ui); padding: 8px; border: 2px solid; border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); background: #fff; color: var(--ink); min-width: 0; }
 
 /* Manager reveal */
@@ -175,7 +177,8 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
           <li>Quick match: one auction, one game. Campaign: one auction, then a full season against all 15 managers.</li>
         </ol>
         <label class="field" for="teamName"><span class="lbl">Your team name</span>
-          <input type="text" id="teamName" value="Mariners" maxlength="20" autocomplete="off"></label>
+          <input type="text" id="teamName" value="" placeholder="e.g. Skeffling Rovers" maxlength="20" autocomplete="off"></label>
+        <p class="note nameErr" id="nameErr" hidden>Name your team to start a campaign. It's the name that goes on the global table.</p>
         <div class="row">
           <button class="btn go" id="startBtn" type="button">Quick match</button>
           <button class="btn go" id="campBtn" type="button">New campaign</button>
@@ -690,7 +693,13 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   $('#gBack').addEventListener('click', () => { show(gBack); if (gBack !== 'title' && !$('#campWin').hidden) $('#campWin').scrollIntoView({ block: 'start' }); });
 
   let confirmNew = false;
+  const NAME = 'fiveasold.name';
+  try { const n = localStorage.getItem(NAME); if (n) $('#teamName').value = n; } catch (_) {}
+  $('#teamName').addEventListener('input', () => { $('#teamName').classList.remove('bad'); $('#nameErr').hidden = true; });
   $('#campBtn').addEventListener('click', () => {
+    const nm = ($('#teamName').value || '').replace(/\s+/g, ' ').trim();
+    if (!nm) { $('#nameErr').hidden = false; $('#teamName').classList.add('bad'); $('#teamName').focus(); return; }
+    try { localStorage.setItem(NAME, nm); } catch (_) {}
     const s = store.get();
     if (s && s.phase !== 'done' && !confirmNew) { confirmNew = true; $('#campBtn').textContent = 'Start over? Tap again'; return; }
     confirmNew = false; $('#campBtn').textContent = 'New campaign';
@@ -706,7 +715,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   });
 
   function newCampaign() {
-    const name = ($('#teamName').value || '').trim() || 'Mariners';
+    const name = ($('#teamName').value || '').replace(/\s+/g, ' ').trim();
     const order = [...Array(15).keys()];
     for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
     // eight decks dealt from one pool, so a player can only ever be at one club; your deck is one of the eight at random
@@ -781,9 +790,9 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     $('#campRound').textContent = `After round ${C.round} of 15`;
     $('#fxLbl').textContent = `Round ${r + 1} results`;
     $('#fixtures').innerHTML = C.results.filter(f => f.r === r).map(f => `<div class="${f.a === 'U' || f.b === 'U' ? 'you' : ''}"><span>${esc(mgrName(f.a))}</span><span>${f.ga_} - ${f.gb_}</span><span>${esc(mgrName(f.b))}</span></div>`).join('');
-    $('#table').innerHTML = `<thead><tr><th>Pos</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>` +
+    $('#table').innerHTML = `<thead><tr><th>Pos</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>F</th><th>A</th><th>GD</th><th>Pts</th></tr></thead><tbody>` +
       t.map((x, i) => { const k = kitOf(x.key); const gd = x.gf - x.ga;
-        return `<tr class="${x.key === 'U' ? 'you' : ''}"><td>${i + 1}</td><td><span class="sw" style="background:${kitBg(k)}"></span>${esc(mgrName(x.key))}</td><td>${x.p}</td><td>${x.w}</td><td>${x.d}</td><td>${x.l}</td><td>${gd > 0 ? '+' + gd : gd}</td><td class="pts">${x.pts}</td></tr>`; }).join('') + '</tbody>';
+        return `<tr class="${x.key === 'U' ? 'you' : ''}"><td>${i + 1}</td><td><span class="sw" style="background:${kitBg(k)}"></span>${esc(mgrName(x.key))}</td><td>${x.p}</td><td>${x.w}</td><td>${x.d}</td><td>${x.l}</td><td>${x.gf}</td><td>${x.ga}</td><td>${gd > 0 ? '+' + gd : gd}</td><td class="pts">${x.pts}</td></tr>`; }).join('') + '</tbody>';
     const champ = $('#campChamp'), boot = $('#bootWrap');
     champ.hidden = !done; boot.hidden = !done;
     if (done) {
