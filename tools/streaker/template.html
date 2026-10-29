@@ -176,6 +176,13 @@ body.playing .topbar,body.playing .msg{display:none}
 .sheet .lbt td{color:var(--ink)} .sheet .lbt .rk,.sheet .lbt td.dt{color:#5d7a6c} .sheet .lbt td.sk{color:var(--ink)} .sheet .lbmsg{color:#35584a} .sheet .lbt tr.me td{color:#1a1a00} .sheet .lbt tr.top1 .rk{color:#a87a06}
 .sheet .lbt tr.gap td{color:#5d7a6c}
 
+.lbhome{gap:8px;padding:12px 14px 10px}
+.lbhome .lbhead h3{font-size:20px}
+.lbhome .lbt td{padding:5px 6px}
+.lbhome .lbt .rk,.lbhome .lbt td.sk{font-size:17px}
+.lbfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:24px}
+.lbfoot .linkbtn{padding:0;white-space:nowrap}
+
 /* ---------- data notes popup ---------- */
 .linkbtn{background:none;border:0;padding:4px 0;color:var(--muted);font:600 14px var(--body);letter-spacing:0;text-transform:none;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .modal{position:fixed;inset:0;z-index:50;background:rgba(4,10,7,.72);display:flex;align-items:flex-end;justify-content:center;padding:max(12px,env(safe-area-inset-top,0px)) 12px 0}
@@ -228,6 +235,12 @@ summary{cursor:pointer;font-family:var(--cond);font-weight:700;letter-spacing:.1
         <button id="start">Kick off</button>
       </div>
       <div class="row"><button type="button" class="linkbtn" id="lbBtn" hidden>Leaderboard</button><button type="button" class="linkbtn" id="aboutBtn">About the data</button></div>
+    </section>
+
+    <section class="lb lbhome" id="lbHome" hidden aria-labelledby="lbhTitle">
+      <div class="lbhead"><h3 id="lbhTitle">Leaderboard</h3><span class="lbmeta" id="lbhMode">All leagues</span></div>
+      <table class="lbt" id="lbhTable"></table>
+      <div class="lbfoot"><span class="lbmsg" id="lbhMsg"></span><button type="button" class="linkbtn" id="lbhMore">Full board</button></div>
     </section>
 
     <div class="clockbox" id="clockbox" hidden><span class="mode" id="modeTag">All</span><i class="yc" id="yc" title="Booked" hidden></i><span class="mini">Streak<b id="streak2">0</b></span><span class="mini">Best<b class="bst" id="best2">0</b></span><div class="clock" id="clock"><i id="bar"></i></div><b id="secs">60</b></div>
@@ -431,7 +444,7 @@ function renderTable(changed=[0,1,2],marks=null){
     const miss=marks&&!marks[i], hit=marks&&marks[i];
     d.className='card cat-'+CATCLASS[c.cat]+(changed.includes(i)?' new':'')+(miss?' miss':'')+(hit?' hit':'');
     const lw=Math.max(...c.label.split(' ').map(w=>w.length));
-    const size=Math.min(19,150/Math.max(lw,1),c.label.length>24?13:99);
+    const size=Math.min(19,132/Math.max(lw,1),c.label.length>24?13:99);
     const band=miss?'Not met':c.cat;
     d.innerHTML=`<div class="band" style="font-size:${Math.min(15,125/band.length).toFixed(1)}cqi">${band}</div><div class="face" style="font-size:${size.toFixed(1)}cqi">${esc(c.label)}</div><div class="pip"></div>`;
     $('table').appendChild(d);
@@ -450,7 +463,7 @@ function resetClock(){ clearInterval(timer); left=limit; draw(); timer=setInterv
 
 function setMode(m){
   document.body.classList.toggle('playing',m!=='idle'); document.body.classList.toggle('over',m==='over'||m==='booked');
-  $('kick').hidden=m!=='idle'; $('info').hidden=m!=='idle'; $('sampleLbl').hidden=m!=='idle';
+  $('kick').hidden=m!=='idle'; $('info').hidden=m!=='idle'; if(typeof lbHomeLoad==='function') lbHomeLoad(m==='idle'); $('sampleLbl').hidden=m!=='idle';
   $('clockbox').hidden=m==='idle'; $('play').hidden=m!=='live';
   $('result').hidden=m!=='over'; $('sash').hidden=!(m==='over'||m==='booked');
   $('sash').classList.toggle('yellow',m==='booked'); $('again').hidden=m!=='over'; $('resume').hidden=m!=='booked';
@@ -462,6 +475,7 @@ function setPool(m){
   $('modeTag').textContent=m==='pl'?'PL':'All';
   buildDeck(); usedBits=new Uint32Array(W); loadBest(); setStats();
   slots=freshDeal(); renderTable();
+  if(typeof lbHomeLoad==='function' && !document.body.classList.contains('playing')) lbHomeLoad(true);
 }
 
 function start(){
@@ -718,6 +732,24 @@ async function lbmLoad(m){
 function openLb(e){ lbmReturn=e.currentTarget; $('lbModal').hidden=false; $('lbClose').focus(); lbmLoad(mode); }
 function closeLb(){ $('lbModal').hidden=true; lbmReturn?.focus(); }
 $('lbBtn').hidden=!lbOn;
+/* Top of the board on the start screen, for the selected mode */
+let lbhSeq=0;
+async function lbHomeLoad(show){
+  const box=$('lbHome');
+  if(!lbOn||!show){ box.hidden=true; return; }
+  const m=mode, seq=++lbhSeq;
+  let myId=null; try{ const v=localStorage.getItem('bk_lbid_'+m); myId=v?+v:null; }catch(e){}
+  $('lbhMode').textContent=modeName(m);
+  try{
+    const rows=await rpc('board',{p_mode:m,p_id:myId});
+    if(seq!==lbhSeq) return;
+    const top=rows.filter(r=>r.rank<=5), me=myId!=null&&rows.find(r=>r.id===myId);
+    $('lbhTable').innerHTML=top.length?lbRows(top,{meId:myId}):'';
+    $('lbhMsg').textContent=!rows.length?'No scores yet. Be the first.':me&&me.rank>5?`Your latest: ${ord(+me.rank)} of ${rows[0].total}`:`${rows[0].total} score${+rows[0].total===1?'':'s'} so far`;
+    box.hidden=document.body.classList.contains('playing');
+  }catch(e){ if(seq===lbhSeq) box.hidden=true; }
+}
+$('lbhMore').addEventListener('click',openLb);
 $('lbBtn').addEventListener('click',openLb); $('lbClose').addEventListener('click',closeLb);
 $('lbModal').addEventListener('click',e=>{ if(e.target.id==='lbModal') closeLb(); });
 $('lbmAll').addEventListener('click',()=>lbmLoad('all')); $('lbmPL').addEventListener('click',()=>lbmLoad('pl'));
