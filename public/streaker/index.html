@@ -238,11 +238,6 @@ summary{cursor:pointer;font-family:var(--cond);font-weight:700;letter-spacing:.1
       <div class="row"><button type="button" class="linkbtn" id="lbBtn" hidden>Leaderboard</button><button type="button" class="linkbtn" id="aboutBtn">About the data</button></div>
     </section>
 
-    <section class="lb lbhome" id="lbHome" hidden aria-labelledby="lbhTitle">
-      <div class="lbhead"><h3 id="lbhTitle">Leaderboard</h3><span class="lbmeta" id="lbhMode">All leagues</span></div>
-      <table class="lbt" id="lbhTable"></table>
-      <div class="lbfoot"><span class="lbmsg" id="lbhMsg"></span><button type="button" class="linkbtn" id="lbhMore">Full board</button></div>
-    </section>
 
     <div class="clockbox" id="clockbox" hidden><span class="mode" id="modeTag">All</span><i class="yc" id="yc" title="Booked" hidden></i><span class="mini">Streak<b id="streak2">0</b></span><span class="mini">Best<b class="bst" id="best2">0</b></span><div class="clock" id="clock"><i id="bar"></i></div><b id="secs">60</b></div>
 
@@ -342,6 +337,12 @@ summary{cursor:pointer;font-family:var(--cond);font-weight:700;letter-spacing:.1
     </div>
   </div>
 </div>
+
+<section class="lb lbhome" id="lbHome" hidden aria-labelledby="lbhTitle">
+      <div class="lbhead"><h3 id="lbhTitle">Leaderboard</h3><span class="lbmeta" id="lbhMode">All leagues</span></div>
+      <table class="lbt" id="lbhTable"></table>
+      <div class="lbfoot"><span class="lbmsg" id="lbhMsg"></span><button type="button" class="linkbtn" id="lbhMore">Full board</button></div>
+    </section>
 
 <div class="info" id="info">
     <details>
