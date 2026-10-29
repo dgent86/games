@@ -1,6 +1,7 @@
 // dangent.uk: serves the static site from ./public and a small leaderboard API backed by D1.
 //   POST /api/submit_score  {p_name, p_streak, p_mode, p_secs}       -> new row id
 //   POST /api/board         {p_mode, p_id?, p_streak?}               -> top 5 plus two either side of you
+//   POST /api/all           {p_mode}                                 -> the whole board (top 500)
 // Scores can only be added or read here. Edit or delete rows in the Cloudflare dashboard (D1 > dangent-scores > Console).
 
 const SCHEMA = [
@@ -36,6 +37,11 @@ const BOARD = `
   WHERE r.rank <= 5 OR (me.rk IS NOT NULL AND r.rank BETWEEN me.rk - 2 AND me.rk + 2)
   ORDER BY r.rank`;
 
+const ALL = `
+  SELECT row_number() OVER (ORDER BY streak DESC, created_at, id) AS rank,
+         id, name, streak, secs, created_at, count(*) OVER () AS total
+  FROM scores WHERE mode = ?1 ORDER BY rank LIMIT 500`;
+
 async function api(fn, request, env) {
   if (request.method !== 'POST') return json({ message: 'POST only' }, 405);
   let b;
@@ -47,6 +53,12 @@ async function api(fn, request, env) {
     const id = Number.isInteger(b.p_id) ? b.p_id : null;
     const st = Number.isInteger(b.p_streak) ? b.p_streak : null;
     const { results } = await env.DB.prepare(BOARD).bind(mode, id, st).all();
+    return json(results);
+  }
+  if (fn === 'all') {
+    const mode = String(b.p_mode);
+    if (!MODES.has(mode)) return json({ message: 'Bad mode' }, 400);
+    const { results } = await env.DB.prepare(ALL).bind(mode).all();
     return json(results);
   }
   if (fn === 'submit_score') {
@@ -66,7 +78,7 @@ async function api(fn, request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const m = url.pathname.match(/^\/api\/(board|submit_score)\/?$/);
+    const m = url.pathname.match(/^\/api\/(board|all|submit_score)\/?$/);
     if (m) {
       try { return await api(m[1], request, env); }
       catch (e) { return json({ message: 'Server error' }, 500); }

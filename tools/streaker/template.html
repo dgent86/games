@@ -172,7 +172,8 @@ body.playing .topbar,body.playing .msg{display:none}
 .lbtabs{display:flex;gap:3px;background:#e4e8e1;border-radius:8px;padding:3px;margin:8px 0 10px}
 .lbtabs button{flex:1;background:transparent;color:#35584a;font-size:14px;padding:8px}
 .lbtabs button[aria-pressed="true"]{background:var(--turf);color:var(--chalk)}
-.sheet .lbt th{color:#5d7a6c;border-color:#dfe4dc} .sheet .lbt td{border-color:#e7ebe4}
+.sheet .lbt th{color:#5d7a6c;border-color:#dfe4dc;position:sticky;top:0;background:#f7f8f3;z-index:1;padding-top:6px}
+.sheet .body{overscroll-behavior:contain;-webkit-overflow-scrolling:touch} .sheet .lbt td{border-color:#e7ebe4}
 .sheet .lbt td{color:var(--ink)} .sheet .lbt .rk,.sheet .lbt td.dt{color:#5d7a6c} .sheet .lbt td.sk{color:var(--ink)} .sheet .lbmsg{color:#35584a} .sheet .lbt tr.me td{color:#1a1a00} .sheet .lbt tr.top1 .rk{color:#a87a06}
 .sheet .lbt tr.gap td{color:#5d7a6c}
 
@@ -723,11 +724,12 @@ async function lbmLoad(m){
   $('lbmTable').innerHTML=''; $('lbmMsg').textContent='Loading...';
   let myId=null; try{ const v=localStorage.getItem('bk_lbid_'+m); myId=v?+v:null; }catch(e){}
   try{
-    const rows=await rpc('board',{p_mode:m,p_id:myId});
+    const rows=await rpc(LB_URL.startsWith('/')?'all':'board',{p_mode:m,p_id:myId});
     if(lbmMode!==m) return;
     $('lbmTable').innerHTML=rows.length?lbRows(rows,{meId:myId}):'';
-    const me=myId!=null&&rows.find(r=>r.id===myId);
-    $('lbmMsg').textContent=!rows.length?'No scores yet. Be the first.':me?`Your latest saved score is ${ord(+me.rank)} of ${rows[0].total}.`:`${rows[0].total} score${+rows[0].total===1?'':'s'} so far.`;
+    const me=myId!=null&&rows.find(r=>r.id===myId), total=rows.length?+rows[0].total:0;
+    $('lbmMsg').textContent=!rows.length?'No scores yet. Be the first.':(me?`Your latest saved score is ${ord(+me.rank)} of ${total}.`:`${total} score${total===1?'':'s'} so far.`)+(total>rows.length?` Showing the top ${rows.length}.`:'');
+    const meRow=$('lbmTable').querySelector('tr.me'); if(meRow&&+me.rank>8) meRow.scrollIntoView({block:'center'});
   }catch(e){ if(lbmMode===m) $('lbmMsg').textContent='The leaderboard is unavailable right now.'; }
 }
 function openLb(e){ lbmReturn=e.currentTarget; $('lbModal').hidden=false; $('lbClose').focus(); lbmLoad(mode); }
