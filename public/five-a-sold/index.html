@@ -692,7 +692,7 @@ const AD = (() => {
     const sp = (t, name) => t.sp === name;
     const scoreline = () => `${H.name} ${score[0]}, ${A.name} ${score[1]}`;
     const avgOvr = t => (t.gk.ovr + t.slots.reduce((s, x) => s + x.p.ovr, 0)) / 5;
-    const ranieriBonus = t => sp(t, 'Underdog spirit') ? (avgOvr(t) < avgOvr(t === H ? A : H) ? 5 : 3) : 0;
+    const ranieriBonus = t => sp(t, 'Underdog spirit') ? (avgOvr(t) < avgOvr(t === H ? A : H) ? 3 : 1) : 0;
     function pr(t, p, line) { // player rating in slot incl. specials and fatigue
       const mods = { pas: sp(t, 'Flowing football') ? 2 : 0, wrk: sp(t, 'Intensity') ? 2 : 0 };
       let r = slotRating(p, line, mods);
@@ -709,6 +709,7 @@ const AD = (() => {
       if (line === 'MID' && sp(t, 'Positional play')) v *= 1.06;
       if (line === 'MID' && sp(t, 'Heavy-metal pressing')) v *= 1.08;
       if (line === 'DEF' && sp(t, 'Organisation')) v *= 1.06;
+      if (line === 'DEF' && sp(t, 'Park the bus')) v *= 1.08; // a Mourinho back line is strong all game, not just when ahead
       if (sp(t, 'Park the bus') && minute >= T.minutes * 0.75 && my > their) { if (line === 'DEF') v *= 1.12; if (line === 'FWD') v *= 0.90; }
       if (sp(t, 'Fergie time') && minute >= T.minutes * 0.875 && my <= their && line === 'FWD') v *= 1.10;
       if (htSwitch && htSwitch.t === t && htSwitch.line === line) v *= 1.08;
