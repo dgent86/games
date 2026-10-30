@@ -4,6 +4,7 @@
 //   POST /api/all           {p_mode}                                 -> the whole board (top 500)
 //   POST /api/event         {g, e, d, s}                             -> 204; private play counter, never read back by the site
 //   POST /api/season        {cid, name, w, d, l, gf, ga, pos, scorer, goals} -> {id}; a finished Five-a-Sold campaign
+//                           optional log {order, results, table, boot, squads} is kept in campaign_log
 //   POST /api/seasons       {p_id?}                                  -> global table: top 50 plus two either side of you
 // Scores can only be added or read here. Edit or delete rows in the Cloudflare dashboard (D1 > dangent-scores > Console).
 
@@ -36,6 +37,12 @@ const SCHEMA = [
      pos INTEGER NOT NULL,
      scorer TEXT NOT NULL DEFAULT '',
      goals INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`,
+  // Full record of each finished campaign (fixtures, tables, squads, prices) as JSON, for analysis. Never read back by the site.
+  `CREATE TABLE IF NOT EXISTS campaign_log (
+     cid TEXT PRIMARY KEY,
+     name TEXT NOT NULL,
+     data TEXT NOT NULL,
      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`,
   `CREATE INDEX IF NOT EXISTS seasons_board ON seasons (pts DESC, gd DESC, gf DESC)`,
 ];
@@ -106,6 +113,10 @@ async function api(fn, request, env) {
     await env.DB.prepare(`INSERT INTO seasons (cid, name, w, d, l, gd, gf, ga, pts, pos, scorer, goals)
       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12) ON CONFLICT(cid) DO NOTHING`)
       .bind(cid, name, w, d, l, gf - ga, gf, ga, 3 * w + d, pos, scorer, scorer ? goals : 0).run();
+    if (b.log && typeof b.log === 'object') {
+      const data = JSON.stringify(b.log);
+      if (data.length <= 40000) await env.DB.prepare('INSERT INTO campaign_log (cid, name, data) VALUES (?1, ?2, ?3) ON CONFLICT(cid) DO NOTHING').bind(cid, name, data).run();
+    }
     const row = await env.DB.prepare('SELECT id FROM seasons WHERE cid = ?1').bind(cid).first();
     return json({ id: row.id });
   }

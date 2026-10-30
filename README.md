@@ -12,6 +12,8 @@ Usage counter: the pages send small anonymous events (view, start, auction_done,
 `SELECT game, event, count(*) FROM events GROUP BY game, event;`
 
 Five-a-Sold global table: when a campaign ends, the page posts the season to `/api/season` and it is stored in the `seasons` table of `dangent-scores` (team name, W/D/L, goal difference, goals for and against where known, points, finishing position in that campaign, top scorer and goals). Each campaign has a random id, so a resend can't log it twice; a season finished offline is kept in the browser and sent the next time the page opens. `/api/seasons` returns the top 50 plus two either side of the player's own season, sorted on points, goal difference, then goals scored. Remove a row in the dashboard console, e.g. `DELETE FROM seasons WHERE id = 12;`
+
+Campaign log: the same submission also stores the whole season as JSON in `campaign_log` (all 120 fixtures, final table, top 15 scorers, every club's squad with prices paid, opponent order). It is never read back by the site. Query it with `json_extract` in the D1 console, or ask Claude for the Excel workbook.
 Events are only sent from dangent.uk itself, so local copies and previews don't count.
 
 To remove a leaderboard entry: Cloudflare dashboard > Storage & databases > D1 > dangent-scores > Console, then

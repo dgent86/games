@@ -656,7 +656,18 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     const t = table(), i = t.findIndex(r => r.key === 'U'), r = t[i];
     const top = Object.entries(C.goals).filter(([k]) => k.startsWith('U|')).sort((a, b) => b[1] - a[1])[0];
     if (!C.cid) C.cid = rid();
-    return { cid: C.cid, name: C.name, w: r.w, d: r.d, l: r.l, gf: r.gf, ga: r.ga, pos: i + 1, scorer: top ? top[0].slice(2) : '', goals: top ? top[1] : 0 };
+    return { cid: C.cid, name: C.name, w: r.w, d: r.d, l: r.l, gf: r.gf, ga: r.ga, pos: i + 1, scorer: top ? top[0].slice(2) : '', goals: top ? top[1] : 0, log: campaignLog(t) };
+  }
+  // everything about the season, kept server-side for analysis
+  function campaignLog(t) {
+    return {
+      v: 1,
+      order: C.order.map(i => AD.managers[i].name),
+      results: C.results.map(f => [f.r + 1, mgrName(f.a), mgrName(f.b), f.ga_, f.gb_]),
+      table: t.map((x, i) => [i + 1, mgrName(x.key), x.p, x.w, x.d, x.l, x.gf, x.ga, x.pts]),
+      boot: Object.entries(C.goals).sort((a, b) => b[1] - a[1]).slice(0, 15).map(([k, g]) => { const j = k.indexOf('|'); return [k.slice(j + 1), mgrName(k.slice(0, j) === 'U' ? 'U' : +k.slice(0, j)), g]; }),
+      squads: keys().map(k => [mgrName(k), fromSave(C.squads[k]).map(e => [e.p.fa ? 'Free agent' : e.p.n, e.p.pos, e.p.ovr, e.price])])
+    };
   }
   // kept until the server confirms it, so a season finished offline goes in next time the page opens
   function submitSeason() {
