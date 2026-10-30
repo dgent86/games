@@ -377,7 +377,7 @@ function flag(nat){
   const c=ISO[nat]; if(!c) return '\u{1F3F3}\u{FE0F}';
   return [...c].map(ch=>String.fromCodePoint(0x1F1E6+ch.charCodeAt(0)-65)).join('');
 }
-const MIN_CARD=8, MIN_NAT=15, MIN_ANSWERS=2;
+const MIN_CARD=8, MIN_NAT=15, MIN_ANSWERS=5;
 
 let mode='all', POOL=[], CARDS=[], byGroup={}, GROUPS=[], W=0, usedBits=null, dupes=new Set();
 let slots=[], used=new Set(), runList=[], streak=0, best=0, limit=60, left=60, timer=null, live=false, hl=-1, shown=[];
