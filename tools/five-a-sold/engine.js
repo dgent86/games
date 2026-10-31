@@ -104,7 +104,7 @@ const AD = (() => {
       let score = 0; const slots = order.map((p, i) => { score += slotRating(p, lines[i]); return { p, line: lines[i] }; });
       if (!best || score > best.score + 1e-9) best = { score, slots, shape: sh.join('-') };
     }));
-    return { gk, slots: best.slots, shape: best.shape };
+    return { gk, slots: best.slots, shape: best.shape, score: best.score };
   }
 
   // ---------------- Auction
@@ -364,7 +364,7 @@ const AD = (() => {
 
   // ---------------- Match
   function makeTeam(m, isHome, mgr) {
-    const lu = lineup(m.squad);
+    const lu = (m.tactic && buildLineup(m.squad, m.tactic.shape, m.tactic.order)) || lineup(m.squad);
     return { name: m.name, isHome, gk: lu.gk, slots: lu.slots, shape: lu.shape, mgr: mgr || null, sp: mgr ? mgr.special : null, goals: 0, scorers: {} };
   }
   function match(gm, opts) {
@@ -673,7 +673,118 @@ const AD = (() => {
     return { events: ev, score, winner, pens, teams: [H, A], ratings };
   }
 
+
+  // ---------------- Tactics: pick a shape, then who plays where (slot order = squad indexes, DEF first, then MID, then FWD)
+  const SHAPES = ['2-1-1', '1-2-1', '1-1-2'];
+  const shapeLines = sh => { const [d, m, f] = sh.split('-').map(Number); return [...Array(d).fill('DEF'), ...Array(m).fill('MID'), ...Array(f).fill('FWD')]; };
+  const permsOf = a => a.length <= 1 ? [a] : a.flatMap((x, i) => permsOf([...a.slice(0, i), ...a.slice(i + 1)]).map(r => [x, ...r]));
+  function outIdx(squad) { const gk = squad.find(p => p.pos === 'GK'); const gi = squad.indexOf(gk); return { gk, idx: squad.map((_, i) => i).filter(i => i !== gi) }; }
+  function buildLineup(squad, shape, order) {
+    if (!SHAPES.includes(shape) || !Array.isArray(order)) return null;
+    const { gk, idx } = outIdx(squad); if (!gk) return null;
+    const lines = shapeLines(shape);
+    if (order.length !== idx.length || lines.length !== idx.length || new Set(order).size !== order.length || order.some(i => !idx.includes(i))) return null;
+    const slots = order.map((i, k) => ({ p: squad[i], line: lines[k] }));
+    return { gk, slots, shape, order: order.slice(), score: slots.reduce((t, x) => t + slotRating(x.p, x.line), 0) };
+  }
+  // the best arrangement of this squad inside one shape: what the game fills in when you pick a formation
+  function autoLineup(squad, shape) {
+    const { gk, idx } = outIdx(squad); if (!gk) return null;
+    const lines = shapeLines(shape); let best = null;
+    permsOf(idx).forEach(order => {
+      let score = 0; order.forEach((i, k) => { score += slotRating(squad[i], lines[k]); });
+      if (!best || score > best.score + 1e-9) best = { order, score };
+    });
+    return buildLineup(squad, shape, best.order);
+  }
+  function bestShape(squad) { const lu = lineup(squad); return lu.shape; }
+
+  // how each manager is likely to set up, for the pre-match briefing. Lean is a summary, not a rule: the shape is still picked from the squad.
+  const SCOUT = {
+    Guardiola: ['Possession', 'Short passing and plenty of the ball. His midfield is the engine, so do not let it run the game.'],
+    Ferguson: ['Attacking', 'Never beaten until the whistle. If he is losing, expect a late surge and extra time on the clock.'],
+    Wenger: ['Attacking', 'Fluid, passing football that scores pretty goals. It can leave space behind him.'],
+    Klopp: ['Attacking', 'All-out pressing from the first minute. He runs hot early and fades late, so survive the opening spell.'],
+    Mourinho: ['Defensive', 'A strong back line all game, and once he leads the shutters come down. Score first or you will struggle.'],
+    Ancelotti: ['Balanced', 'Calm and pragmatic. His best players tend to turn up in the big moments.'],
+    'Benítez': ['Balanced', 'The half-time tinkerer. If he is behind at the break, he will change something.'],
+    Pochettino: ['Attacking', 'High energy and relentless work rate. His side keeps running when others tire.'],
+    Ranieri: ['Defensive', 'Plays above the team sheet when he is the underdog. Do not take him lightly.'],
+    Moyes: ['Defensive', 'Organised and stubborn. Hard to break down, and rarely makes the first move.'],
+    Hodgson: ['Defensive', 'Two banks and no nonsense. Expect a slow, tight, low-scoring game.'],
+    Redknapp: ['Balanced', 'No fixed system. He trusts his old boys and goes with the flow.'],
+    Keegan: ['Attacking', 'Open, end-to-end football. Goals at both ends, so a lead is never safe.'],
+    Allardyce: ['Direct', 'Long ball. Crosses, headers and second balls: big defenders matter against him.'],
+    Dyche: ['Defensive', 'Blocks, tackles and bodies behind the ball. Chances will be hard to come by.']
+  };
+  function scout(mgrName, squad) {
+    const sc = SCOUT[mgrName] || ['Balanced', ''];
+    return { shape: bestShape(squad), lean: sc[0], style: sc[1] };
+  }
+
+  // ---------------- Transfer window: 16 players, one auction each, every manager has their unspent money plus 1m
+  const WIN_MIX = ['GK', 'GK', 'GK', 'DEF', 'DEF', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'MID', 'MID', 'FWD', 'FWD', 'FWD', 'FWD'];
+  function winPool(usedIds, sd) {
+    seed(sd);
+    const used = new Set(usedIds), pool = [];
+    WIN_MIX.forEach(pos => {
+      const c = PLAYERS.filter(p => p.pos === pos && !used.has(p.id) && !pool.includes(p));
+      pool.push(weighted(c, c.map(q => Math.pow(2, (q.ovr - 80) / 6))));
+    });
+    const ids = shuffle(pool).map(p => p.id);
+    seed((Date.now() ^ Math.imul(sd, 2654435761)) >>> 0); // do not leave the match engine on a fixed sequence
+    return ids;
+  }
+  const fiveOK = sq => sq.length === 5 && sq.filter(p => p.pos === 'GK').length === 1;
+  const squadScore = sq => { const lu = lineup(sq); return lu.score + lu.gk.ovr; };
+  // best player to release from a squad of six; null when no release leaves a legal five
+  function winKeep(sq6) {
+    let best = null;
+    sq6.forEach((_, i) => {
+      const r = sq6.filter((__, j) => j !== i); if (!fiveOK(r)) return;
+      const sc = squadScore(r); if (!best || sc > best.score + 1e-9) best = { drop: i, score: sc };
+    });
+    return best;
+  }
+  function winLegalDrops(sq6) { return sq6.map((_, i) => i).filter(i => fiveOK(sq6.filter((__, j) => j !== i))); }
+  const noise = (a, b, c) => { const x = Math.sin(a * 12.9898 + b * 78.233 + c * 37.719) * 43758.5453; return x - Math.floor(x); };
+  // what an AI manager will pay for this player: the lineup gain, shaded by taste, never above their budget
+  function winMax(sq, p, budget, mgr, sd, lotNo, mi) {
+    if (budget < 1 || sq.length !== 5) return 0;
+    const k = winKeep([...sq, p]); if (!k) return 0;
+    const gain = k.score - squadScore(sq);
+    if (gain < 0.5) return 0;
+    const bias = mgr.bias || [1, 1, 1];
+    const L = p.pos === 'GK' ? 1 : bias[['DEF', 'MID', 'FWD'].indexOf(p.pos)];
+    const tg = tags(p); let S = 1;
+    if (tg.some(t => (mgr.likes || []).includes(t))) S *= 1.15;
+    if (tg.some(t => (mgr.dislikes || []).includes(t))) S *= 0.85;
+    const Cc = (mgr.clubs || []).includes(p.club) ? 1.25 : 1;
+    const Af = 0.7 + 0.06 * Math.min(mgr.aggr, 12);
+    const v = gain * 0.6 * L * S * Cc * Af * (0.88 + 0.24 * noise(sd % 9973, lotNo, mi));
+    return Math.min(budget, Math.max(1, Math.round(v)));
+  }
+  // interested AI managers for one lot, best first. items: [{ key, mi, sq, budget }]
+  function winWants(items, p, sd, lotNo) {
+    return items.map((it, n) => ({ key: it.key, max: winMax(it.sq, p, it.budget, MANAGERS[it.mi], sd, lotNo, it.mi), n }))
+      .filter(w => w.max > 0).sort((a, b) => b.max - a.max || a.n - b.n);
+  }
+  const winOpen = wants => wants.length ? { price: 1, by: wants[0].key } : { price: 0, by: null };
+  // the user bids `amount`: the strongest AI who can go higher answers at amount + 1
+  function winCounter(wants, amount) {
+    const w = wants.find(x => x.max >= amount + 1);
+    return w ? { price: amount + 1, by: w.key } : { price: amount, by: 'U' };
+  }
+  // the user is out (or was never in): the leader takes it at the second-highest ceiling plus 1, or the current price
+  function winSettle(wants, lot) {
+    if (!wants.length) return null;
+    const top = wants[0], second = wants[1] ? wants[1].max : 0;
+    const cur = lot && lot.by === top.key ? lot.price : 0;
+    if (cur && second <= cur) return { key: top.key, price: cur }; // nobody can beat the standing bid
+    return { key: top.key, price: Math.max(cur || 1, Math.min(top.max, second + 1)) };
+  }
+
   return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
-    match, simulate, lineup, makeTeam, slotRating, tags, freeAgent, T, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
+    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, T, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;

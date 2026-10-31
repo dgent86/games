@@ -41,6 +41,7 @@ body {
 .btn:focus-visible { outline: 2px dashed var(--navy); outline-offset: 2px; }
 .btn.go { background: var(--navy); color: var(--on-navy); border-color: var(--navy-hi) var(--navy-lo) var(--navy-lo) var(--navy-hi); }
 .btn.go:focus-visible { outline-color: var(--amber); }
+.btn.go:disabled { background: var(--panel); color: var(--panel-lo); border-color: var(--panel-hi) var(--panel-lo) var(--panel-lo) var(--panel-hi); }
 .btn small { display: block; font-weight: normal; font-size: 11px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .row > .btn { flex: 1 1 0; }
@@ -158,6 +159,54 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   .band { font-size: 25px; min-height: 104px; }
 }
 @media (prefers-reduced-motion: reduce) { .band.blink { animation: none; } }
+.log:empty { display: none; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { background: var(--navy); color: var(--on-navy); font-size: 11px; font-weight: bold; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; }
+.chip.alt { background: var(--well); color: var(--ink); border: 1px solid var(--panel-lo); }
+.tacrow { box-sizing: border-box; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; text-align: left; background: var(--well); border: 2px solid transparent; padding: 4px 6px; font: inherit; color: inherit; cursor: pointer; min-height: 44px; }
+.tacrow.fixed { cursor: default; }
+.tacrow.l-GK { background: #f3eed5; }
+.tacrow.l-DEF { background: #dde6f4; }
+.tacrow.l-MID { background: #dcefd9; }
+.tacrow.l-FWD { background: #f5dfda; }
+#shapeRow .btn { font-size: 11px; white-space: nowrap; padding-inline: 3px; min-width: 0; letter-spacing: -.01em; }
+#shapeRow .btn[data-m=unchanged] { flex-grow: 1.35; }
+.tacrow.sel { border-color: var(--navy); background: #ffffff; }
+.tacrow:focus-visible { outline: 2px dashed var(--navy); outline-offset: 2px; }
+.tacrow .who { min-width: 0; }
+.tacrow .who b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tacrow .who span { font-size: 11px; color: var(--muted); }
+.tag { font-size: 11px; font-weight: bold; letter-spacing: .06em; padding: 2px 6px; background: var(--panel); border: 1px solid var(--panel-lo); white-space: nowrap; }
+.tag.oop { background: #f3d9a8; border-color: #a1670c; }
+.wq { position: relative; display: grid; gap: 2px; max-height: 118px; overflow: auto; font-size: 12px; border: 2px solid; border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); padding: 2px; }
+.wq div { display: grid; grid-template-columns: 20px 32px minmax(0, 1fr) auto; gap: 6px; padding: 2px 6px; background: var(--well); align-items: center; }
+.wq div b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wq div.cur { background: var(--navy); color: var(--on-navy); }
+.wq div.done { color: var(--muted); }
+.wq div.you { color: var(--good); font-weight: bold; }
+.wm { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; font-size: 12px; }
+.wm div { display: flex; justify-content: space-between; gap: 6px; background: var(--well); padding: 2px 6px; }
+.wm div.got { color: var(--muted); }
+table.wt th, table.wt td { text-align: left; font-size: 12px; }
+table.wt { width: 100%; border-collapse: collapse; }
+#wCard .nm { min-height: 1.9em; }
+#wControls .btn { flex: 1 1 calc(50% - 8px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; min-height: 44px; padding-inline: 6px; }
+#wControls.col .btn { flex-basis: 100%; text-align: left; }
+#wControls .btn.solo { flex-basis: 100%; }
+table.wt td.muted { color: var(--muted); }
+table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-space: nowrap; }
+#wCard .meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#wCard .bid { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts { display: grid; gap: 4px; }
+.ts > div { background: var(--well); padding: 6px 8px; display: grid; gap: 2px; font-size: 12px; }
+.ts > div.you { outline: 2px solid var(--navy); outline-offset: -2px; }
+.ts b { font-size: 13px; }
+.ts .in { color: #17602d; }
+.ts .out { color: #a51f1f; }
+.ts .none { color: var(--muted); }
+.tog { display: flex; gap: 8px; align-items: center; font-size: 13px; min-height: 44px; cursor: pointer; }
+.tog input { width: 20px; height: 20px; margin: 0; accent-color: var(--navy); flex: none; }
+.relrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 .sitefoot { text-align: center; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; padding-top: 4px; }
 .sitefoot a { color: var(--amber); text-decoration: none; font-weight: bold; }
 .sitefoot a:hover, .sitefoot a:focus-visible { text-decoration: underline; }
@@ -174,11 +223,12 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
           <li>Build a five: one keeper and four outfield. Out-of-position players suffer.</li>
           <li>You can't bid money you'll need: keep £1m back for every empty slot.</li>
           <li>Then it's kick-off. No ratings until the final whistle.</li>
-          <li>Quick match: one auction, one game. Campaign: one auction, then a full season against all 15 managers.</li>
+          <li>Quick match: one auction, one game. Campaign: one auction, then a full season against all 15 managers, with an optional transfer window after game 7.</li>
         </ol>
         <label class="field" for="teamName"><span class="lbl">Your team name</span>
           <input type="text" id="teamName" value="" placeholder="e.g. Skeffling Rovers" maxlength="20" autocomplete="off"></label>
         <p class="note nameErr" id="nameErr" hidden>Name your team to start a campaign. It's the name that goes on the global table.</p>
+        <label class="tog" for="twOn"><input type="checkbox" id="twOn" checked> Include Transfer Window after Game 7</label>
         <div class="row">
           <button class="btn go" id="startBtn" type="button">Quick match</button>
           <button class="btn go" id="campBtn" type="button">New campaign</button>
@@ -203,7 +253,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
         </div>
         <div class="well row" id="kitRow"></div>
         <p class="note" id="campNote" style="margin:0" hidden></p>
-        <button class="btn go" id="preTeamsBtn" type="button" hidden>See the team sheets</button>
+        <button class="btn go" id="preTeamsBtn" type="button" hidden>Scout the opposition and pick your team</button>
       </div>
     </div>
     <div class="win" id="deckWin">
@@ -249,9 +299,51 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   </section>
 
   <section class="screen" id="teams" hidden>
-    <div class="win" id="sheetH"></div>
     <div class="win" id="sheetA"></div>
+    <div class="win" id="sheetH">
+      <div class="bar"><span>Your team</span><span id="tacShape"></span></div>
+      <div class="pad">
+        <div class="lbl">Formation</div>
+        <div class="speed" id="shapeRow" role="group" aria-label="Formation"></div>
+        <p class="note" id="tacNote" style="margin:0"></p>
+        <div class="sheet" id="tacSheet"></div>
+        <p class="note" id="tacHelp" style="margin:0"></p>
+      </div>
+    </div>
     <button class="btn go" id="kickBtn" type="button">Kick off</button>
+  </section>
+
+  <section class="screen" id="window" hidden>
+    <div class="card" id="wCard" aria-live="polite"></div>
+    <div class="win" id="wAct">
+      <div class="bar" id="wActBar" hidden><span>Release a player</span><span>Transfer window</span></div>
+      <div class="pad">
+        <div class="side-head" id="wBudRow"><span class="side-name">Your budget</span><span class="money" id="wBud"></span></div>
+        <div class="status" id="wStatus" aria-live="polite"></div>
+        <div class="row" id="wControls"></div>
+      </div>
+    </div>
+    <div class="win" id="wResults" hidden>
+      <div class="bar"><span>Auction results</span><span id="wResTag"></span></div>
+      <div class="pad"><div style="overflow-x:auto"><table class="lt wt" id="wResTable"></table></div></div>
+    </div>
+    <div class="win" id="wPool">
+      <div class="bar"><span>Up for auction</span><span id="wLeft"></span></div>
+      <div class="pad">
+        <div class="wq" id="wQueue"></div>
+        <div class="lbl">Other managers</div>
+        <div class="wm" id="wMgrs"></div>
+        <div class="log" id="wLog" aria-label="Window log"></div>
+        <button class="btn" id="wLeave" type="button">Save and leave</button>
+      </div>
+    </div>
+    <div class="win" id="wTop">
+      <div class="bar"><span>Your squad</span><span id="wLot"></span></div>
+      <div class="pad">
+        <div class="slots" id="wSquad"></div>
+        <p class="note" id="wIntro" style="margin:0">Sixteen players, one auction each, and every manager is bidding. You each have your unspent auction money plus £1m, and you can sign one player. At the end you release one from your squad. Fees are not refunded. Ratings stay hidden.</p>
+      </div>
+    </div>
   </section>
 
   <section class="screen" id="match" hidden>
@@ -295,6 +387,19 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
           <p class="note" id="gDone"></p><button class="btn" id="globalBtn2" type="button">Global table</button></div>
         <button class="btn go" id="nextBtn" type="button">Next match</button>
         <button class="btn" id="titleBtn" type="button">Back to the title screen</button>
+      </div>
+    </div>
+  </section>
+  <section class="screen" id="transfers" hidden>
+    <div class="win">
+      <div class="bar"><span>Window summary</span><span id="tsTag"></span></div>
+      <div class="pad">
+        <p class="note" id="tsHead" style="margin:0"></p>
+        <div class="ts" id="tsList"></div>
+        <p class="note" id="tsUnsold" style="margin:0"></p>
+        <div class="lbl" id="tsSquadLbl">Your squad</div>
+        <div class="slots" id="tsSquad"></div>
+        <button class="btn go" id="wGo" type="button">Play on</button>
       </div>
     </div>
   </section>
@@ -495,21 +600,68 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     }, total);
   }
 
-  // ---------- team sheets
-  function sheetHTML(team, kit, title) {
-    const lines = [{ p: team.gk, line: 'GK' }, ...team.slots.slice().sort((a, b) => ['DEF', 'MID', 'FWD'].indexOf(a.line) - ['DEF', 'MID', 'FWD'].indexOf(b.line))];
-    const rows = lines.map(s => `<div class="ln">${shirt(kit, initials(s.p.n), 30)}<div class="who"><b>${esc(s.p.n)}</b><span>${s.line}${s.p.pos !== s.line && s.line !== 'GK' ? ' (natural ' + s.p.pos + ')' : ''}${s.p.club ? ' · ' + esc(s.p.club) + ' ' + esc(s.p.season) : ''}</span></div></div>`).join('');
-    return `<div class="banner" style="background:${kitBg(kit)}"><span class="plate">${esc(title)}</span></div>
-      <div class="pad"><div class="lbl">Shape ${team.shape}</div><div class="sheet">${rows}</div></div>`;
+  // ---------- scouting and tactics
+  const ORDER = ['DEF', 'MID', 'FWD'];
+  const oop = (p, line) => line !== 'GK' && p.pos !== line && p.sec !== line; // a secondary position is fine (small 5% cost in the engine)
+  const posLabel = p => p.sec ? `${p.pos}/${p.sec}` : p.pos;
+  function sheetRows(team, kit) {
+    const lines = [{ p: team.gk, line: 'GK' }, ...team.slots.slice().sort((a, b) => ORDER.indexOf(a.line) - ORDER.indexOf(b.line))];
+    return lines.map(s => `<div class="ln">${shirt(kit, initials(s.p.n), 30)}<div class="who"><b>${esc(s.p.n)}</b><span>${s.line}${oop(s.p, s.line) ? ' (natural ' + s.p.pos + ')' : s.p.sec && s.line !== 'GK' ? ' (' + posLabel(s.p) + ')' : ''}${s.p.club ? ' · ' + esc(s.p.club) + ' ' + esc(s.p.season) : ''}</span></div></div>`).join('');
   }
+  function scoutHTML(m, tA) {
+    const sc = AD.scout(m.name, G.A.squad);
+    return `<div class="banner" style="background:${kitBg(m.kit)}"><span class="plate">Scouting report: ${esc(m.name)}</span></div>
+      <div class="pad"><div class="chips"><span class="chip">Formation ${sc.shape}</span><span class="chip alt">Approach: ${esc(sc.lean)}</span></div>
+      <p class="mgr-teaser" style="margin:0">${esc(sc.style)}</p>
+      <div class="lbl">His XI</div><div class="sheet">${sheetRows(tA, m.kit)}</div></div>`;
+  }
+  let tac = null, tacPrev = null, tacMode = '', tacSel = null;
+  const tacOf = t => ({ shape: t.shape, order: t.order.slice() });
   function teamsScreen() {
     if (C && C.phase === 'draft') captureDraft(); else if (!C) track('five-a-sold','auction_done',G.A.mgr.name);
-    const tH = AD.makeTeam(G.H, true, null), tA = AD.makeTeam(G.A, false, G.A.mgr);
-    $('#sheetH').innerHTML = sheetHTML(tH, HUMAN_KIT, G.H.name);
-    $('#sheetA').innerHTML = sheetHTML(tA, G.A.mgr.kit, G.A.name);
+    const sq = G.H.squad, tA = AD.makeTeam(G.A, false, G.A.mgr);
+    $('#sheetA').innerHTML = scoutHTML(G.A.mgr, tA);
+    const saved = C && C.tactic && AD.buildLineup(sq, C.tactic.shape, C.tactic.order);
+    tacPrev = saved ? tacOf(saved) : null;
+    if (tacPrev) { tac = tacOf(tacPrev); tacMode = 'unchanged'; }
+    else { const sh = AD.bestShape(sq); tac = tacOf(AD.autoLineup(sq, sh)); tacMode = sh; }
+    tacSel = null;
+    renderTac();
     show('teams');
   }
-  $('#kickBtn').addEventListener('click', playMatch);
+  function renderTac() {
+    const sq = G.H.squad, lu = AD.buildLineup(sq, tac.shape, tac.order);
+    $('#tacShape').textContent = `Shape ${tac.shape}`;
+    const modes = (tacPrev ? [['unchanged', 'Unchanged']] : []).concat(AD.SHAPES.map(sh => [sh, sh]));
+    $('#shapeRow').innerHTML = modes.map(([k, label]) => {
+      const on = tacMode === k || (tacMode === 'custom' && k === tac.shape);
+      return `<button class="btn" type="button" data-m="${k}" aria-pressed="${on}">${label}</button>`;
+    }).join('');
+    $('#tacNote').textContent = tacMode === 'unchanged' ? `Same formation (${tacPrev.shape}) and positions as last game.`
+      : tacMode === 'custom' ? 'Your own positions.'
+      : 'Positions picked by the game for this formation.';
+    const row = (p, line, i) => `<button type="button" class="tacrow l-${line}${tacSel === i ? ' sel' : ''}" data-i="${i}" aria-label="${esc(p.n)}, playing ${line}">${shirt(HUMAN_KIT, initials(p.n), 30)}<span class="who"><b>${esc(p.n)}</b><span>${oop(p, line) ? 'Natural ' + posLabel(p) + ' · ' : p.sec ? posLabel(p) + ' · ' : ''}${p.club ? esc(p.club) + ' ' + esc(p.season) : ''}</span></span><span class="tag${oop(p, line) ? ' oop' : ''}">${line}${oop(p, line) ? ' *' : ''}</span></button>`;
+    $('#tacSheet').innerHTML = `<div class="tacrow fixed l-GK">${shirt(HUMAN_KIT, initials(lu.gk.n), 30)}<span class="who"><b>${esc(lu.gk.n)}</b><span>${lu.gk.club ? esc(lu.gk.club) + ' ' + esc(lu.gk.season) : ''}</span></span><span class="tag">GK</span></div>` +
+      lu.slots.map((x, i) => row(x.p, x.line, i)).join('');
+    $('#tacHelp').textContent = tacSel == null ? 'Tap one player, then another, to swap their positions. * means out of position, which costs you.' : 'Now tap the player to swap with.';
+  }
+  $('#shapeRow').addEventListener('click', e => {
+    const b = e.target.closest('button[data-m]'); if (!b) return;
+    const k = b.dataset.m;
+    if (k === 'unchanged') { tac = tacOf(tacPrev); tacMode = 'unchanged'; }
+    else { tac = tacOf(AD.autoLineup(G.H.squad, k)); tacMode = k; }
+    tacSel = null; renderTac();
+  });
+  $('#tacSheet').addEventListener('click', e => {
+    const b = e.target.closest('button[data-i]'); if (!b) return;
+    const i = +b.dataset.i;
+    if (tacSel == null) tacSel = i;
+    else if (tacSel === i) tacSel = null;
+    else { [tac.order[tacSel], tac.order[i]] = [tac.order[i], tac.order[tacSel]]; tacSel = null; tacMode = 'custom'; }
+    renderTac();
+    const f = $(`#tacSheet [data-i="${i}"]`); if (f) f.focus({ preventScroll: true }); // keep keyboard focus after the redraw
+  });
+  $('#kickBtn').addEventListener('click', () => { G.H.tactic = tacOf(tac); playMatch(); });
 
   // ---------- match
   const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -602,7 +754,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     const all = res.ratings.flat(), best = all.reduce((a, b) => b.rating > a.rating ? b : a);
     const rows = list => list.map(x => {
       const spent = G.log.find(e => e.card === x.p);
-      return `<tr><td>${esc(x.p.n)}${x === best ? ' <span class="motm">MOTM</span>' : ''}</td><td>${x.line}${x.p.pos !== x.line && x.line !== 'GK' ? '*' : ''}</td><td class="n">${x.p.ovr}</td><td class="n">${x.stats.g || ''}</td><td class="n">${x.stats.a || ''}</td><td class="n mr">${x.rating.toFixed(1)}</td><td class="n">${spent ? fmt(spent.price) : '£0m'}</td></tr>`;
+      return `<tr><td>${esc(x.p.n)}${x === best ? ' <span class="motm">MOTM</span>' : ''}</td><td>${x.line}${oop(x.p, x.line) ? '*' : ''}</td><td class="n">${x.p.ovr}</td><td class="n">${x.stats.g || ''}</td><td class="n">${x.stats.a || ''}</td><td class="n mr">${x.rating.toFixed(1)}</td><td class="n">${spent ? fmt(spent.price) : '£0m'}</td></tr>`;
     }).join('');
     $('#ratings').innerHTML = `<thead><tr><th>Player</th><th>Slot</th><th class="n">OVR</th><th class="n">G</th><th class="n">A</th><th class="n">Rating</th><th class="n">Paid</th></tr></thead>
       <tbody><tr><th colspan="7">${esc(H.name)}</th></tr>${rows(res.ratings[0])}<tr><th colspan="7">${esc(A.name)}</th></tr>${rows(res.ratings[1])}</tbody>`;
@@ -636,7 +788,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   function refreshContinue() {
     const s = store.get();
     const b = $('#contBtn');
-    if (s && s.phase !== 'done') { b.hidden = false; b.textContent = `Continue campaign · ${s.name} · Round ${s.round + 1} of 15`; }
+    if (s && s.phase !== 'done') { b.hidden = false; b.textContent = `Continue campaign · ${s.name} · ` + (s.phase === 'season' && s.round === 7 && !s.noWindow && !(s.win && s.win.done) ? 'Transfer window' : `Round ${s.round + 1} of 15`); }
     else b.hidden = true;
   }
   refreshContinue();
@@ -661,8 +813,11 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   // everything about the season, kept server-side for analysis
   function campaignLog(t) {
     return {
-      v: 1,
+      v: 2,
+      tw: !C.noWindow,
       order: C.order.map(i => AD.managers[i].name),
+      shapes: C.shapes || [],
+      window: C.win && C.win.done ? { pool: C.win.pool.map(id => AD.players[id].n), res: C.win.res.map(([n, id, k, pr]) => [n, AD.players[id].n, k == null ? null : mgrName(k), pr]), sum: C.win.sum.map(([k, sg, fee, rel]) => [mgrName(k), sg, fee, rel]), squads0: keys().map(k => [mgrName(k), fromSave(C.win.sq0[k]).map(e => [e.p.fa ? 'Free agent' : e.p.n, e.p.pos, e.p.ovr, e.price])]) } : null,
       results: C.results.map(f => [f.r + 1, mgrName(f.a), mgrName(f.b), f.ga_, f.gb_]),
       table: t.map((x, i) => [i + 1, mgrName(x.key), x.p, x.w, x.d, x.l, x.gf, x.ga, x.pts]),
       boot: Object.entries(C.goals).sort((a, b) => b[1] - a[1]).slice(0, 15).map(([k, g]) => { const j = k.indexOf('|'); return [k.slice(j + 1), mgrName(k.slice(0, j) === 'U' ? 'U' : +k.slice(0, j)), g]; }),
@@ -705,6 +860,8 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   let confirmNew = false;
   const NAME = 'fiveasold.name';
   try { const n = localStorage.getItem(NAME); if (n) $('#teamName').value = n; } catch (_) {}
+  try { if (localStorage.getItem('fiveasold.tw') === '0') $('#twOn').checked = false; } catch (_) {}
+  $('#twOn').addEventListener('change', () => { try { localStorage.setItem('fiveasold.tw', $('#twOn').checked ? '1' : '0'); } catch (_) {} });
   $('#teamName').addEventListener('input', () => { $('#teamName').classList.remove('bad'); $('#nameErr').hidden = true; });
   $('#campBtn').addEventListener('click', () => {
     const nm = ($('#teamName').value || '').replace(/\s+/g, ' ').trim();
@@ -724,13 +881,229 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     beginRound();
   });
 
+  // ---------- transfer window (after round 7): 16 players, one auction each, every manager bids
+  let W = null, lot = null, wTimer = null, wAuto = false;
+  const sqOf = k => fromSave(C.squads[k]).map(e => e.p);
+  const paidOf = k => C.squads[k].reduce((t, e) => t + e.price, 0);
+  const windowDue = () => !!C && !C.noWindow && C.phase === 'season' && C.round === 7 && !(C.win && C.win.done);
+  const wName = k => k === 'U' ? 'You' : AD.managers[k].name;
+  function openWindow() {
+    if (!C.win) {
+      const used = []; Object.values(C.squads).forEach(l => fromSave(l).forEach(e => { if (!e.p.fa) used.push(e.p.id); }));
+      const sd = Math.floor(Math.random() * 1e9), bud = {};
+      keys().forEach(k => { bud[k] = Math.max(0, AD.BUDGET - paidOf(k)) + 1; });
+      C.win = { sd, pool: AD.winPool(used, sd), i: 0, bud, signed: {}, res: [], stage: 'lots', sq0: JSON.parse(JSON.stringify(C.squads)) };
+      store.set(C);
+      track('five-a-sold', 'window', 'open');
+    }
+    W = C.win; lot = null; wAuto = false; clearTimeout(wTimer);
+    $('#wLog').innerHTML = '';
+    W.res.forEach(([n, id, k, pr]) => winLog(k == null ? `Lot ${n}: ${AD.players[id].n} unsold` : `Lot ${n}: ${AD.players[id].n} to ${wName(k)} for ${fmt(pr)}`));
+    show('window');
+    if (W.stage === 'release') return winRelease();
+    if (W.stage === 'done') return winSummary();
+    winNext();
+  }
+  function winLog(t) { const d = document.createElement('div'); d.textContent = t; const L = $('#wLog'); L.appendChild(d); L.scrollTop = L.scrollHeight; }
+  function winRender() {
+    $('#wBud').textContent = fmt(W.bud.U);
+    const sg = W.done ? null : W.signed.U, mine = C.squads.U;
+    $('#wIntro').hidden = !!W.done; $('#wLeave').hidden = !!W.done;
+    const sorted = fromSave(mine).map((e, i) => ({ e, i })).sort((a, b) => ['GK', 'DEF', 'MID', 'FWD'].indexOf(a.e.p.pos) - ['GK', 'DEF', 'MID', 'FWD'].indexOf(b.e.p.pos));
+    $('#wSquad').innerHTML = sorted.map(({ e }) => `<div class="slot"><span class="pos">${e.p.pos}</span><span class="nm">${esc(e.p.n)}</span><span>${fmt(e.price)}</span></div>`).join('') +
+      (sg ? `<div class="slot"><span class="pos">${AD.players[sg.id].pos}</span><span class="nm">${esc(AD.players[sg.id].n)} (new)</span><span>${fmt(sg.price)}</span></div>` : '');
+    const total = W.pool.length, done = W.i >= total;
+    $('#wLot').textContent = done ? 'Window closing' : `Lot ${W.i + 1} of ${total}`;
+    $('#wLeft').textContent = `${total - W.i} to go`;
+    $('#wQueue').innerHTML = W.pool.map((id, i) => {
+      const p = AD.players[id], r = W.res.find(x => x[0] === i + 1);
+      if (r) return `<div class="done${r[2] === 'U' ? ' you' : ''}"><span>${i + 1}</span><span>${p.pos}</span><b>${esc(p.n)}</b><span>${r[2] == null ? 'unsold' : esc(wName(r[2])) + ' ' + fmt(r[3])}</span></div>`;
+      return `<div class="${i === W.i ? 'cur' : ''}"><span>${i + 1}</span><span>${p.pos}</span><b>${esc(p.n)}</b><span>${esc(p.club)} ${esc(p.season)}</span></div>`;
+    }).join('');
+    const q = $('#wQueue'), cur = q.querySelector('.cur');
+    if (cur) q.scrollTop = Math.max(0, cur.offsetTop - cur.offsetHeight - 4); // one finished lot stays visible above the current one
+    else if (W.i >= W.pool.length) q.scrollTop = q.scrollHeight;
+    $('#wMgrs').innerHTML = C.order.map(k => `<div class="${W.signed[k] ? 'got' : ''}"><span>${esc(AD.managers[k].name)}</span><span>${W.signed[k] ? 'signed' : fmt(W.bud[k])}</span></div>`).join('');
+    if (lot && W.stage === 'lots') {
+      const c = lot.p;
+      const bid = lot.sold ? lot.sold : lot.by == null ? 'No bids yet' : `${fmt(lot.price)} · ${lot.by === 'U' ? 'your bid' : AD.managers[lot.by].name}`;
+      $('#wCard').innerHTML = `<div class="pos">LOT ${Math.min(W.i + (lot.sold ? 0 : 1), total)} OF ${total} · ${c.pos}${c.sec ? ' / ' + c.sec : ''}</div><div class="nm">${esc(c.n)}</div><div class="meta">${esc(c.club)} · ${esc(c.season)}</div><div class="bid">${esc(bid)}</div>`;
+    }
+  }
+  function wbtn(label, sub, fn, opts) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (opts && opts.go ? ' go' : '');
+    b.innerHTML = esc(label) + (sub ? `<small>${esc(sub)}</small>` : '');
+    b.addEventListener('click', fn); $('#wControls').appendChild(b); return b;
+  }
+  function winNext() {
+    clearTimeout(wTimer);
+    if (W.i >= W.pool.length) return winLotsDone();
+    const p = AD.players[W.pool[W.i]];
+    const items = C.order.filter(k => !W.signed[k]).map(k => ({ key: k, mi: k, sq: sqOf(k), budget: W.bud[k] }));
+    const wants = AD.winWants(items, p, W.sd, W.i + 1);
+    const userIn = !W.signed.U && W.bud.U >= 1 && !wAuto;
+    lot = Object.assign({ p, wants, userIn }, AD.winOpen(wants));
+    $('#wAct').hidden = false; $('#wCard').hidden = false; $('#wTop').hidden = false; $('#wPool').hidden = false; $('#wResults').hidden = true; $('#wActBar').hidden = true; $('#wBudRow').hidden = false; $('#wControls').classList.remove('col');
+    winRender();
+    if (!userIn) {
+      $('#wStatus').textContent = W.signed.U ? 'You have signed your player. The rest of the window plays out.' : 'You are skipping the rest of the window.';
+      if (!$('#wSkip')) { $('#wControls').innerHTML = ''; skipWinBtn(true); }
+      wTimer = setTimeout(() => { const r = AD.winSettle(wants, null); winSell(r ? r.key : null, r ? r.price : 0); }, 450);
+      return;
+    }
+    winControls();
+  }
+  let skipArmed = false;
+  function skipWinBtn(solo) {
+    skipArmed = false;
+    const sk = wbtn('Skip window', '', () => {
+      // skipping before you have signed anyone gives up the window, so ask once more
+      if (!W.signed.U && !skipArmed) { skipArmed = true; sk.textContent = 'Tap again to skip'; return; }
+      wAuto = true; winFast();
+    });
+    sk.id = 'wSkip'; if (solo) sk.classList.add('solo', 'go');
+    return sk;
+  }
+  function winControls() {
+    const bud = W.bud.U, next = lot.price + 1;
+    $('#wControls').innerHTML = '';
+    $('#wStatus').textContent = lot.by == null ? 'Nobody has bid yet. Open the bidding or pass.' : `${wName(lot.by)} bids ${fmt(lot.price)}. Raise or pass.`;
+    const bb = wbtn(`Bid ${fmt(next)}`, '', () => winBid(next), { go: true }); bb.disabled = next > bud;
+    wbtn('Pass', '', winPass).title = 'Let this bid go. You can come back in after the others have bid';
+    wbtn('Skip player', '', winSkipPlayer).title = 'Drop out and go straight to the next player';
+    skipWinBtn(false);
+    winRender();
+  }
+  function winBid(x) {
+    winLog(`You bid ${fmt(x)}`);
+    const r = AD.winCounter(lot.wants, x);
+    lot.price = r.price; lot.by = r.by;
+    if (r.by === 'U') return winSell('U', x);
+    winLog(`${wName(r.by)} bids ${fmt(r.price)}`);
+    winControls();
+  }
+  // pass: you let this bid go. The AI managers bid among themselves, then you can come back in at the new price.
+  function winPass() {
+    winLog('You pass');
+    const r = AD.winSettle(lot.wants, lot);
+    if (!r) return winSell(null, 0, true);
+    if (r.price <= lot.price) return winSell(r.key, lot.price, true); // nobody else wants to go higher: sold
+    const top = lot.wants[0], second = lot.wants[1];
+    // alternate back from the winning bid so nobody outbids himself
+    let steps = [];
+    for (let q = r.price; q > lot.price; q--) steps.unshift([q, !second || (r.price - q) % 2 === 0 ? top.key : second.key]);
+    if (steps.length > 1 && steps[0][1] === lot.by) steps.shift();
+    steps = steps.slice(-6);
+    $('#wControls').innerHTML = '';
+    $('#wStatus').textContent = 'You let that bid go. The others are bidding...';
+    const go = () => {
+      if (!steps.length) { lot.price = r.price; lot.by = r.key; return winControls(); }
+      const [q, by] = steps.shift(); lot.price = q; lot.by = by; winLog(`${wName(by)} bids ${fmt(q)}`); winRender();
+      wTimer = setTimeout(go, 550);
+    };
+    go();
+  }
+  // skip player: you are out of this lot and it is settled straight away
+  function winSkipPlayer() {
+    winLog('You skip this player');
+    const r = AD.winSettle(lot.wants, lot);
+    lot.userIn = false;
+    winSell(r ? r.key : null, r ? r.price : 0, true);
+  }
+  function winSell(key, price, quick) {
+    clearTimeout(wTimer);
+    const p = lot.p;
+    if (key != null) { W.signed[key] = { id: p.id, price }; W.bud[key] -= price; }
+    W.res.push([W.i + 1, p.id, key, price]);
+    lot.sold = key == null ? 'UNSOLD' : `SOLD · ${wName(key)} ${fmt(price)}`;
+    winLog(key == null ? `Lot ${W.i + 1}: ${p.n} unsold` : `Lot ${W.i + 1}: ${p.n} to ${wName(key)} for ${fmt(price)}`);
+    W.i++; store.set(C);
+    const wasUser = lot.userIn || quick;
+    if (wasUser) { $('#wControls').innerHTML = ''; $('#wStatus').textContent = key == null ? `${p.n} goes unsold.` : `${wName(key)} ${key === 'U' ? 'sign' : 'signs'} ${p.n} for ${fmt(price)}.`; }
+    lot.userIn = false;
+    winRender();
+    wTimer = setTimeout(winNext, quick ? 900 : wasUser ? 1500 : 450);
+  }
+  function winFast() {
+    clearTimeout(wTimer);
+    while (W.i < W.pool.length) {
+      const p = AD.players[W.pool[W.i]];
+      const items = C.order.filter(k => !W.signed[k]).map(k => ({ key: k, mi: k, sq: sqOf(k), budget: W.bud[k] }));
+      const r = AD.winSettle(AD.winWants(items, p, W.sd, W.i + 1), null);
+      if (r) { W.signed[r.key] = { id: p.id, price: r.price }; W.bud[r.key] -= r.price; }
+      W.res.push([W.i + 1, p.id, r ? r.key : null, r ? r.price : 0]);
+      winLog(r ? `Lot ${W.i + 1}: ${p.n} to ${wName(r.key)} for ${fmt(r.price)}` : `Lot ${W.i + 1}: ${p.n} unsold`);
+      W.i++;
+    }
+    store.set(C); winRender(); winLotsDone();
+  }
+  function winLotsDone() {
+    if (W.signed.U) { W.stage = 'release'; store.set(C); winRelease(); }
+    else winFinish(null);
+  }
+  function winRelease() {
+    W.stage = 'release'; lot = null;
+    const sg = W.signed.U, nw = AD.players[sg.id], six = sqOf('U').concat([nw]), legal = AD.winLegalDrops(six);
+    $('#wTop').hidden = true; $('#wCard').hidden = true; $('#wPool').hidden = true; $('#wAct').hidden = false; $('#wActBar').hidden = false; $('#wBudRow').hidden = true;
+    $('#wStatus').textContent = `You signed ${nw.n} for ${fmt(sg.price)}. Release one player to make room.` + (legal.length < 6 ? ' You must keep one goalkeeper.' : '') + ' Fees are not refunded.';
+    $('#wControls').innerHTML = ''; $('#wControls').classList.add('col');
+    six.forEach((p, i) => {
+      const b = wbtn(`${p.n} · ${p.pos}${i === 5 ? ' (new)' : ''}`, '', () => winFinish(i));
+      b.disabled = !legal.includes(i); b.setAttribute('aria-label', `Release ${p.n}`);
+    });
+    // what happened in the auction: manager, player, fee
+    const rows = W.res.map(([n, id, k, pr]) => k == null
+      ? `<tr><td class="muted">Unsold</td><td class="muted">${esc(AD.players[id].n)}</td><td class="muted">-</td></tr>`
+      : `<tr class="${k === 'U' ? 'you' : ''}"><td>${esc(mgrName(k))}</td><td>${esc(AD.players[id].n)}</td><td>${fmt(pr)}</td></tr>`).join('');
+    $('#wResTag').textContent = `${W.res.filter(r => r[2] != null).length} of ${W.pool.length} sold`;
+    $('#wResTable').innerHTML = `<thead><tr><th>Manager</th><th>Player</th><th>Fee</th></tr></thead><tbody>${rows}</tbody>`;
+    $('#wResults').hidden = false;
+    window.scrollTo(0, 0);
+  }
+  function winFinish(userDrop) {
+    $('#wControls').classList.remove('col');
+    const sum = [];
+    keys().forEach(k => {
+      const sg = W.signed[k];
+      if (!sg) { sum.push([k, null, 0, null, null, null]); return; }
+      const six = C.squads[k].concat([{ n: AD.players[sg.id].n, price: sg.price }]);
+      let d = k === 'U' ? userDrop : (AD.winKeep(fromSave(six).map(e => e.p)) || { drop: 5 }).drop;
+      const out = fromSave(six)[d].p;
+      sum.push([k, AD.players[sg.id].n, sg.price, out.n, AD.players[sg.id].pos, out.pos]);
+      C.squads[k] = six.filter((_, j) => j !== d);
+    });
+    W.sum = sum; W.stage = 'done'; W.done = true; if (W.signed.U) C.tactic = null; // new player, so the saved positions no longer fit
+    store.set(C);
+    track('five-a-sold', 'window', W.signed.U ? 'signed' : 'sat out');
+    winSummary();
+  }
+  function winSummary() {
+    lot = null; clearTimeout(wTimer);
+    const posOf = (n, p) => p || (byName.get(n) || {}).pos || '';
+    const sold = W.res.filter(r => r[2] != null), top = sold.slice().sort((a, b) => b[3] - a[3])[0];
+    $('#tsTag').textContent = `${sold.length} of ${W.pool.length} sold`;
+    $('#tsHead').textContent = top ? `Record fee: ${AD.players[top[1]].n} to ${wName(top[2]) === 'You' ? C.name : wName(top[2])} for ${fmt(top[3])}.` : '';
+    const rows = W.sum.slice().sort((a, b) => (b[0] === 'U') - (a[0] === 'U') || (!!b[1]) - (!!a[1]) || b[2] - a[2]);
+    $('#tsList').innerHTML = rows.map(([k, sg, fee, rel, ip, op]) => `<div class="${k === 'U' ? 'you' : ''}"><b>${esc(mgrName(k))}</b>` +
+      (sg ? `<span class="in"><b>In:</b> ${esc(sg)} · ${posOf(sg, ip)} · ${fmt(fee)}</span><span class="out"><b>Out:</b> ${esc(rel)} · ${posOf(rel, op)}</span>` : '<span class="none">No signing</span>') + '</div>').join('');
+    const uns = W.res.filter(r => r[2] == null).map(r => AD.players[r[1]].n);
+    $('#tsUnsold').textContent = uns.length ? `Unsold: ${uns.join(', ')}.` : '';
+    $('#tsSquadLbl').textContent = `Your squad for round ${C.round + 1}`;
+    $('#tsSquad').innerHTML = fromSave(C.squads.U).sort((a, b) => ['GK', 'DEF', 'MID', 'FWD'].indexOf(a.p.pos) - ['GK', 'DEF', 'MID', 'FWD'].indexOf(b.p.pos))
+      .map(e => `<div class="slot"><span class="pos">${e.p.pos}</span><span class="nm">${esc(e.p.n)}</span><span>${fmt(e.price)}</span></div>`).join('');
+    $('#wGo').textContent = `Play round ${C.round + 1}: v ${AD.managers[C.order[C.round]].name}`;
+    show('transfers');
+  }
+  $('#wGo').addEventListener('click', () => { W = null; beginRound(); });
+  $('#wLeave').addEventListener('click', () => { clearTimeout(wTimer); playToken++; refreshContinue(); show('title'); });
+
   function newCampaign() {
     const name = ($('#teamName').value || '').replace(/\s+/g, ' ').trim();
     const order = [...Array(15).keys()];
     for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
     // eight decks dealt from one pool, so a player can only ever be at one club; your deck is one of the eight at random
     const decks = AD.buildDecks(8), mine = Math.floor(Math.random() * 8);
-    C = { v: 1, name, order, round: 0, phase: 'draft', squads: {}, results: [], goals: {}, deck: decks.splice(mine, 1)[0], cid: rid() };
+    C = { v: 1, name, order, round: 0, phase: 'draft', squads: {}, results: [], goals: {}, deck: decks.splice(mine, 1)[0], cid: rid(), noWindow: !$('#twOn').checked };
     // the other 14 managers draft against each other in pairs, out of sight
     const rest = order.slice(1);
     for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
@@ -743,6 +1116,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
     beginRound();
   }
   function beginRound() {
+    if (windowDue()) return openWindow();
     const opp = C.order[C.round];
     if (C.phase === 'draft') {
       if (!C.deck) { // older save: deal around the players the other clubs already have
@@ -774,6 +1148,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
   function recordRound(res) {
     // saved at kick-off, so leaving mid-match can't replay a result
     const r = C.round, fixtures = AD.campaignSchedule(C.order)[r];
+    if (G.H.tactic) { C.tactic = G.H.tactic; (C.shapes = C.shapes || [])[r] = G.H.tactic.shape; }
     C.results.push({ a: 'U', b: C.order[r], ga_: res.score[0], gb_: res.score[1], r });
     addGoals(res, 'U', C.order[r]);
     fixtures.forEach(([a, b]) => {
@@ -813,8 +1188,36 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
       $('#gDone').textContent = ON ? 'Your season has gone into the global table.' : 'Play on dangent.uk to get your season into the global table.';
       $('#nextBtn').textContent = 'Finish and start again';
     } else {
-      $('#nextBtn').textContent = `Next match: v ${AD.managers[C.order[C.round]].name}`;
+      $('#nextBtn').textContent = windowDue() ? 'Open the transfer window' : `Next match: v ${AD.managers[C.order[C.round]].name}`;
     }
+  }
+  // ---------- test builds only: jump straight to the transfer window with a simulated first half of the season
+  if (window.FAS_TEST === 'window') {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn go'; b.id = 'testWinBtn';
+    b.textContent = 'Test: jump to the transfer window';
+    $('#campBtn').closest('.row').after(b);
+    b.addEventListener('click', () => {
+      const name = (($('#teamName').value || '').replace(/\s+/g, ' ').trim()) || 'Test XI';
+      const order = [...Array(15).keys()];
+      for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+      const decks = AD.buildDecks(8);
+      C = { v: 1, name, order, round: 0, phase: 'season', squads: {}, results: [], goals: {}, cid: rid(), test: true };
+      // your squad is drafted by a middle-of-the-road AI bidder against your round 1 opponent, the rest pair off as normal
+      const proxy = AD.managers.findIndex(m => m.name === (AD.managers[order[0]].name === 'Ancelotti' ? 'Moyes' : 'Ancelotti'));
+      const [u, a0] = AD.draftAI(proxy, order[0], decks[0]);
+      C.squads.U = toSave(u); C.squads[order[0]] = toSave(a0);
+      const rest = order.slice(1);
+      for (let i = 0; i < rest.length; i += 2) { const [a, c] = AD.draftAI(rest[i], rest[i + 1], decks[1 + i / 2]); C.squads[rest[i]] = toSave(a); C.squads[rest[i + 1]] = toSave(c); }
+      const team = (k, home) => k === 'U' ? AD.makeTeam({ name: C.name, squad: fromSave(C.squads.U).map(e => e.p) }, home, null)
+        : AD.makeTeam({ name: AD.managers[k].name, squad: fromSave(C.squads[k]).map(e => e.p) }, home, AD.managers[k]);
+      const sched = AD.campaignSchedule(C.order);
+      for (let r = 0; r < 7; r++) sched[r].forEach(([a, c]) => {
+        const res = AD.simulate(team(a, true), team(c, false), { league: true });
+        C.results.push({ a, b: c, ga_: res.score[0], gb_: res.score[1], r }); addGoals(res, a, c);
+      });
+      C.round = 7; store.set(C);
+      openWindow();
+    });
   }
 })();
 </script>
