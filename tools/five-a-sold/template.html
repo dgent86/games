@@ -409,6 +409,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
       <div class="pad">
         <p class="note" id="gNote"></p>
         <div style="overflow-x:auto"><table class="lt gt" id="gTable"></table></div>
+        <p class="note" id="gTotal" style="margin:0"></p>
         <button class="btn" id="gBack" type="button">Back</button>
       </div>
     </div>
@@ -837,14 +838,15 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
     const cur = document.querySelector('.screen:not([hidden])'); gBack = cur && cur.id !== 'global' ? cur.id : 'title';
     show('global');
     const tb = $('#gTable'), note = $('#gNote');
-    tb.innerHTML = ''; $('#gCount').textContent = '';
+    tb.innerHTML = ''; $('#gCount').textContent = ''; $('#gTotal').textContent = '';
     if (!ON) { note.textContent = 'The global table lives at dangent.uk/five-a-sold. Finish a campaign there and your season goes in automatically.'; return; }
     note.textContent = 'Loading...';
     submitSeason().then(() => post('/api/seasons', { p_id: ls.get(MINE) })).then(rows => {
       if (!rows.length) { note.textContent = 'No completed seasons yet. Finish a campaign to be the first.'; return; }
       const me = ls.get(MINE), n = rows[0].total;
-      $('#gCount').textContent = `${n} season${n === 1 ? '' : 's'}`;
-      note.textContent = 'Every completed campaign, ranked on points, then goal difference, then goals scored. Every season is 15 games. Fin is where the side finished in its own campaign.';
+      $('#gCount').textContent = 'Best 3 per team';
+      $('#gTotal').textContent = `${n.toLocaleString('en-GB')} season${n === 1 ? '' : 's'} played in total.`;
+      note.textContent = 'Completed campaigns ranked on points, then goal difference, then goals scored. Each team name shows its best 3 seasons. Every season is 15 games. Fin is where the side finished in its own campaign.';
       let last = 0;
       tb.innerHTML = '<thead><tr><th>Pos</th><th>Team</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th>Fin</th><th>Top scorer</th></tr></thead><tbody>' +
         rows.map(x => {

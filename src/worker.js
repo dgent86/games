@@ -72,11 +72,15 @@ const BOARD = `
   ORDER BY r.rank`;
 
 // Same rules as the campaign table: points, then goal difference, then goals scored; earlier seasons first after that.
+// Each team name (exact match) shows at most its best 3 seasons. Every season stays in the table; total counts them all.
 const SEASONS = `
-  WITH r AS (
-    SELECT row_number() OVER (ORDER BY pts DESC, gd DESC, gf DESC NULLS LAST, created_at, id) AS rank,
-           id, name, w, d, l, gd, pts, pos, scorer, goals, count(*) OVER () AS total
+  WITH b AS (
+    SELECT *, row_number() OVER (PARTITION BY name ORDER BY pts DESC, gd DESC, gf DESC NULLS LAST, created_at, id) AS nth
     FROM seasons),
+  r AS (
+    SELECT row_number() OVER (ORDER BY pts DESC, gd DESC, gf DESC NULLS LAST, created_at, id) AS rank,
+           id, name, w, d, l, gd, pts, pos, scorer, goals, count(*) OVER () AS shown, (SELECT count(*) FROM seasons) AS total
+    FROM b WHERE nth <= 3),
   me AS (SELECT (SELECT rank FROM r WHERE id = ?1) AS rk)
   SELECT r.* FROM r, me
   WHERE r.rank <= 50 OR (me.rk IS NOT NULL AND r.rank BETWEEN me.rk - 2 AND me.rk + 2)
