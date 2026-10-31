@@ -163,12 +163,17 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { background: var(--navy); color: var(--on-navy); font-size: 11px; font-weight: bold; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; }
 .chip.alt { background: var(--well); color: var(--ink); border: 1px solid var(--panel-lo); }
-.tacrow { box-sizing: border-box; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; text-align: left; background: var(--well); border: 2px solid transparent; padding: 4px 6px; font: inherit; color: inherit; cursor: pointer; min-height: 44px; }
+.tacrow { box-sizing: border-box; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; width: 100%; text-align: left; background: var(--well); border: 2px solid transparent; padding: 4px 6px; font: inherit; color: inherit; cursor: pointer; min-height: 44px; }
 .tacrow.fixed { cursor: default; }
 .tacrow.l-GK { background: #f3eed5; }
 .tacrow.l-DEF { background: #dde6f4; }
 .tacrow.l-MID { background: #dcefd9; }
 .tacrow.l-FWD { background: #f5dfda; }
+.tacrow .rv { font-weight: bold; font-size: 16px; font-variant-numeric: tabular-nums; min-width: 24px; text-align: right; }
+.tacrow.l-GK .rv { color: #6e5a0e; }
+.tacrow.l-DEF .rv { color: #24467f; }
+.tacrow.l-MID .rv { color: #2a6125; }
+.tacrow.l-FWD .rv { color: #8e2c1f; }
 #shapeRow .btn { font-size: 11px; white-space: nowrap; padding-inline: 3px; min-width: 0; letter-spacing: -.01em; }
 #shapeRow .btn[data-m=unchanged] { flex-grow: 1.35; }
 .tacrow.sel { border-color: var(--navy); background: #ffffff; }
@@ -222,7 +227,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
           <li>Players come up one at a time, blind. You and a rival manager bid in £1m steps.</li>
           <li>Build a five: one keeper and four outfield. Out-of-position players suffer.</li>
           <li>You can't bid money you'll need: keep £1m back for every empty slot.</li>
-          <li>Then it's kick-off. No ratings until the final whistle.</li>
+          <li>No ratings during the auction. You see your own players' ratings when you pick your team, then it's kick-off.</li>
           <li>Quick match: one auction, one game. Campaign: one auction, then a full season against all 15 managers, with an optional transfer window after game 7.</li>
         </ol>
         <label class="field" for="teamName"><span class="lbl">Your team name</span>
@@ -269,7 +274,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
           <li>Your formation is picked automatically to suit your squad: 2-1-1, 1-2-1 or 1-1-2.</li>
           <li>Once one squad is full, the other side gets each player for £1m, with one refusal.</li>
           <li>You have 10 seconds to bid, or it counts as a pass.</li>
-          <li>Ratings stay hidden until the final whistle.</li>
+          <li>Ratings stay hidden during the auction. You see your own when you pick your team.</li>
         </ul>
         <button class="btn go" id="beginBtn" type="button">Start the auction</button>
       </div>
@@ -641,10 +646,10 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
     $('#tacNote').textContent = tacMode === 'unchanged' ? `Same formation (${tacPrev.shape}) and positions as last game.`
       : tacMode === 'custom' ? 'Your own positions.'
       : 'Positions picked by the game for this formation.';
-    const row = (p, line, i) => `<button type="button" class="tacrow l-${line}${tacSel === i ? ' sel' : ''}" data-i="${i}" aria-label="${esc(p.n)}, playing ${line}">${shirt(HUMAN_KIT, initials(p.n), 30)}<span class="who"><b>${esc(p.n)}</b><span>${oop(p, line) ? 'Natural ' + posLabel(p) + ' · ' : p.sec ? posLabel(p) + ' · ' : ''}${p.club ? esc(p.club) + ' ' + esc(p.season) : ''}</span></span><span class="tag${oop(p, line) ? ' oop' : ''}">${line}${oop(p, line) ? ' *' : ''}</span></button>`;
-    $('#tacSheet').innerHTML = `<div class="tacrow fixed l-GK">${shirt(HUMAN_KIT, initials(lu.gk.n), 30)}<span class="who"><b>${esc(lu.gk.n)}</b><span>${lu.gk.club ? esc(lu.gk.club) + ' ' + esc(lu.gk.season) : ''}</span></span><span class="tag">GK</span></div>` +
+    const row = (p, line, i) => `<button type="button" class="tacrow l-${line}${tacSel === i ? ' sel' : ''}" data-i="${i}" aria-label="${esc(p.n)}, playing ${line}, rated ${Math.round(AD.slotRating(p, line))}">${shirt(HUMAN_KIT, initials(p.n), 30)}<span class="who"><b>${esc(p.n)}</b><span>${oop(p, line) ? 'Natural ' + posLabel(p) + ' · ' : p.sec ? posLabel(p) + ' · ' : ''}${p.club ? esc(p.club) + ' ' + esc(p.season) : ''}</span></span><span class="rv" title="Rating in this position">${Math.round(AD.slotRating(p, line))}</span><span class="tag${oop(p, line) ? ' oop' : ''}">${line}${oop(p, line) ? ' *' : ''}</span></button>`;
+    $('#tacSheet').innerHTML = `<div class="tacrow fixed l-GK">${shirt(HUMAN_KIT, initials(lu.gk.n), 30)}<span class="who"><b>${esc(lu.gk.n)}</b><span>${lu.gk.club ? esc(lu.gk.club) + ' ' + esc(lu.gk.season) : ''}</span></span><span class="rv" title="Rating in goal">${lu.gk.ovr}</span><span class="tag">GK</span></div>` +
       lu.slots.map((x, i) => row(x.p, x.line, i)).join('');
-    $('#tacHelp').textContent = tacSel == null ? 'Tap one player, then another, to swap their positions. * means out of position, which costs you.' : 'Now tap the player to swap with.';
+    $('#tacHelp').textContent = tacSel == null ? 'Tap one player, then another, to swap their positions. The number is his rating in that position. * means out of position, which costs you.' : 'Now tap the player to swap with.';
   }
   $('#shapeRow').addEventListener('click', e => {
     const b = e.target.closest('button[data-m]'); if (!b) return;
