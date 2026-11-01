@@ -1683,7 +1683,7 @@ if (typeof module !== 'undefined') module.exports = AD;
         ['Biggest defeat', 'loss', x => [x.team, x.score, `v ${x.opp}`]],
         ['Most goals scored in a season', 'gf', x => [x.team, x.n, '']],
         ['Most goals conceded in a season', 'ga', x => [x.team, x.n, '']],
-        ['Most clean sheets in a season', 'cs', x => [x.team, x.n, x.gk ? `In goal: ${x.gk}` : '']],
+        ['Most clean sheets in a season', 'cs', x => [x.team, x.n, x.gk || '']],
         ['Top scorer in a season', 'scorer', x => [x.player, x.n, x.team]],
         ['Most assists in a season', 'assists', x => [x.player, x.n, x.team]],
         ['Fastest goal', 'fastest', x => [x.player, `${x.min}'`, x.team + (x.opp ? ` v ${x.opp}` : '')]],
