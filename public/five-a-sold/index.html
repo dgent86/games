@@ -1683,11 +1683,14 @@ if (typeof module !== 'undefined') module.exports = AD;
         ['Biggest defeat', 'loss', x => [x.team, x.score, `v ${x.opp}`]],
         ['Most goals scored in a season', 'gf', x => [x.team, x.n, '']],
         ['Most goals conceded in a season', 'ga', x => [x.team, x.n, '']],
+        ['Most clean sheets in a season', 'cs', x => [x.team, x.n, '']],
         ['Top scorer in a season', 'scorer', x => [x.player, x.n, x.team]],
         ['Most assists in a season', 'assists', x => [x.player, x.n, x.team]],
         ['Fastest goal', 'fastest', x => [x.player, `${x.min}'`, x.team + (x.opp ? ` v ${x.opp}` : '')]],
         ['Longest winning run', 'wins', x => [x.team, x.n, plural(x.n, 'win') + ' in a row']],
-        ['Longest losing run', 'losses', x => [x.team, x.n, plural(x.n, 'defeat') + ' in a row']]
+        ['Longest losing run', 'losses', x => [x.team, x.n, plural(x.n, 'defeat') + ' in a row']],
+        ['Record signing', 'signing', x => [x.player, fmt(x.n), x.team]],
+        ['Cheapest champions', 'cheapest', x => [x.team, fmt(x.n), 'Total spent on the title-winning squad']]
       ];
       list.innerHTML = rows.map(([label, k, f]) => {
         const x = R[k];
@@ -1695,7 +1698,7 @@ if (typeof module !== 'undefined') module.exports = AD;
         const [who, val, sub] = f(x);
         return `<div><span class="lbl">${label}</span><b>${esc(who)}</b><span class="val">${esc(val)}</span>${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</div>`;
       }).join('');
-      note.textContent = `Users only, from ${plural(d.seasons, 'completed campaign')}. Assists and fastest goals count from 1 November 2026. First to set a record keeps it on a tie.`;
+      note.textContent = `Users only, from ${plural(d.seasons, 'completed campaign')}, including seasons since removed from the global table. Assists and fastest goals count from 1 November 2026. First to set a record keeps it on a tie.`;
     }).catch(() => { note.textContent = 'Could not load the records. Try again in a moment.'; });
   }
   $('#recBtn').addEventListener('click', openRecords);

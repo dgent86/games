@@ -6,7 +6,7 @@
 //   POST /api/season        {cid, name, w, d, l, gf, ga, pos, scorer, goals} -> {id}; a finished Five-a-Sold campaign
 //                           optional log {order, results, table, boot, squads} is kept in campaign_log
 //   POST /api/seasons       {p_id?}                                  -> global table: top 50 plus two either side of you
-//   POST /api/records       {}                                       -> Five-a-Sold record holders, users only (cached 60s)
+//   POST /api/records       {}                                       -> Five-a-Sold record holders, users only (cached 2 minutes)
 // Scores can only be added or read here. Edit or delete rows in the Cloudflare dashboard (D1 > dangent-scores > Console).
 
 const SCHEMA = [
@@ -87,44 +87,60 @@ const SEASONS = `
   WHERE r.rank <= 50 OR (me.rk IS NOT NULL AND r.rank BETWEEN me.rk - 2 AND me.rk + 2)
   ORDER BY r.rank`;
 
-// Every match a user played in a logged campaign, from the user's side. Seasons deleted from the table drop out.
-const USER_GAMES = `
-  SELECT s.id, s.name,
-    CAST(json_extract(j.value, '$[0]') AS INTEGER) AS r,
-    CASE WHEN json_extract(j.value, '$[1]') = s.name THEN json_extract(j.value, '$[3]') ELSE json_extract(j.value, '$[4]') END AS f,
-    CASE WHEN json_extract(j.value, '$[1]') = s.name THEN json_extract(j.value, '$[4]') ELSE json_extract(j.value, '$[3]') END AS a,
-    CASE WHEN json_extract(j.value, '$[1]') = s.name THEN json_extract(j.value, '$[2]') ELSE json_extract(j.value, '$[1]') END AS opp
-  FROM seasons s JOIN campaign_log l ON l.cid = s.cid, json_each(l.data, '$.results') j
-  WHERE json_extract(j.value, '$[1]') = s.name OR json_extract(j.value, '$[2]') = s.name
-  ORDER BY s.created_at, s.id, r`;
-const USER_SEASONS = `
-  SELECT s.id, s.name, s.gf, s.ga, s.scorer, s.goals, json_extract(l.data, '$.ast') AS ast, json_extract(l.data, '$.fast') AS fast
-  FROM seasons s LEFT JOIN campaign_log l ON l.cid = s.cid ORDER BY s.created_at, s.id`;
+// Every finished campaign: seasons on the table (with their log if there is one), plus logged seasons deleted from the table.
+const ALL_SEASONS = `
+  SELECT s.name, s.gf, s.ga, s.scorer, s.goals, s.pos, s.created_at AS t, l.data
+  FROM seasons s LEFT JOIN campaign_log l ON l.cid = s.cid
+  UNION ALL
+  SELECT l.name, NULL, NULL, NULL, NULL, NULL, l.created_at AS t, l.data
+  FROM campaign_log l WHERE l.cid NOT IN (SELECT cid FROM seasons)
+  ORDER BY t`;
 
-// First to set a record keeps it on a tie.
+// Users only. First to set a record keeps it on a tie.
 async function records(env) {
-  const [{ results: G }, { results: S }] = await Promise.all([env.DB.prepare(USER_GAMES).all(), env.DB.prepare(USER_SEASONS).all()]);
+  const { results } = await env.DB.prepare(ALL_SEASONS).all();
   const rec = {};
   const beat = (k, v, row) => { if (v > 0 && (!rec[k] || v > rec[k].v)) rec[k] = Object.assign({ v }, row); };
-  let cur = null, w = 0, l = 0;
-  for (const g of G) {
-    if (g.id !== cur) { cur = g.id; w = 0; l = 0; }
-    const m = g.f - g.a, score = `${g.f}-${g.a}`;
-    if (m > 0) beat('win', m * 1000 + g.f, { team: g.name, score, opp: g.opp });
-    if (m < 0) beat('loss', -m * 1000 + g.a, { team: g.name, score, opp: g.opp });
-    w = m > 0 ? w + 1 : 0; l = m < 0 ? l + 1 : 0;
-    beat('wins', w, { team: g.name, n: w }); beat('losses', l, { team: g.name, n: l });
+  let games = 0;
+  for (const s of results) {
+    const team = s.name;
+    let L = null;
+    try { L = s.data ? JSON.parse(s.data) : null; } catch { L = null; }
+    // the user's own name inside the log: squads start with the user
+    const me = L && L.squads && L.squads[0] ? L.squads[0][0] : null;
+    const row = me && Array.isArray(L.table) ? L.table.find(x => x[1] === me) : null;
+    const gf = s.gf ?? (row ? row[6] : null), ga = s.ga ?? (row ? row[7] : null), pos = s.pos ?? (row ? row[0] : null);
+    if (gf != null) beat('gf', gf, { team, n: gf });
+    if (ga != null) beat('ga', ga, { team, n: ga });
+    if (s.scorer) beat('scorer', s.goals, { team, player: s.scorer, n: s.goals });
+    else if (L && Array.isArray(L.boot)) { const b = L.boot.find(x => x[1] === me); if (b) beat('scorer', b[2], { team, player: b[0], n: b[2] }); }
+    if (!me) continue;
+    // match records, from the user's side, in round order
+    const mine = (L.results || []).filter(x => x[1] === me || x[2] === me).sort((x, y) => x[0] - y[0]);
+    let w = 0, l = 0, cs = 0;
+    for (const x of mine) {
+      games++;
+      const home = x[1] === me, f = home ? x[3] : x[4], a = home ? x[4] : x[3], opp = home ? x[2] : x[1], m = f - a, score = `${f}-${a}`;
+      if (m > 0) beat('win', m * 1000 + f, { team, score, opp });
+      if (m < 0) beat('loss', -m * 1000 + a, { team, score, opp });
+      w = m > 0 ? w + 1 : 0; l = m < 0 ? l + 1 : 0; if (a === 0) cs++;
+      beat('wins', w, { team, n: w }); beat('losses', l, { team, n: l });
+    }
+    beat('cs', cs, { team, n: cs });
+    for (const [p, n] of (L.ast || [])) beat('assists', n, { team, player: p, n });
+    if (L.fast) beat('fastest', 1000 - L.fast[1], { team, player: L.fast[0], min: L.fast[1], opp: L.fast[3] || '' });
+    // signings: the auction squad (before any window), the final squad, and window buys
+    const sq = list => ((list || []).find(x => x[0] === me) || [null, []])[1];
+    const auction = L.window ? sq(L.window.squads0) : sq(L.squads);
+    const buys = L.window ? (L.window.res || []).filter(x => x[2] === me) : [];
+    for (const [p, , , price] of auction.concat(sq(L.squads))) if (p !== 'Free agent') beat('signing', price, { team, player: p, n: price });
+    for (const [, p, , price] of buys) beat('signing', price, { team, player: p, n: price });
+    if (pos === 1) {
+      const spend = auction.reduce((t, x) => t + (x[3] || 0), 0) + buys.reduce((t, x) => t + (x[3] || 0), 0);
+      beat('cheapest', 1000 - spend, { team, n: spend });
+    }
   }
-  for (const s of S) {
-    if (s.gf != null) beat('gf', s.gf, { team: s.name, n: s.gf });
-    if (s.ga != null) beat('ga', s.ga, { team: s.name, n: s.ga });
-    if (s.scorer) beat('scorer', s.goals, { team: s.name, player: s.scorer, n: s.goals });
-    let ast = [], fast = null;
-    try { ast = JSON.parse(s.ast || '[]'); fast = JSON.parse(s.fast || 'null'); } catch { /* old logs have neither */ }
-    for (const [p, n] of ast) beat('assists', n, { team: s.name, player: p, n });
-    if (fast) beat('fastest', 1000 - fast[1], { team: s.name, player: fast[0], min: fast[1], opp: fast[3] || '' });
-  }
-  return { rec, seasons: S.length, games: G.length };
+  return { rec, seasons: results.length, games };
 }
 
 const ALL = `
@@ -174,7 +190,7 @@ async function api(fn, request, env) {
     const cache = caches.default, key = new Request('https://dangent.uk/__cache/five-a-sold-records');
     const hit = await cache.match(key);
     if (hit) return hit;
-    const res = new Response(JSON.stringify(await records(env)), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=60' } });
+    const res = new Response(JSON.stringify(await records(env)), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=120' } });
     await cache.put(key, res.clone());
     return res;
   }
