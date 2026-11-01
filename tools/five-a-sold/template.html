@@ -211,6 +211,12 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .ts .none { color: var(--muted); }
 .tog { display: flex; gap: 8px; align-items: center; font-size: 13px; min-height: 44px; cursor: pointer; }
 .tog input { width: 20px; height: 20px; margin: 0; accent-color: var(--navy); flex: none; }
+.recs { display: grid; gap: 4px; }
+.recs > div { background: var(--well); padding: 6px 8px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; align-items: baseline; }
+.recs .lbl { grid-column: 1 / -1; }
+.recs b { font-size: 14px; overflow-wrap: anywhere; }
+.recs .val { font-family: var(--f-crt); font-size: 26px; line-height: 1; color: var(--navy); white-space: nowrap; }
+.recs .sub { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
 .relrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 .sitefoot { text-align: center; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; padding-top: 4px; }
 .sitefoot a { color: var(--amber); text-decoration: none; font-weight: bold; }
@@ -240,6 +246,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
         </div>
         <button class="btn" id="contBtn" type="button" hidden></button>
         <button class="btn" id="globalBtn" type="button">Global table</button>
+        <button class="btn" id="recBtn" type="button">Record holders</button>
       </div>
     </div>
   </section>
@@ -405,6 +412,16 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
         <div class="lbl" id="tsSquadLbl">Your squad</div>
         <div class="slots" id="tsSquad"></div>
         <button class="btn go" id="wGo" type="button">Play on</button>
+      </div>
+    </div>
+  </section>
+  <section class="screen" id="records" hidden>
+    <div class="win">
+      <div class="bar"><span>Record holders</span><span>Campaigns</span></div>
+      <div class="pad">
+        <div class="recs" id="recList"></div>
+        <p class="note" id="recNote" style="margin:0"></p>
+        <button class="btn" id="recBack" type="button">Back</button>
       </div>
     </div>
   </section>
@@ -819,7 +836,9 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
   // everything about the season, kept server-side for analysis
   function campaignLog(t) {
     return {
-      v: 2,
+      v: 3,
+      ast: Object.entries(C.ast || {}).sort((a, b) => b[1] - a[1]),
+      fast: C.fast || null,
       tw: !C.noWindow,
       order: C.order.map(i => AD.managers[i].name),
       shapes: C.shapes || [],
@@ -861,6 +880,35 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
     }).catch(() => { note.textContent = 'Could not load the global table. Try again in a moment.'; });
   }
   $('#globalBtn').addEventListener('click', openGlobal);
+  function openRecords() {
+    show('records');
+    const list = $('#recList'), note = $('#recNote'); list.innerHTML = '';
+    if (!ON) { note.textContent = 'Record holders live at dangent.uk/five-a-sold. Finish a campaign there to get on them.'; return; }
+    note.textContent = 'Loading...';
+    post('/api/records', {}).then(d => {
+      const R = d.rec, plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+      const rows = [
+        ['Biggest win', 'win', x => [x.team, x.score, `v ${x.opp}`]],
+        ['Biggest defeat', 'loss', x => [x.team, x.score, `v ${x.opp}`]],
+        ['Most goals scored in a season', 'gf', x => [x.team, x.n, '']],
+        ['Most goals conceded in a season', 'ga', x => [x.team, x.n, '']],
+        ['Top scorer in a season', 'scorer', x => [x.player, x.n, x.team]],
+        ['Most assists in a season', 'assists', x => [x.player, x.n, x.team]],
+        ['Fastest goal', 'fastest', x => [x.player, `${x.min}'`, x.team + (x.opp ? ` v ${x.opp}` : '')]],
+        ['Longest winning run', 'wins', x => [x.team, x.n, plural(x.n, 'win') + ' in a row']],
+        ['Longest losing run', 'losses', x => [x.team, x.n, plural(x.n, 'defeat') + ' in a row']]
+      ];
+      list.innerHTML = rows.map(([label, k, f]) => {
+        const x = R[k];
+        if (!x) return `<div><span class="lbl">${label}</span><b class="none">No record yet</b><span></span></div>`;
+        const [who, val, sub] = f(x);
+        return `<div><span class="lbl">${label}</span><b>${esc(who)}</b><span class="val">${esc(val)}</span>${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</div>`;
+      }).join('');
+      note.textContent = `Users only, from ${plural(d.seasons, 'completed campaign')}. Assists and fastest goals count from 1 November 2026. First to set a record keeps it on a tie.`;
+    }).catch(() => { note.textContent = 'Could not load the records. Try again in a moment.'; });
+  }
+  $('#recBtn').addEventListener('click', openRecords);
+  $('#recBack').addEventListener('click', () => show('title'));
   $('#globalBtn2').addEventListener('click', openGlobal);
   $('#gBack').addEventListener('click', () => { show(gBack); if (gBack !== 'title' && !$('#campWin').hidden) $('#campWin').scrollIntoView({ block: 'start' }); });
 
@@ -1158,6 +1206,9 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
     if (G.H.tactic) { C.tactic = G.H.tactic; (C.shapes = C.shapes || [])[r] = G.H.tactic.shape; }
     C.results.push({ a: 'U', b: C.order[r], ga_: res.score[0], gb_: res.score[1], r });
     addGoals(res, 'U', C.order[r]);
+    // for the record holders: your assists, and your fastest goal of the season
+    res.ratings[0].forEach(x => { if (x.stats.a && !x.p.fa) { C.ast = C.ast || {}; C.ast[x.p.n] = (C.ast[x.p.n] || 0) + x.stats.a; } });
+    res.events.forEach(e => { const g = e.goal; if (g && g.ti === 0 && !g.own && g.n !== 'Free agent' && (!C.fast || g.min < C.fast[1])) C.fast = [g.n, g.min, r + 1, AD.managers[C.order[r]].name]; });
     fixtures.forEach(([a, b]) => {
       if (a === 'U' || b === 'U') return;
       const team = (k, home) => AD.makeTeam({ name: AD.managers[k].name, squad: fromSave(C.squads[k]).map(e => e.p) }, home, AD.managers[k]);

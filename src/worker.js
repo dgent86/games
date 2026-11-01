@@ -6,6 +6,7 @@
 //   POST /api/season        {cid, name, w, d, l, gf, ga, pos, scorer, goals} -> {id}; a finished Five-a-Sold campaign
 //                           optional log {order, results, table, boot, squads} is kept in campaign_log
 //   POST /api/seasons       {p_id?}                                  -> global table: top 50 plus two either side of you
+//   POST /api/records       {}                                       -> Five-a-Sold record holders, users only (cached 60s)
 // Scores can only be added or read here. Edit or delete rows in the Cloudflare dashboard (D1 > dangent-scores > Console).
 
 const SCHEMA = [
@@ -86,6 +87,46 @@ const SEASONS = `
   WHERE r.rank <= 50 OR (me.rk IS NOT NULL AND r.rank BETWEEN me.rk - 2 AND me.rk + 2)
   ORDER BY r.rank`;
 
+// Every match a user played in a logged campaign, from the user's side. Seasons deleted from the table drop out.
+const USER_GAMES = `
+  SELECT s.id, s.name,
+    CAST(json_extract(j.value, '$[0]') AS INTEGER) AS r,
+    CASE WHEN json_extract(j.value, '$[1]') = s.name THEN json_extract(j.value, '$[3]') ELSE json_extract(j.value, '$[4]') END AS f,
+    CASE WHEN json_extract(j.value, '$[1]') = s.name THEN json_extract(j.value, '$[4]') ELSE json_extract(j.value, '$[3]') END AS a,
+    CASE WHEN json_extract(j.value, '$[1]') = s.name THEN json_extract(j.value, '$[2]') ELSE json_extract(j.value, '$[1]') END AS opp
+  FROM seasons s JOIN campaign_log l ON l.cid = s.cid, json_each(l.data, '$.results') j
+  WHERE json_extract(j.value, '$[1]') = s.name OR json_extract(j.value, '$[2]') = s.name
+  ORDER BY s.created_at, s.id, r`;
+const USER_SEASONS = `
+  SELECT s.id, s.name, s.gf, s.ga, s.scorer, s.goals, json_extract(l.data, '$.ast') AS ast, json_extract(l.data, '$.fast') AS fast
+  FROM seasons s LEFT JOIN campaign_log l ON l.cid = s.cid ORDER BY s.created_at, s.id`;
+
+// First to set a record keeps it on a tie.
+async function records(env) {
+  const [{ results: G }, { results: S }] = await Promise.all([env.DB.prepare(USER_GAMES).all(), env.DB.prepare(USER_SEASONS).all()]);
+  const rec = {};
+  const beat = (k, v, row) => { if (v > 0 && (!rec[k] || v > rec[k].v)) rec[k] = Object.assign({ v }, row); };
+  let cur = null, w = 0, l = 0;
+  for (const g of G) {
+    if (g.id !== cur) { cur = g.id; w = 0; l = 0; }
+    const m = g.f - g.a, score = `${g.f}-${g.a}`;
+    if (m > 0) beat('win', m * 1000 + g.f, { team: g.name, score, opp: g.opp });
+    if (m < 0) beat('loss', -m * 1000 + g.a, { team: g.name, score, opp: g.opp });
+    w = m > 0 ? w + 1 : 0; l = m < 0 ? l + 1 : 0;
+    beat('wins', w, { team: g.name, n: w }); beat('losses', l, { team: g.name, n: l });
+  }
+  for (const s of S) {
+    if (s.gf != null) beat('gf', s.gf, { team: s.name, n: s.gf });
+    if (s.ga != null) beat('ga', s.ga, { team: s.name, n: s.ga });
+    if (s.scorer) beat('scorer', s.goals, { team: s.name, player: s.scorer, n: s.goals });
+    let ast = [], fast = null;
+    try { ast = JSON.parse(s.ast || '[]'); fast = JSON.parse(s.fast || 'null'); } catch { /* old logs have neither */ }
+    for (const [p, n] of ast) beat('assists', n, { team: s.name, player: p, n });
+    if (fast) beat('fastest', 1000 - fast[1], { team: s.name, player: fast[0], min: fast[1], opp: fast[3] || '' });
+  }
+  return { rec, seasons: S.length, games: G.length };
+}
+
 const ALL = `
   SELECT row_number() OVER (ORDER BY streak DESC, created_at, id) AS rank,
          id, name, streak, secs, created_at, count(*) OVER () AS total
@@ -129,6 +170,14 @@ async function api(fn, request, env) {
     const { results } = await env.DB.prepare(SEASONS).bind(id).all();
     return json(results);
   }
+  if (fn === 'records') {
+    const cache = caches.default, key = new Request('https://dangent.uk/__cache/five-a-sold-records');
+    const hit = await cache.match(key);
+    if (hit) return hit;
+    const res = new Response(JSON.stringify(await records(env)), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=60' } });
+    await cache.put(key, res.clone());
+    return res;
+  }
   if (fn === 'board') {
     const mode = String(b.p_mode);
     if (!MODES.has(mode)) return json({ message: 'Bad mode' }, 400);
@@ -160,7 +209,7 @@ async function api(fn, request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons)\/?$/);
+    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons|records)\/?$/);
     if (m) {
       try { return await api(m[1], request, env); }
       catch (e) { return json({ message: 'Server error' }, 500); }
