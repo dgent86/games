@@ -126,7 +126,10 @@ async function records(env) {
       w = m > 0 ? w + 1 : 0; l = m < 0 ? l + 1 : 0; if (a === 0) cs++;
       beat('wins', w, { team, n: w }); beat('losses', l, { team, n: l });
     }
-    beat('cs', cs, { team, n: cs });
+    // keeper(s): if a window brought in a new keeper, both are named
+    const gkOf = list => { const g = (((list || []).find(x => x[0] === me) || [null, []])[1]).find(x => x[1] === 'GK'); return g ? g[0] : ''; };
+    const gk = [...new Set([L.window ? gkOf(L.window.squads0) : '', gkOf(L.squads)].filter(Boolean))].join(' then ');
+    beat('cs', cs, { team, n: cs, gk });
     for (const [p, n] of (L.ast || [])) beat('assists', n, { team, player: p, n });
     if (L.fast) beat('fastest', 1000 - L.fast[1], { team, player: L.fast[0], min: L.fast[1], opp: L.fast[3] || '' });
     // signings: the auction squad (before any window), the final squad, and window buys
