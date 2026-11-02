@@ -152,6 +152,18 @@ table.rt { width: 100%; border-collapse: collapse; font-size: 12px; }
 table.rt th, table.rt td { padding: 3px 4px; text-align: left; border-bottom: 1px solid var(--panel-lo); }
 table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-nums; }
 .result-line { font-family: var(--f-crt); font-size: 34px; line-height: 1; }
+
+/* Champions screen: full-screen flashing banner in the winner's kit colours with falling trophies */
+.champ { position: fixed; inset: 0; z-index: 100; background: var(--crt); overflow: hidden; container-type: inline-size; }
+.champ canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; image-rendering: pixelated; }
+.champ .banner { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; padding: 18px 12px 16px; font-family: var(--f-crt); line-height: .88; border-block: 6px solid var(--bd, #fff); background: var(--bg, #000); color: var(--fg, #fff); box-shadow: 0 0 0 4px #000, 0 0 40px 6px var(--bg, #000); }
+.champ .banner { display: block; }
+.champ .banner span { display: block; white-space: nowrap; }
+.champ .ck { font-size: min(7.5cqw, 40px); letter-spacing: .22em; margin-bottom: 4px; }
+.champ .cc { font-size: min(16.5cqw, 120px); letter-spacing: .04em; }
+.champ .cn { font-size: min(10cqw, 70px); letter-spacing: .06em; margin-top: 6px; }
+.champ .cm { font-size: min(6.5cqw, 34px); letter-spacing: .14em; margin-top: 10px; opacity: .92; }
+.champ .btn { position: absolute; z-index: 3; left: 50%; transform: translateX(-50%); bottom: max(24px, env(safe-area-inset-bottom, 0px)); min-width: 200px; }
 @media (max-width: 420px) {
   .card .nm { font-size: 36px; }
   .logo { font-size: 44px; }
@@ -375,6 +387,12 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
       </div>
     </div>
   </section>
+  <div class="champ" id="champ" hidden>
+    <canvas id="champCv"></canvas>
+    <div class="banner" id="champBanner"><span class="ck">WORLD CUP</span><span class="cc">CHAMPIONS</span><span class="cn" id="champN"></span><span class="cm" id="champM"></span></div>
+    <button class="btn go" type="button" id="champBtn">Continue</button>
+  </div>
+
 
   <footer class="sitefoot"><a href="https://dangent.uk/">More games at dangent.uk</a></footer>
 </div>
@@ -1689,6 +1707,36 @@ const DATA = {"commentary":{"kickoff":["{team} get things going","{player} rolls
     else { const f = AD.wcUserFixture(W), opp = f.a === W.nat ? f.b : f.a; b.textContent = `Next: ${W.stage[0] === 'G' ? 'matchday ' + W.stage[1] : SN(W.stage)} v ${opp}`; b.onclick = toSheet; }
     $('#roundWin').hidden = false;
   }
+
+  // champions screen: 30 trophies, 64px, 1.2x fall, banner flashing twice a second between the two kit colours
+  let champRaf = 0;
+  function showChampions(done) {
+    const box = $('#champ'), cvs = $('#champCv'), ctx = cvs.getContext('2d'), ban = $('#champBanner'), k = DATA.nations[W.nat].kit;
+    const img = document.querySelector('.logo img'), reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('#champN').textContent = W.nat.toUpperCase(); $('#champM').textContent = (W.name || 'Manager').toUpperCase();
+    box.hidden = false;
+    let Wd = 0, Hd = 0, drops = [], last = 0, ft = 0, ph = 0;
+    const N = reduce ? 12 : 30;
+    const size = () => { const r = box.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2); Wd = r.width; Hd = r.height; cvs.width = Math.round(Wd * d); cvs.height = Math.round(Hd * d); ctx.setTransform(d, 0, 0, d, 0, 0); ctx.imageSmoothingEnabled = false; };
+    const spawn = first => { const sc = 64 * (0.55 + Math.random() * 0.7); return { x: Math.random() * Wd, y: first ? -Math.random() * Hd * 1.4 - sc : -sc - Math.random() * 120, s: sc, vy: (60 + Math.random() * 90) * 1.2 * (0.6 + sc / 64 * 0.5), a: Math.random() * 6.28, va: (Math.random() - .5) * 2.2, sw: 12 + Math.random() * 26, sp: 1 + Math.random() * 1.6, ph: Math.random() * 6.28 }; };
+    const paint = () => { const a = ph ? k[1] : k[0], b = ph ? k[0] : k[1]; ban.style.setProperty('--bg', a); ban.style.setProperty('--fg', b); ban.style.setProperty('--bd', b); };
+    size(); drops = Array.from({ length: N }, () => spawn(true)); paint();
+    const frame = t => {
+      const dt = Math.min(0.05, (t - (last || t)) / 1000); last = t; ft += dt;
+      if (ft >= 0.5) { ft -= 0.5; ph ^= 1; paint(); }
+      ctx.clearRect(0, 0, Wd, Hd); drops.sort((p, q) => p.s - q.s);
+      for (let i = 0; i < drops.length; i++) {
+        const d = drops[i]; d.y += d.vy * dt; d.a += d.va * dt; d.ph += d.sp * dt;
+        if (d.y - d.s > Hd) { drops[i] = spawn(false); continue; }
+        ctx.save(); ctx.translate(d.x + Math.sin(d.ph) * d.sw, d.y); ctx.rotate(Math.sin(d.a) * 0.45); if (img.complete) ctx.drawImage(img, -d.s / 2, -d.s / 2, d.s, d.s); ctx.restore();
+      }
+      champRaf = requestAnimationFrame(frame);
+    };
+    const onResize = () => size();
+    addEventListener('resize', onResize);
+    cancelAnimationFrame(champRaf); champRaf = requestAnimationFrame(frame);
+    $('#champBtn').onclick = () => { cancelAnimationFrame(champRaf); removeEventListener('resize', onResize); box.hidden = true; if (done) done(); };
+  }
   function showEnd() {
     const oc = AD.wcOutcome(W);
     $('#endTag').textContent = W.champion === W.nat ? 'Champions' : '';
@@ -1699,6 +1747,7 @@ const DATA = {"commentary":{"kickoff":["{team} get things going","{player} rolls
     $('#endBracket').innerHTML = bracketHTML();
     $('#endGroups').innerHTML = allGroups();
     clearSave(); show('end');
+    if (W.champion === W.nat) showChampions();
   }
   $('#againBtn').addEventListener('click', () => { playToken++; clearSave(); W = null; showResume(); show('pick'); });
 
