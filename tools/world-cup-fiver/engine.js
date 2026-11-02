@@ -24,6 +24,7 @@ const AD = (() => {
     goalExp: 1.4, quietShow: 0.12, minutes: 90, actionRate: 0.45
   };
 
+  const STYLE = { attMid: 1.06, attFwd: 1.03, attDef: 0.94, defDef: 1.05, defMid: 0.93, counterRate: 0.10, counterVsAtt: 1.6, counterChance: 1.2, counter1v1: 1.5 };
   const TEMPO = { Hodgson: 0.78, Moyes: 0.85, Mourinho: 0.85, Dyche: 0.85, 'Benítez': 0.9, Allardyce: 0.92, Ancelotti: 0.95, Klopp: 1.08, Guardiola: 1.0 };
   const LULL = ['Not much happening out there', 'A scrappy spell in midfield', 'Both sides cancelling each other out', 'Very little goalmouth action', 'It has gone a bit quiet', 'Neither keeper has been troubled for a while', 'Plenty of huff and puff, not much end product'];
   // ---------------- Data
@@ -365,7 +366,7 @@ const AD = (() => {
   // ---------------- Match
   function makeTeam(m, isHome, mgr) {
     const lu = (m.tactic && buildLineup(m.squad, m.tactic.shape, m.tactic.order)) || lineup(m.squad);
-    return { name: m.name, isHome, gk: lu.gk, slots: lu.slots, shape: lu.shape, mgr: mgr || null, sp: mgr ? mgr.special : null, goals: 0, scorers: {} };
+    return { name: m.name, isHome, gk: lu.gk, slots: lu.slots, shape: lu.shape, mgr: mgr || null, sp: mgr ? mgr.special : null, style: m.style || 'BAL', goals: 0, scorers: {} };
   }
   function match(gm, opts) {
     const H = makeTeam(gm.H, true, null), A = makeTeam(gm.A, false, gm.A.mgr);
@@ -398,6 +399,9 @@ const AD = (() => {
       if (sp(t, 'Park the bus') && minute >= T.minutes * 0.75 && my > their) { if (line === 'DEF') v *= 1.12; if (line === 'FWD') v *= 0.90; }
       if (sp(t, 'Fergie time') && minute >= T.minutes * 0.875 && my <= their && line === 'FWD') v *= 1.10;
       if (htSwitch && htSwitch.t === t && htSwitch.line === line) v *= 1.08;
+      // play style: attacking trades a looser back line for the ball and the chances, defensive does the opposite and hits on the counter
+      if (t.style === 'ATT') { if (line === 'MID') v *= STYLE.attMid; else if (line === 'FWD') v *= STYLE.attFwd; else v *= STYLE.attDef; }
+      if (t.style === 'DEF') { if (line === 'DEF') v *= STYLE.defDef; else if (line === 'MID') v *= STYLE.defMid; }
       return v;
     }
     const gkR = t => t.gk.ovr + ranieriBonus(t) + (sp(t, 'Calm authority') && t.gk.ovr >= 86 ? 2 : 0);
@@ -412,7 +416,7 @@ const AD = (() => {
     const ST = new Map();
     const st = p => { if (!ST.has(p)) ST.set(p, { g: 0, a: 0, sot: 0, miss: 0, def: 0, saves: 0, conc: 0, err: 0, og: 0, kp: 0, drb: 0, claim: 0 }); return ST.get(p); };
     const D = x => x ? '#D' + x : x;
-    let pendingGoal = null;
+    let pendingGoal = null, counter = null;
     function push(lines, team, extra) { const e = Object.assign({ min: minute, team, lines: lines.filter(Boolean), score: score.slice() }, extra || {}); if (pendingGoal) { e.goal = pendingGoal; pendingGoal = null; } ev.push(e); }
     const ratio = (atk, def) => atk / Math.max(1, def);
 
@@ -521,6 +525,7 @@ const AD = (() => {
       let c = T.chanceBase * Math.pow(ratio(att, def), T.chanceExp);
       if (sp(t, 'Entertainers') || sp(o, 'Entertainers')) c *= 1.15;
       if (sp(o, 'Hard to beat')) c *= 0.92;
+      if (counter === ti) c *= STYLE.counterChance;
       [t, o].forEach(x => { if (x.mgr && TEMPO[x.mgr.name]) c *= TEMPO[x.mgr.name]; });
       c = clamp(c, 0.05, 0.9);
       const chance = rand() < c;
@@ -558,7 +563,7 @@ const AD = (() => {
       const assister = shooter !== builder ? builder : null;
       const fastest = outfield(t).filter(p => p !== builder).sort((a, b) => b.a.Pac - a.a.Pac)[0] || shooter;
       const defP = pickDefender(o);
-      const p1 = clamp(T.oneOnOneBase * Math.pow(fastest.a.Pac / Math.max(1, defP.a.Pac), 2), 0.05, 0.5);
+      const p1 = clamp(T.oneOnOneBase * Math.pow(fastest.a.Pac / Math.max(1, defP.a.Pac), 2) * (counter === ti ? STYLE.counter1v1 : 1), 0.05, 0.6);
       const crossRate = sp(t, 'Direct football') ? 0.45 : T.crossRate;
       if (rand() < p1) {
         const runner = fastest === builder ? shooter : fastest;
@@ -589,7 +594,12 @@ const AD = (() => {
       const mH = lineStr(H, 'MID'), mA = lineStr(A, 'MID');
       const pH = Math.pow(mH, T.possK) / (Math.pow(mH, T.possK) + Math.pow(mA, T.possK));
       const n0 = ev.length;
-      if (rand() < T.actionRate) attack(rand() < pH ? 0 : 1);
+      if (rand() < T.actionRate) {
+        const a = rand() < pH ? 0 : 1, gs = score[0] + score[1];
+        attack(a);
+        // a defensive side that has just seen an attack off breaks straight away
+        if (teams[1 - a].style === 'DEF' && score[0] + score[1] === gs && rand() < STYLE.counterRate * (teams[a].style === 'ATT' ? STYLE.counterVsAtt : 1)) { counter = 1 - a; attack(1 - a); counter = null; }
+      }
       const seen = ev.length > n0 && !ev[ev.length - 1].quiet;
       if (!seen) { quietRun++; if (quietRun === 14) push([pick(LULL)], null, { lull: true }); } else quietRun = 0;
       if (score[0] + score[1] > g0) {
@@ -784,7 +794,48 @@ const AD = (() => {
     return { key: top.key, price: Math.max(cur || 1, Math.min(top.max, second + 1)) };
   }
 
+
+  // ---------------- World Cup Fiver draft: one jumbled deck of 21 (3 GK, 6 DEF, 6 MID, 6 FWD) from the nation's own pool, take or twist, no recall.
+  // A deck is { deck, idx }. The same real person is never dealt twice.
+  const WC_MIX = { GK: 3, DEF: 6, MID: 6, FWD: 6 };
+  function wcDeal(cards) {
+    const names = new Set(), got = { GK: 0, DEF: 0, MID: 0, FWD: 0 }, deck = [];
+    for (const c of shuffle(cards.slice())) {
+      if (names.has(c.n) || got[c.pos] >= WC_MIX[c.pos]) continue;
+      names.add(c.n); got[c.pos]++; deck.push(c);
+    }
+    return { deck: shuffle(deck), idx: 0 };
+  }
+  const wcNeeds = squad => ({ gk: squad.some(p => p.pos === 'GK') ? 0 : 1, out: 4 - squad.filter(p => p.pos !== 'GK').length });
+  const wcLegal = (squad, c) => { const n = wcNeeds(squad); return c.pos === 'GK' ? n.gk > 0 : n.out > 0; };
+  // the card in front of the manager: cards he cannot hold (a second keeper, a fifth outfielder) are skipped
+  function wcCurrent(D, squad) {
+    while (D.idx < D.deck.length && !wcLegal(squad, D.deck[D.idx])) D.idx++;
+    return D.deck[D.idx] || null;
+  }
+  // true when twisting would leave too few cards to finish the squad, so this card must be taken
+  function wcForced(D, squad) {
+    const c = D.deck[D.idx], n = wcNeeds(squad); let gk = 0, out = 0;
+    for (let i = D.idx; i < D.deck.length; i++) { if (D.deck[i].pos === 'GK') gk++; else out++; }
+    return c.pos === 'GK' ? (n.gk > 0 && gk <= 1) : (n.out > 0 && out <= n.out);
+  }
+  const wcLeft = D => { const c = { GK: 0, DEF: 0, MID: 0, FWD: 0 }; for (let i = D.idx; i < D.deck.length; i++) c[D.deck[i].pos]++; return c; };
+  function wcTake(D, squad) { squad.push(D.deck[D.idx]); D.idx++; }
+  function wcTwist(D) { D.idx++; }
+  // AI nations run the same draft: take anything above a target (70th percentile of their own pool), the target relaxing with every card passed
+  function wcAI(cards) {
+    const q = pos => { const r = cards.filter(c => pos === 'GK' ? c.pos === 'GK' : c.pos !== 'GK').map(c => c.ovr).sort((a, b) => a - b); return r[Math.floor(r.length * 0.7)]; };
+    const base = { GK: q('GK'), OUT: q('OUT') }, D = wcDeal(cards), squad = []; let seen = 0;
+    while (squad.length < 5) {
+      const c = wcCurrent(D, squad); if (!c) break;
+      const t = (c.pos === 'GK' ? base.GK : base.OUT) - 2 * seen;
+      if (wcForced(D, squad) || c.ovr + gauss() * 2.5 >= t) wcTake(D, squad); else { wcTwist(D); seen++; }
+    }
+    while (squad.length < 5) squad.push(freeAgent(squad.some(p => p.pos === 'GK') ? 'DEF' : 'GK'));
+    return squad;
+  }
+
   return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
-    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, T, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
+    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;

@@ -218,6 +218,12 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .recs .val { font-family: var(--f-crt); font-size: 26px; line-height: 1; color: var(--navy); white-space: nowrap; }
 .recs .sub { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
 .relrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.styles { display: grid; gap: 6px; }
+.sbtn { text-align: left; font: inherit; color: var(--ink); background: var(--panel); padding: 8px 10px; min-height: 52px; cursor: pointer; touch-action: manipulation;
+  border: 2px solid; border-color: var(--panel-hi) var(--panel-lo) var(--panel-lo) var(--panel-hi); }
+.sbtn b { display: block; } .sbtn small { color: var(--muted); font-size: 12px; }
+.sbtn[aria-pressed=true] { background: var(--navy); color: #fff; border-color: var(--navy-hi) var(--navy-lo) var(--navy-lo) var(--navy-hi); } .sbtn[aria-pressed=true] small { color: #d6dcf5; }
+.slot.pick { outline: 3px solid var(--navy); } button.slot { font: inherit; text-align: left; width: 100%; color: var(--ink); cursor: pointer; }
 .sitefoot { text-align: center; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; padding-top: 4px; }
 .sitefoot a { color: var(--amber); text-decoration: none; font-weight: bold; }
 .sitefoot a:hover, .sitefoot a:focus-visible { text-decoration: underline; }
@@ -249,7 +255,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
       <div class="bar"><span id="dNation"></span><span id="dProg"></span></div>
       <div class="pad">
         <div id="dSquad" class="slots"></div>
-        <div id="dLines" class="row"></div>
+        <div class="well" id="dDeck"></div>
         <div id="dCard" class="card" hidden></div>
         <div id="dActs" class="row" hidden>
           <button class="btn go" type="button" id="takeBtn">Take</button>
@@ -262,9 +268,23 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 
   <section class="screen" id="sheet" hidden>
     <div class="win">
-      <div class="bar"><span>Team sheet</span><span id="sShape"></span></div>
+      <div class="bar"><span>Formation</span><span id="sShape"></span></div>
       <div class="pad">
+        <div class="speed" id="shapeRow" role="group" aria-label="Formation"></div>
         <div id="sXI" class="slots"></div>
+        <div class="note" id="sHint">Tap a player, then another, to swap them. Out of position (*) costs rating.</div>
+      </div>
+    </div>
+    <div class="win">
+      <div class="bar"><span>Play style</span></div>
+      <div class="pad">
+        <div id="styleRow" class="styles" role="group" aria-label="Play style"></div>
+        <div class="note" id="styleNote"></div>
+      </div>
+    </div>
+    <div class="win">
+      <div class="bar"><span>Scouting report</span></div>
+      <div class="pad">
         <div class="well" id="sOpp"></div>
         <button class="btn go" type="button" id="kickBtn">Kick off</button>
       </div>
@@ -336,7 +356,7 @@ const DATA = __DATA__;
   const NAMES = Object.keys(DATA.nations);
   const show = id => { document.querySelectorAll('.screen').forEach(s => s.hidden = s.id !== id); window.scrollTo(0, 0); };
 
-  // ---------- cards and hands
+  // ---------- cards
   let uid = 0;
   function mk(nat, r) {
     const [n, pos, sec, club, yr, caps, leg, ovr, a] = r;
@@ -344,40 +364,7 @@ const DATA = __DATA__;
     return { id: uid++, n, pos, sec, club, season: String(yr), born: 0, ovr, a: at, age: 27, yr, caps, leg, nation: nat };
   }
   const pool = nat => DATA.nations[nat].cards.map(r => mk(nat, r));
-  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(AD.rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-  // one hand per line: 3 keepers, 6 of each outfield line, never the same real person twice in a hand
-  function deal(nat) {
-    const all = pool(nat), hands = {};
-    for (const [pos, size] of [['GK', 3], ['DEF', 6], ['MID', 6], ['FWD', 6]]) {
-      const seen = new Set(); hands[pos] = [];
-      for (const c of shuffle(all.filter(c => c.pos === pos))) { if (seen.has(c.n)) continue; seen.add(c.n); hands[pos].push(c); if (hands[pos].length === size) break; }
-    }
-    return hands;
-  }
-  const inSquad = (sq, c) => sq.some(p => p.n === c.n);
-  // top card of a line's hand that the squad can still hold
-  function top(S, pos) { while (S.hands[pos].length && inSquad(S.squad, S.hands[pos][0])) S.hands[pos].shift(); return S.hands[pos][0] || null; }
-
-  // ---------- AI draft: threshold rule with noise, the target relaxes as the hand runs out
-  function gauss() { let u = 0, v = 0; while (!u) u = AD.rand(); while (!v) v = AD.rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
-  // target = the 70th percentile of the nation's own cards in that line, relaxed by 2.5 for every card passed; never twist so far that a later slot in the line is starved
-  function aiDraft(nat) {
-    const S = { hands: deal(nat), squad: [] }, all = pool(nat);
-    const q = pos => { const r = all.filter(c => c.pos === pos).map(c => c.ovr).sort((a, b) => a - b); return r[Math.floor(r.length * 0.7)]; };
-    const run = (pos, need) => {
-      let seen = 0; const base = q(pos);
-      for (;;) {
-        const c = top(S, pos); if (!c) return false;
-        const left = S.hands[pos].filter(x => !inSquad(S.squad, x)).length;
-        if (left <= need || c.ovr + gauss() * 2.5 >= base - 2.5 * seen) { S.squad.push(c); S.hands[pos].shift(); return true; }
-        S.hands[pos].shift(); seen++;
-      }
-    };
-    run('GK', 1);
-    const shape = [[2, 1, 1], [1, 2, 1], [1, 1, 2]][Math.floor(AD.rand() * 3)];
-    ['DEF', 'MID', 'FWD'].forEach((pos, i) => { for (let k = 0; k < shape[i]; k++) if (!run(pos, shape[i] - k)) { for (const p of ['DEF', 'MID', 'FWD']) if (run(p, 1)) break; } });
-    return S.squad;
-  }
+  const LINE = { GK: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' };
 
   // ---------- pick screen
   let S = null, OPP = null;
@@ -392,15 +379,15 @@ const DATA = __DATA__;
     const seedParam = new URLSearchParams(location.search).get('seed');
     const seed = seedParam != null ? (+seedParam >>> 0) : (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     AD.seed(seed);
-    S = { nat, seed, name: ($('#teamName').value.trim() || nat), hands: deal(nat), squad: [], line: null };
+    S = { nat, seed, name: ($('#teamName').value.trim() || nat), D: AD.wcDeal(pool(nat)), squad: [], passed: 0, style: 'BAL', shape: null, order: null, sel: null };
     $('#dNation').textContent = `${nat} · ${DATA.nations[nat].nick}`;
     show('draft'); renderDraft();
   }
 
-  // ---------- draft screen
+  // ---------- draft screen: one jumbled deck, take or twist
   const cardHTML = (c, reveal) => {
     const wc = typeof c.yr === 'number';
-    const meta = wc ? `${esc(c.club)} · World Cup ${c.yr}${c.caps != null ? ` · ${c.caps} caps` : ''}` : `${esc(c.club)}`;
+    const meta = wc ? `${esc(c.club)} · World Cup ${c.yr}${c.caps != null ? ` · ${c.caps} caps` : ''}` : esc(c.club);
     let h = `<div class="nm">${esc(c.n)}</div><div class="mt">${c.pos}${reveal && c.sec ? ' / ' + c.sec : ''}</div><div class="mt dim">${meta}</div>`;
     if (reveal) {
       const ks = c.pos === 'GK' ? GKK : OUT;
@@ -410,62 +397,74 @@ const DATA = __DATA__;
   };
   function renderSquad(el, squad) {
     const rows = squad.map(c => `<div class="slot"><span>${esc(c.n)} <small>${c.pos}${c.sec ? '/' + c.sec : ''} · ${typeof c.yr === 'number' ? c.yr : 'legend'}</small></span><b>${c.ovr}</b></div>`);
-    while (rows.length < 5) rows.push(`<div class="slot empty"><span>${rows.length === 0 ? 'Goalkeeper' : 'Empty slot'}</span><b>-</b></div>`);
+    while (rows.length < 5) rows.push(`<div class="slot empty"><span>Empty slot</span><b>-</b></div>`);
     el.innerHTML = rows.join('');
   }
+  const mixText = c => ['GK', 'DEF', 'MID', 'FWD'].filter(p => c[p]).map(p => `${c[p]} ${p}`).join(' · ');
   function renderDraft() {
     renderSquad($('#dSquad'), S.squad);
     $('#dProg').textContent = `${S.squad.length} of 5 signed`;
-    const hasGK = S.squad.some(p => p.pos === 'GK'), lines = $('#dLines'), card = $('#dCard'), acts = $('#dActs');
-    if (S.squad.length === 5) return toSheet();
-    lines.innerHTML = '';
-    if (!hasGK) S.line = 'GK';
-    if (!S.line) {
-      card.hidden = true; acts.hidden = true;
-      $('#dNote').textContent = 'Pick the line for your next outfield slot. The card is dealt blind.';
-      ['DEF', 'MID', 'FWD'].forEach(pos => {
-        const left = S.hands[pos].filter(c => !inSquad(S.squad, c)).length, b = document.createElement('button');
-        b.type = 'button'; b.className = 'btn go'; b.disabled = !left; b.innerHTML = `${{ DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' }[pos]}<small>${left} in hand</small>`;
-        b.addEventListener('click', () => { S.line = pos; renderDraft(); }); lines.appendChild(b);
-      });
-      return;
-    }
-    const c = top(S, S.line);
-    if (!c) { S.line = null; return renderDraft(); }
-    const left = S.hands[S.line].filter(x => !inSquad(S.squad, x)).length;
-    card.hidden = false; acts.hidden = false; card.innerHTML = cardHTML(c, false);
-    $('#twistBtn').disabled = left === 1;
-    $('#twistBtn').textContent = left === 1 ? 'Twist (last card, must take)' : `Twist (${left - 1} more)`;
-    $('#dNote').textContent = (S.line === 'GK' ? 'Your goalkeeper: ' : `${{ DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' }[S.line]} slot: `) + `${left} card${left === 1 ? '' : 's'} left in this hand. No recall.`;
+    const D = S.D, cur = S.squad.length < 5 ? AD.wcCurrent(D, S.squad) : null;
+    if (S.squad.length === 5 || !cur) { while (S.squad.length < 5) S.squad.push(AD.freeAgent(S.squad.some(p => p.pos === 'GK') ? 'DEF' : 'GK')); return toSheet(); }
+    const left = AD.wcLeft(D); left[cur.pos]--;
+    $('#dDeck').innerHTML = `<div class="lbl">Still in the deck after this card</div>${mixText(left) || 'Nothing'}`;
+    const forced = AD.wcForced(D, S.squad), nd = AD.wcNeeds(S.squad);
+    $('#dCard').hidden = false; $('#dActs').hidden = false; $('#dCard').innerHTML = cardHTML(cur, false);
+    $('#takeBtn').hidden = false; $('#takeBtn').textContent = 'Take'; $('#twistBtn').disabled = forced;
+    $('#twistBtn').textContent = forced ? 'Twist (must take)' : 'Twist';
+    $('#dNote').textContent = (forced ? 'Not enough cards left to finish your squad, so this one is yours. ' : '') +
+      `You still need ${nd.gk ? 'a goalkeeper and ' : ''}${nd.out} outfield player${nd.out === 1 ? '' : 's'}. No recall.`;
   }
   $('#takeBtn').addEventListener('click', () => {
-    const c = top(S, S.line); S.hands[S.line].shift(); S.squad.push(c);
-    const el = $('#dCard'); el.innerHTML = cardHTML(c, true);
-    S.line = null; renderSquad($('#dSquad'), S.squad); $('#dProg').textContent = `${S.squad.length} of 5 signed`;
-    $('#dActs').hidden = true; $('#dLines').innerHTML = '';
-    const nx = document.createElement('button'); nx.type = 'button'; nx.className = 'btn go'; nx.textContent = S.squad.length === 5 ? 'To the team sheet' : 'Next slot';
-    nx.addEventListener('click', renderDraft); $('#dLines').appendChild(nx); $('#dNote').textContent = `${c.n} signs.`;
+    const c = AD.wcCurrent(S.D, S.squad); AD.wcTake(S.D, S.squad);
+    $('#dCard').innerHTML = cardHTML(c, true); renderSquad($('#dSquad'), S.squad); $('#dProg').textContent = `${S.squad.length} of 5 signed`;
+    $('#dActs').hidden = true; $('#dNote').textContent = `${c.n} signs.`;
+    const nx = $('#nextBtn') || Object.assign(document.createElement('button'), { id: 'nextBtn', type: 'button', className: 'btn go' });
+    nx.textContent = S.squad.length === 5 ? 'To the formation screen' : 'Next card'; nx.onclick = () => { nx.remove(); renderDraft(); };
+    $('#dNote').after(nx);
   });
-  $('#twistBtn').addEventListener('click', () => { S.hands[S.line].shift(); renderDraft(); });
+  $('#twistBtn').addEventListener('click', () => { AD.wcTwist(S.D); S.passed++; renderDraft(); });
 
-  // ---------- team sheet
+  // ---------- formation, line-up and play style
+  const STYLES = { DEF: ['Defensive', 'Keep it tight and play on the counter.'], BAL: ['Balanced', 'No big risks either way.'], ATT: ['Attacking', 'Dominate possession and create chances, with a looser back line.'] };
+  const SHAPE_NAMES = ['2-1-1', '1-2-1', '1-1-2'];
+  function setShape(sh) { S.shape = sh; S.order = AD.autoLineup(S.squad, sh).order; S.sel = null; renderSheet(); }
+  function renderSheet() {
+    const lu = AD.buildLineup(S.squad, S.shape, S.order);
+    $('#sShape').textContent = S.shape;
+    $('#shapeRow').innerHTML = SHAPE_NAMES.map(sh => `<button class="btn" type="button" data-sh="${sh}" aria-pressed="${sh === S.shape}">${sh}</button>`).join('');
+    $('#shapeRow').querySelectorAll('button').forEach(b => b.addEventListener('click', () => setShape(b.dataset.sh)));
+    const rows = [`<div class="slot"><span>GK · ${esc(lu.gk.n)}</span><b>${lu.gk.ovr}</b></div>`];
+    lu.slots.forEach((x, i) => rows.push(`<button class="slot${S.sel === i ? ' pick' : ''}" type="button" data-i="${i}"><span>${x.line} · ${esc(x.p.n)}${oop(x.p, x.line) ? ' *' : ''}</span><b>${Math.round(AD.slotRating(x.p, x.line))}</b></button>`));
+    $('#sXI').innerHTML = rows.join('');
+    $('#sXI').querySelectorAll('button.slot').forEach(b => b.addEventListener('click', () => {
+      const i = +b.dataset.i;
+      if (S.sel == null) S.sel = i; else { if (S.sel !== i) [S.order[S.sel], S.order[i]] = [S.order[i], S.order[S.sel]]; S.sel = null; }
+      renderSheet();
+    }));
+    $('#styleRow').innerHTML = Object.entries(STYLES).map(([k, v]) => `<button class="sbtn" type="button" data-st="${k}" aria-pressed="${k === S.style}"><b>${v[0]}</b><small>${v[1]}</small></button>`).join('');
+    $('#styleRow').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { S.style = b.dataset.st; renderSheet(); }));
+    $('#styleNote').textContent = '';
+    const o = OPP, os = STYLES[o.style];
+    $('#sOpp').innerHTML = `<div class="lbl">Opponent</div><b>${esc(o.nat)}</b> · ${esc(DATA.nations[o.nat].nick)}<br>Expect ${o.shape} and a ${os[0].toLowerCase()} approach: ${esc(os[1].toLowerCase())}<br><span class="note">Squad drafted from their own World Cup history. No ratings shown.</span>`;
+  }
+  function toSheet() {
+    const others = NAMES.filter(n => n !== S.nat), nat = others[Math.floor(AD.rand() * others.length)];
+    const squad = AD.wcAI(pool(nat));
+    OPP = { nat, squad, shape: AD.lineup(squad).shape, style: 'BAL' };
+    const r = AD.rand(); OPP.style = r < 0.5 ? 'BAL' : r < 0.75 ? 'DEF' : 'ATT';
+    OPP.lu = AD.autoLineup(squad, OPP.shape);
+    S.shape = AD.lineup(S.squad).shape; S.order = AD.autoLineup(S.squad, S.shape).order; S.sel = null;
+    show('sheet'); renderSheet();
+  }
+  $('#kickBtn').addEventListener('click', playMatch);
+
   const dist = (a, b) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const x = p(a), y = p(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
   function kitFor(nat, against) {
     const k = DATA.nations[nat].kit; let kit = { p: k[0], s: k[1], t: k[2] };
-    if (against && dist(kit.p, against.p) < 90) kit = { p: k[1] === '#FFFFFF' || k[1] === '#111111' || k[1] === '#000000' ? '#1b2a4a' : k[1], s: k[0], t: '#FFFFFF' };
+    if (against && dist(kit.p, against.p) < 90) kit = { p: ['#FFFFFF', '#111111', '#000000'].includes(k[1]) ? '#1b2a4a' : k[1], s: k[0], t: '#FFFFFF' };
     return kit;
   }
-  function toSheet() {
-    const others = NAMES.filter(n => n !== S.nat);
-    OPP = { nat: others[Math.floor(AD.rand() * others.length)] };
-    OPP.squad = aiDraft(OPP.nat);
-    const lu = AD.lineup(S.squad);
-    $('#sShape').textContent = lu.shape;
-    $('#sXI').innerHTML = [{ p: lu.gk, line: 'GK' }, ...lu.slots].map(x => `<div class="slot"><span>${x.line} · ${esc(x.p.n)}</span><b>${Math.round(AD.slotRating(x.p, x.line))}</b></div>`).join('');
-    $('#sOpp').innerHTML = `<div class="lbl">Opponent</div><b>${esc(OPP.nat)}</b> · ${esc(DATA.nations[OPP.nat].nick)}<br><span class="note">Squad drafted from their own World Cup history. No ratings shown.</span>`;
-    show('sheet');
-  }
-  $('#kickBtn').addEventListener('click', playMatch);
 
   // ---------- match
   let speed = 'normal', playToken = 0, KITS = null;
@@ -484,7 +483,7 @@ const DATA = __DATA__;
     const token = ++playToken; speed = 'normal';
     document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.speed === 'normal')));
     const home = kitFor(S.nat), away = kitFor(OPP.nat, home); KITS = [home, away];
-    const res = AD.simulate(AD.makeTeam({ name: S.name, squad: S.squad }, true, null), AD.makeTeam({ name: OPP.nat, squad: OPP.squad }, false, null));
+    const res = AD.simulate(AD.makeTeam({ name: S.name, squad: S.squad, style: S.style, tactic: { shape: S.shape, order: S.order } }, true, null), AD.makeTeam({ name: OPP.nat, squad: OPP.squad, style: OPP.style, tactic: { shape: OPP.shape, order: OPP.lu.order } }, false, null));
     show('match'); $('#resultWin').hidden = true;
     $('#nameH').textContent = S.name; $('#nameH').style.background = home.p; $('#nameH').style.color = home.t;
     $('#nameA').textContent = OPP.nat; $('#nameA').style.background = away.p; $('#nameA').style.color = away.t;
@@ -542,6 +541,6 @@ const DATA = __DATA__;
   $('#againBtn').addEventListener('click', () => { playToken++; show('pick'); });
 
   // test hooks for the simulation harness
-  window.WCF = { deal, aiDraft, pool, NAMES, DATA };
+  window.WCF = { pool, NAMES, DATA };
 })();
 </script>
