@@ -156,8 +156,8 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 
 /* Knocked-out screen: one pixel-art image full screen, caption and button over its calm bottom strip */
 .ko { position: fixed; inset: 0; z-index: 100; background: #000; display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 0px); overflow: hidden; }
-.ko .kimg { flex: 1 1 0; min-height: 0; width: 100%; display: flex; justify-content: center; }
-.ko img { max-width: 100%; max-height: 100%; height: 100%; width: auto; object-fit: contain; image-rendering: pixelated; display: block; }
+.ko .kimg { flex: 1 1 0; min-height: 0; width: min(100%, 480px); }
+.ko img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; image-rendering: pixelated; display: block; }
 .ko .kob { flex: none; width: min(100%, 440px); box-sizing: border-box; display: grid; gap: 8px; justify-items: center; text-align: center; padding: 12px 16px max(16px, env(safe-area-inset-bottom, 0px)); }
 .ko .kot { font-family: var(--f-crt); font-size: 30px; line-height: 1; letter-spacing: .08em; color: var(--amber); }
 .ko .kos { font-family: var(--f-crt); font-size: 24px; line-height: 1; letter-spacing: .06em; color: var(--crt-ink); }
@@ -1717,7 +1717,7 @@ const DATA = {"commentary":{"kickoff":["{team} get things going","{player} rolls
     $('#roundTag').textContent = out ? 'Knocked out' : '';
     const b = $('#nextBtn2');
     if (W.stage === 'DONE') { b.textContent = W.champion === W.nat ? 'Lift the trophy' : 'See the final standings'; b.onclick = showEnd; }
-    else if (W.out) { b.textContent = 'See result'; b.onclick = () => showKnockedOut(() => { while (W.stage !== 'DONE') AD.wcPlayStage(W, null); save(); showEnd(); }, $('#resultLine').textContent); }
+    else if (W.out) { b.textContent = 'Continue'; b.onclick = () => showKnockedOut(() => { while (W.stage !== 'DONE') AD.wcPlayStage(W, null); save(); showEnd(); }, $('#resultLine').textContent); }
     else { const f = AD.wcUserFixture(W), opp = f.a === W.nat ? f.b : f.a; b.textContent = `Next: ${W.stage[0] === 'G' ? 'matchday ' + W.stage[1] : SN(W.stage)} v ${opp}`; b.onclick = toSheet; }
     $('#roundWin').hidden = false;
   }
