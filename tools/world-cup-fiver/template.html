@@ -50,7 +50,9 @@ body {
 h1, h2 { margin: 0; text-wrap: balance; }
 
 /* Title */
-.logo { font-family: var(--f-crt); font-size: 64px; line-height: .9; color: var(--crt-ink); background: var(--crt); padding: 14px 14px 10px; letter-spacing: .02em; }
+.logo { font-family: var(--f-crt); font-size: 64px; line-height: .9; color: var(--crt-ink); background: var(--crt); padding: 14px 10px 10px; letter-spacing: .02em; display: flex; align-items: center; justify-content: space-between; gap: 6px; text-align: center; }
+.logo .lt { flex: 1 1 auto; min-width: 0; }
+.logo img { width: 64px; height: 64px; flex: none; image-rendering: pixelated; }
 .logo span { color: var(--amber); display: block; font-size: 30px; letter-spacing: .12em; }
 .rules { margin: 0 0 8px; padding-left: 18px; display: grid; gap: 1px; line-height: 1.25; }
 label.field { display: grid; gap: 4px; }
@@ -151,7 +153,9 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 .result-line { font-family: var(--f-crt); font-size: 34px; line-height: 1; }
 @media (max-width: 420px) {
   .card .nm { font-size: 36px; }
-  .logo { font-size: 54px; }
+  .logo { font-size: 44px; }
+  .logo img { width: 48px; height: 48px; }
+  .logo span { font-size: 24px; }
   .band.blink { font-size: 52px; }
   .sb-name { font-size: 20px; }
   .sb-goals { font-size: 18px; }
@@ -233,7 +237,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 
   <section class="screen" id="pick">
     <div class="win">
-      <div class="logo">World Cup<br>Fiver<span>5-A-SIDE · 32 NATIONS · STICK OR TWIST</span></div>
+      <div class="logo"><img src="__TROPHY__" alt=""><div class="lt">World Cup<br>Fiver<span>5-A-SIDE · 32 NATIONS · STICK OR TWIST</span></div><img src="__TROPHY__" alt=""></div>
       <div class="pad">
         <ol class="rules">
           <li>Pick a nation.</li>

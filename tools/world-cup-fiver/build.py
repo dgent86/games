@@ -85,7 +85,9 @@ t = (here / 'template.html').read_text(encoding='utf-8')
 e = (here / 'engine.js').read_text(encoding='utf-8')
 d = json.dumps(data, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
 assert t.count('__DATA__') == 1 and t.count('__ENGINE__') == 1
-page = t.replace('__DATA__', d).replace('__ENGINE__', e)
+import base64
+trophy = 'data:image/png;base64,' + base64.b64encode((here / 'trophy.png').read_bytes()).decode()
+page = t.replace('__DATA__', d).replace('__ENGINE__', e).replace('__TROPHY__', trophy)
 head = ('<!doctype html><html lang="en-GB"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
         '<meta name="robots" content="noindex">'
