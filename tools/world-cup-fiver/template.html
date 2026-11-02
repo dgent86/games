@@ -154,13 +154,12 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 
 
 /* Knocked-out screen: one pixel-art image full screen, caption and button over its calm bottom strip */
-.ko { position: fixed; inset: 0; z-index: 100; background: #000; display: grid; grid-template: 100% / 100%; overflow: hidden; }
-.ko img { grid-area: 1 / 1; width: 100%; height: 100%; min-height: 0; min-width: 0; object-fit: cover; image-rendering: pixelated; display: block; }
-@media (min-aspect-ratio: 3/5) { .ko img { object-fit: contain; } }
-.ko .kob { grid-area: 1 / 1; align-self: end; justify-self: center; width: min(100%, 440px); box-sizing: border-box; display: grid; gap: 10px; justify-items: center; text-align: center;
-  padding: 36px 16px max(20px, env(safe-area-inset-bottom, 0px)); background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.82) 45%); z-index: 2; }
-.ko .kot { font-family: var(--f-crt); font-size: 30px; line-height: 1; letter-spacing: .08em; color: var(--amber); text-shadow: 2px 2px 0 #000; }
-.ko .kos { font-family: var(--f-crt); font-size: 24px; line-height: 1; letter-spacing: .06em; color: var(--crt-ink); text-shadow: 2px 2px 0 #000; }
+.ko { position: fixed; inset: 0; z-index: 100; background: #000; display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 0px); overflow: hidden; }
+.ko .kimg { flex: 1 1 0; min-height: 0; width: 100%; display: flex; justify-content: center; }
+.ko img { max-width: 100%; max-height: 100%; height: 100%; width: auto; object-fit: contain; image-rendering: pixelated; display: block; }
+.ko .kob { flex: none; width: min(100%, 440px); box-sizing: border-box; display: grid; gap: 8px; justify-items: center; text-align: center; padding: 12px 16px max(16px, env(safe-area-inset-bottom, 0px)); }
+.ko .kot { font-family: var(--f-crt); font-size: 30px; line-height: 1; letter-spacing: .08em; color: var(--amber); }
+.ko .kos { font-family: var(--f-crt); font-size: 24px; line-height: 1; letter-spacing: .06em; color: var(--crt-ink); }
 .ko .btn { min-width: 200px; }
 /* Champions screen: full-screen flashing banner in the winner's kit colours with falling trophies */
 .champ { position: fixed; inset: 0; z-index: 100; background: var(--crt); overflow: hidden; container-type: inline-size; }
@@ -398,8 +397,8 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
   </section>
 
   <div class="ko" id="ko" hidden>
-    <img id="koImg" alt="">
-    <div class="kob"><div class="kot">KNOCKED OUT</div><div class="kos" id="koTxt"></div><button class="btn go" type="button" id="koBtn">Continue</button></div>
+    <div class="kimg"><img id="koImg" alt=""></div>
+    <div class="kob"><div class="kot">KNOCKED OUT</div><div class="kos" id="koScore"></div><div class="kos" id="koTxt"></div><button class="btn go" type="button" id="koBtn">Continue</button></div>
   </div>
   <div class="champ" id="champ" hidden>
     <canvas id="champCv"></canvas>
@@ -698,6 +697,7 @@ const DATA = __DATA__;
     $('#resultWin').hidden = false;
     roundUp(ROUND);
     $('#resultWin').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (W.out) showKnockedOut(() => { while (W.stage !== 'DONE') AD.wcPlayStage(W, null); save(); showEnd(); }, $('#resultLine').textContent);
   }
 
   // ---------- results, tables and the bracket
@@ -743,12 +743,12 @@ const DATA = __DATA__;
   // knocked-out screen: a pixel-art image of a famous exit, one from the user's own nation when there is one
   const KO = __KO__;
   let koLast = -1;
-  function showKnockedOut(done) {
+  function showKnockedOut(done, score) {
     const mine = KO.map((k, i) => [k, i]).filter(([k]) => k.nat.includes(W.nat)), list = mine.length ? mine : KO.map((k, i) => [k, i]);
     let pick = list[Math.floor(Math.random() * list.length)];
     if (list.length > 1 && pick[1] === koLast) pick = list[(list.indexOf(pick) + 1) % list.length];
     koLast = pick[1];
-    $('#koImg').src = pick[0].src; $('#koTxt').textContent = AD.wcOutcome(W) || '';
+    $('#koImg').src = pick[0].src; $('#koTxt').textContent = (AD.wcOutcome(W) || '').replace(/ to .*$/, ''); $('#koScore').textContent = score || '';
     $('#ko').hidden = false;
     $('#koBtn').onclick = () => { $('#ko').hidden = true; if (done) done(); };
   }
@@ -790,8 +790,9 @@ const DATA = __DATA__;
     $('#endBoot').innerHTML = AD.wcScorers(W).slice(0, 5).map(x => `<div class="r${x.nat === W.nat ? ' me' : ''}"><span>${esc(x.n)}</span><b>${x.g}</b><span>${nm(x.nat)}</span></div>`).join('');
     $('#endBracket').innerHTML = bracketHTML();
     $('#endGroups').innerHTML = allGroups();
+    const ck = kitFor(W.champion), eb = document.querySelector('#end .bar'); eb.style.background = ck.p; eb.style.color = ck.s; eb.style.borderColor = ck.s;
     clearSave(); show('end');
-    if (W.champion === W.nat) showChampions(); else showKnockedOut();
+    if (W.champion === W.nat) showChampions();
   }
   $('#againBtn').addEventListener('click', () => { playToken++; clearSave(); W = null; showResume(); show('pick'); });
 
