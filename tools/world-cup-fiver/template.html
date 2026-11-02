@@ -697,7 +697,6 @@ const DATA = __DATA__;
     $('#resultWin').hidden = false;
     roundUp(ROUND);
     $('#resultWin').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    if (W.out) showKnockedOut(() => { while (W.stage !== 'DONE') AD.wcPlayStage(W, null); save(); showEnd(); }, $('#resultLine').textContent);
   }
 
   // ---------- results, tables and the bracket
@@ -734,7 +733,7 @@ const DATA = __DATA__;
     $('#roundTag').textContent = out ? 'Knocked out' : '';
     const b = $('#nextBtn2');
     if (W.stage === 'DONE') { b.textContent = W.champion === W.nat ? 'Lift the trophy' : 'See the final standings'; b.onclick = showEnd; }
-    else if (W.out) { b.textContent = 'Simulate the rest of the tournament'; b.onclick = () => { while (W.stage !== 'DONE') AD.wcPlayStage(W, null); save(); showEnd(); }; }
+    else if (W.out) { b.textContent = 'See result'; b.onclick = () => showKnockedOut(() => { while (W.stage !== 'DONE') AD.wcPlayStage(W, null); save(); showEnd(); }, $('#resultLine').textContent); }
     else { const f = AD.wcUserFixture(W), opp = f.a === W.nat ? f.b : f.a; b.textContent = `Next: ${W.stage[0] === 'G' ? 'matchday ' + W.stage[1] : SN(W.stage)} v ${opp}`; b.onclick = toSheet; }
     $('#roundWin').hidden = false;
   }
