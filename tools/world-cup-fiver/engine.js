@@ -811,13 +811,19 @@ const AD = (() => {
     // attacking nations (temperament +1 or +2, such as Brazil or the West Africans) never drop below balanced
     return m >= 1.5 ? 'ATT' : m <= -1.5 && (WC_TEMPER[nat] || 0) < 1 ? 'DEF' : 'BAL';
   }
-  // ---------------- World Cup Fiver draft: one jumbled deck of 21 (3 GK, 6 DEF, 6 MID, 6 FWD) from the nation's own pool, take or twist, no recall.
+  // ---------------- World Cup Fiver draft: one jumbled deck (2 GK, 3 to 5 per outfield line) from the nation's own pool, take or twist, no recall.
   // A deck is { deck, idx }. The same real person is never dealt twice.
-  const WC_MIX = { GK: 3, DEF: 6, MID: 6, FWD: 6 };
+  // Deck size per line follows the nation's own depth: about a fifth of its distinct players in that line, between 3 and 5,
+  // so a thin pool does not hand out its one star most runs. Always 2 keepers.
+  function wcMix(cards) {
+    const m = { GK: 2 };
+    for (const pos of ['DEF', 'MID', 'FWD']) m[pos] = Math.max(3, Math.min(5, Math.round(new Set(cards.filter(c => c.pos === pos).map(c => c.n)).size * 0.2)));
+    return m;
+  }
   function wcDeal(cards) {
-    const names = new Set(), got = { GK: 0, DEF: 0, MID: 0, FWD: 0 }, deck = [];
+    const mix = wcMix(cards), names = new Set(), got = { GK: 0, DEF: 0, MID: 0, FWD: 0 }, deck = [];
     for (const c of shuffle(cards.slice())) {
-      if (names.has(c.n) || got[c.pos] >= WC_MIX[c.pos]) continue;
+      if (names.has(c.n) || got[c.pos] >= mix[c.pos]) continue;
       names.add(c.n); got[c.pos]++; deck.push(c);
     }
     return { deck: shuffle(deck), idx: 0 };
@@ -852,6 +858,6 @@ const AD = (() => {
   }
 
   return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
-    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, wcMentality, wcStrength, WC_TEMPER, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
+    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcMix, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, wcMentality, wcStrength, WC_TEMPER, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;

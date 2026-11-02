@@ -301,6 +301,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
             <div class="sb-team r"><div class="sb-name" id="nameA"></div><div class="sb-kit" id="kitA"></div><div class="sb-goals" id="goalsA"></div></div>
           </div>
           <div class="band" id="band" aria-live="polite"><span id="bandTxt"></span></div>
+          <div class="pk" id="pk" hidden aria-label="Penalty shootout"><div class="pkr"><b id="pkNH"></b><span id="pkH"></span></div><div class="pkr"><b id="pkNA"></b><span id="pkA"></span></div></div>
           <div class="sb-foot"><span id="prevLine"></span><span id="footRight"></span></div>
         </div>
         <div class="speed" role="group" aria-label="Commentary speed">
@@ -339,6 +340,12 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .card .ovr { font-size: 46px; color: var(--cyan); }
 .slots { display: grid; gap: 4px; }
 .slot { display: flex; justify-content: space-between; gap: 8px; background: var(--well); padding: 6px 8px; border: 2px solid; border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); font-size: 13px; }
+.pk { display: grid; gap: 6px; padding: 8px 10px; background: var(--crt); color: var(--crt-ink); font-family: var(--f-crt); font-size: 18px; }
+.pkr { display: grid; grid-template-columns: minmax(0, 7em) 1fr; gap: 10px; align-items: center; }
+.pkr b { font-weight: normal; color: var(--crt-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pkr span { display: flex; gap: 6px; flex-wrap: wrap; }
+.pkd { width: 16px; height: 16px; border-radius: 50%; display: inline-block; }
+.pkd.s { background: var(--amber); } .pkd.m { background: #6f6f67; }
 .tacrow.empty { background: transparent; border: 2px dashed var(--panel-lo); } .tacrow.empty .who b { color: var(--muted); font-weight: normal; }
 .slot.empty { color: var(--muted); } .slot b { font-variant-numeric: tabular-nums; }
 .rt { width: 100%; border-collapse: collapse; font-size: 12px; } .rt th, .rt td { padding: 3px 4px; text-align: left; } .rt .n { text-align: right; font-variant-numeric: tabular-nums; }
@@ -360,9 +367,9 @@ const DATA = __DATA__;
   // ---------- cards
   let uid = 0;
   function mk(nat, r) {
-    const [n, pos, sec, club, yr, caps, leg, ovr, a] = r;
+    const [n, pos, sec, club, yr, caps, leg, ovr, a, ag] = r;
     const at = {}; (pos === 'GK' ? GKK : OUT).forEach((k, i) => at[k] = a[i]);
-    return { id: uid++, n, pos, sec, club, season: String(yr), born: 0, ovr, a: at, age: 27, yr, caps, leg, nation: nat };
+    return { id: uid++, n, pos, sec, club, season: String(yr), born: 0, ovr, a: at, age: ag || 27, ag, yr, caps, leg, nation: nat };
   }
   const pool = nat => DATA.nations[nat].cards.map(r => mk(nat, r));
   const LINE = { GK: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' };
@@ -388,7 +395,7 @@ const DATA = __DATA__;
   // ---------- draft screen: one jumbled deck, take or twist
   const cardHTML = (c, reveal) => {
     const wc = typeof c.yr === 'number';
-    const meta = wc ? `${esc(c.club)} · World Cup ${c.yr}${c.caps != null ? ` · ${c.caps} caps` : ''}` : esc(c.club);
+    const meta = (wc ? `${esc(c.club)} · World Cup ${c.yr}` : esc(c.club)) + (c.ag ? ` · age ${c.ag}` : '') + (wc && c.caps != null ? ` · ${c.caps} cap${c.caps === 1 ? '' : 's'}` : '');
     return `<div class="nm">${esc(c.n)}</div><div class="mt">${c.pos}${reveal && c.sec ? ' / ' + c.sec : ''}</div><div class="mt dim">${meta}</div>` +
       (reveal ? `<div class="mt" style="color:var(--amber)">SIGNED</div>` : '');
   };
@@ -399,7 +406,7 @@ const DATA = __DATA__;
   }
   const initials = n => n === 'Free agent' ? 'FA' : n.split(/[\s-]+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
   const ORDER = ['GK', 'DEF', 'MID', 'FWD'];
-  const when = c => typeof c.yr === 'number' ? `${esc(c.club)} · ${c.yr}` : esc(c.club);
+  const when = c => (typeof c.yr === 'number' ? `${esc(c.club)} · ${c.yr}` : esc(c.club)) + (c.ag ? ` · age ${c.ag}` : '');
   // the five-man line-up fills as players sign: keeper on top, then defenders, midfielders, forwards, each with his overall rating
   function renderSquad(el, squad) {
     const kit = kitFor(S.nat), gk = squad.find(p => p.pos === 'GK');
@@ -507,7 +514,8 @@ const DATA = __DATA__;
     $('#kitH').style.background = home.s; $('#kitA').style.background = away.s;
     $('#goalsH').innerHTML = ''; $('#goalsA').innerHTML = ''; $('#prevLine').textContent = ''; $('#footRight').textContent = '';
     $('#scoreTxt').textContent = '0 - 0'; $('#clock').textContent = "0'"; $('#bandTxt').textContent = ''; $('#band').className = 'band'; $('#band').style.background = ''; $('#band').style.color = '';
-    const scorers = [new Map(), new Map()]; let clockMin = 0;
+    const scorers = [new Map(), new Map()]; let clockMin = 0, pks = [0, 0];
+    $('#pk').hidden = true; $('#pkH').innerHTML = ''; $('#pkA').innerHTML = ''; $('#pkNH').textContent = S.name; $('#pkNA').textContent = OPP.nat;
     for (const ev of res.events) {
       if (token !== playToken) return;
       if (ev.quiet) continue;
@@ -538,6 +546,13 @@ const DATA = __DATA__;
         let text = raw, side = ev.team;
         if (text.startsWith('#D')) { text = text.slice(2); side = side == null ? null : 1 - side; }
         for (const b of text.split('|')) { say(b, side, ev.lull ? 'lull' : ''); await wait(delay(b)); }
+      }
+      if (ev.pens) $('#pk').hidden = false;
+      if (ev.pen) {
+        // each kick as a dot: yellow scored, grey missed
+        const sc = ev.pscore[ev.team] > pks[ev.team]; pks = ev.pscore.slice();
+        const d = document.createElement('i'); d.className = 'pkd ' + (sc ? 's' : 'm'); d.title = sc ? 'Scored' : 'Missed';
+        $(ev.team === 0 ? '#pkH' : '#pkA').appendChild(d); $('#pk').hidden = false;
       }
       if (ev.pscore) $('#footRight').textContent = `Penalties ${ev.pscore[0]}-${ev.pscore[1]}`;
     }

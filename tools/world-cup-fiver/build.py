@@ -3,7 +3,7 @@
     python3 tools/world-cup-fiver/build.py
 cards.csv is the locked master deck (one row per player per tournament). The page carries every nation's cards inline.
 """
-import csv, json, pathlib
+import csv, json, pathlib, datetime
 root = pathlib.Path(__file__).resolve().parents[2]
 here = pathlib.Path(__file__).parent
 OUT = ['Fin', 'Pas', 'Dri', 'Pac', 'Def', 'Phy', 'Wrk', 'Com']
@@ -27,12 +27,21 @@ META = {
  'USA': ('Stars and Stripes', '#0A3161', '#B31942', '#FFFFFF'), 'Uruguay': ('La Celeste', '#55B5E5', '#000000', '#0B1F3A'),
  'Wales': ('The Dragons', '#C8102E', '#FFFFFF', '#FFFFFF'),
 }
+# tournament start dates, for each card's age at that World Cup
+START = {1950: '1950-06-24', 1954: '1954-06-16', 1958: '1958-06-08', 1962: '1962-05-30', 1966: '1966-07-11', 1970: '1970-05-31', 1974: '1974-06-13',
+         1978: '1978-06-01', 1982: '1982-06-13', 1986: '1986-05-31', 1990: '1990-06-08', 1994: '1994-06-17', 1998: '1998-06-10', 2002: '2002-05-31',
+         2006: '2006-06-09', 2010: '2010-06-11', 2014: '2014-06-12', 2018: '2018-06-14', 2022: '2022-11-20', 2026: '2026-06-11'}
+def age(dob, y):
+    if not dob or not str(y).isdigit() or int(y) not in START: return None
+    d, m, yy = (int(x) for x in dob.split('/')) if '/' in dob else reversed([int(x) for x in dob.split('-')])
+    s = datetime.date.fromisoformat(START[int(y)]); b = datetime.date(yy, m, d)
+    return s.year - b.year - ((s.month, s.day) < (b.month, b.day))
 nations = {}
 for r in csv.DictReader(open(here / 'cards.csv', encoding='utf-8')):
     a = [int(x) for x in r['Fin Pas Dri Pac Def Phy Wrk Com (GK: Sho Pos Dis Com)'].split()]
     caps = int(r['caps']) if str(r['caps']).strip().isdigit() else None
     y = r['tournament']
-    nations.setdefault(r['nation'], []).append([r['name'], r['pos'], r['secondary'], r['club'], int(y) if y.isdigit() else y, caps, 1 if r['legend'] == 'Y' else 0, int(r['rating']), a])
+    nations.setdefault(r['nation'], []).append([r['name'], r['pos'], r['secondary'], r['club'], int(y) if y.isdigit() else y, caps, 1 if r['legend'] == 'Y' else 0, int(r['rating']), a, age(r.get('dob', ''), y)])
 assert set(nations) == set(META), set(nations) ^ set(META)
 data = {'commentary': json.loads((here / 'commentary.json').read_text(encoding='utf-8')),
         'nations': {n: {'nick': META[n][0], 'kit': META[n][1:], 'cards': c} for n, c in sorted(nations.items())}}
