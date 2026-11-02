@@ -795,6 +795,22 @@ const AD = (() => {
   }
 
 
+
+  // How an AI nation sets up for one game: its natural temperament, shifted by how its five compare with the opponent's.
+  // +2 attacks whoever it plays, -2 sits deep by default. Every 3 rating points of gap moves it one step.
+  const WC_TEMPER = {
+    Brazil: 2, Netherlands: 2, Spain: 2,
+    Argentina: 1, Germany: 1, Nigeria: 1, Cameroon: 1, Colombia: 1, Mexico: 1, Denmark: 1, Belgium: 1, Portugal: 1,
+    France: 0, England: 0, Croatia: 0, Japan: 0, 'South Korea': 0, USA: 0, Australia: 0, Sweden: 0, Serbia: 0, Scotland: 0, Wales: 0, 'Saudi Arabia': 0,
+    Uruguay: -1, Switzerland: -1, Norway: -1, Ireland: -1,
+    Italy: -2, Morocco: -2, Tunisia: -2, Iran: -2
+  };
+  function wcStrength(squad) { const lu = lineup(squad); return (lu.gk.ovr + lu.slots.reduce((t, x) => t + slotRating(x.p, x.line), 0)) / 5; }
+  function wcMentality(nat, squad, oppSquad) {
+    const m = (WC_TEMPER[nat] || 0) + (wcStrength(squad) - wcStrength(oppSquad)) / 3 + gauss() * 0.5;
+    // attacking nations (temperament +1 or +2, such as Brazil or the West Africans) never drop below balanced
+    return m >= 1.5 ? 'ATT' : m <= -1.5 && (WC_TEMPER[nat] || 0) < 1 ? 'DEF' : 'BAL';
+  }
   // ---------------- World Cup Fiver draft: one jumbled deck of 21 (3 GK, 6 DEF, 6 MID, 6 FWD) from the nation's own pool, take or twist, no recall.
   // A deck is { deck, idx }. The same real person is never dealt twice.
   const WC_MIX = { GK: 3, DEF: 6, MID: 6, FWD: 6 };
@@ -836,6 +852,6 @@ const AD = (() => {
   }
 
   return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
-    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
+    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, wcMentality, wcStrength, WC_TEMPER, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;

@@ -469,7 +469,7 @@ const DATA = __DATA__;
     const others = NAMES.filter(n => n !== S.nat), nat = others[Math.floor(AD.rand() * others.length)];
     const squad = AD.wcAI(pool(nat));
     OPP = { nat, squad, shape: AD.lineup(squad).shape, style: 'BAL' };
-    const r = AD.rand(); OPP.style = r < 0.5 ? 'BAL' : r < 0.75 ? 'DEF' : 'ATT';
+    OPP.style = AD.wcMentality(nat, squad, S.squad);
     OPP.lu = AD.autoLineup(squad, OPP.shape);
     S.shape = AD.lineup(S.squad).shape; S.order = AD.autoLineup(S.squad, S.shape).order; S.sel = null;
     show('sheet'); renderSheet();
