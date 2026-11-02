@@ -32,7 +32,10 @@ const AD = (() => {
   const W = { DEF: [0, .10, .05, .15, .35, .20, .10, .05], MID: [.10, .30, .15, .05, .10, .05, .15, .10], FWD: [.35, .10, .20, .15, 0, .10, 0, .10] };
   const GKW = [.5, .3, .1, .1];
   let PLAYERS = [], MANAGERS = [], COM = {};
+  let WC_PERKS = {};
+  const perkKeys = nat => { const e = WC_PERKS[nat]; return e ? [...(e.perk ? e.perk.fx : []), ...(e.quirk ? e.quirk.fx : [])] : []; };
   function init(data) {
+    WC_PERKS = data.perks || {};
     PLAYERS = data.players.map((r, i) => {
       const [n, pos, sec, club, season, born, ovr, a] = r;
       const attrs = {}; (pos === 'GK' ? GKK : OUT).forEach((k, j) => attrs[k] = a[j]);
@@ -91,7 +94,7 @@ const AD = (() => {
       if (m.wrk && k === 'Wrk') v = Math.min(20, v + m.wrk);
       s += w[i] * v;
     });
-    const fam = p.pos === line ? 1 : (p.sec === line ? 0.95 : 0.90);
+    const fam = p.pos === line ? 1 : (m.tf ? 0.97 : (p.sec === line ? 0.95 : 0.90));
     return 5 * s * fam;
   }
   function lineup(squad) {
@@ -366,7 +369,7 @@ const AD = (() => {
   // ---------------- Match
   function makeTeam(m, isHome, mgr) {
     const lu = (m.tactic && buildLineup(m.squad, m.tactic.shape, m.tactic.order)) || lineup(m.squad);
-    return { name: m.name, isHome, gk: lu.gk, slots: lu.slots, shape: lu.shape, mgr: mgr || null, sp: mgr ? mgr.special : null, style: m.style || 'BAL', goals: 0, scorers: {} };
+    return { name: m.name, isHome, gk: lu.gk, slots: lu.slots, shape: lu.shape, mgr: mgr || null, sp: mgr ? mgr.special : null, perks: perkKeys(m.name), style: m.style || 'BAL', goals: 0, scorers: {} };
   }
   function match(gm, opts) {
     const H = makeTeam(gm.H, true, null), A = makeTeam(gm.A, false, gm.A.mgr);
@@ -375,17 +378,19 @@ const AD = (() => {
   function simulate(H, A, opts) {
     const ev = []; const teams = [H, A];
     let score = [0, 0], minute = 0, htSwitch = null;
-    const sp = (t, name) => t.sp === name;
+    const sp = (t, name) => t.sp === name || (t.perks && t.perks.indexOf(name) >= 0);
     const scoreline = () => `${H.name} ${score[0]}, ${A.name} ${score[1]}`;
     const avgOvr = t => (t.gk.ovr + t.slots.reduce((s, x) => s + x.p.ovr, 0)) / 5;
     const ranieriBonus = t => sp(t, 'Underdog spirit') ? (avgOvr(t) < avgOvr(t === H ? A : H) ? 3 : 1) : 0;
+    const perkBonus = t => (sp(t, 'Giant-killer') && avgOvr(t) < avgOvr(t === H ? A : H) ? 2 : 0) - (sp(t, 'Final jinx') && opts && opts.stage === 'F' ? 2.5 : 0);
     function pr(t, p, line) { // player rating in slot incl. specials and fatigue
-      const mods = { pas: sp(t, 'Flowing football') ? 2 : 0, wrk: sp(t, 'Intensity') ? 2 : 0 };
+      const mods = { pas: sp(t, 'Flowing football') ? 2 : 0, wrk: sp(t, 'Intensity') ? 2 : 0, tf: sp(t, 'Total football') };
       let r = slotRating(p, line, mods);
       if (sp(t, 'Calm authority') && p.ovr >= 86) r += 2;
-      r += ranieriBonus(t);
+      r += ranieriBonus(t) + perkBonus(t);
+      if (sp(t, 'Collapse') && score[teams.indexOf(t)] + 2 <= score[1 - teams.indexOf(t)]) r *= 0.90;
       const fs = Math.round(T.minutes * (sp(t, 'Heavy-metal pressing') ? 0.62 : 0.75));
-      if (minute >= fs) r *= 0.90 + 0.005 * Math.min(20, p.a.Wrk + mods.wrk);
+      if (minute >= fs && !(minute > T.minutes && sp(t, 'Extra-time legs'))) r *= 0.90 + 0.005 * Math.min(20, p.a.Wrk + mods.wrk);
       return r;
     }
     function lineStr(t, line) {
@@ -393,6 +398,10 @@ const AD = (() => {
       let v = ps.reduce((s, x) => s + pr(t, x.p, line), 0) / ps.length;
       const o = t === H ? A : H, ti = t === H ? 0 : 1, my = score[ti], their = score[1 - ti];
       if (line === 'MID' && sp(t, 'Positional play')) v *= 1.06;
+      if (line === 'FWD' && sp(t, 'Free-scoring')) v *= 1.03;
+      if (line === 'FWD' && sp(t, 'Flair')) v *= 1.02;
+      if (line === 'MID' && sp(t, 'Possession')) v *= 1.03;
+      if (line === 'DEF' && sp(t, 'Physical')) v *= 1.04;
       if (line === 'MID' && sp(t, 'Heavy-metal pressing')) v *= 1.08;
       if (line === 'DEF' && sp(t, 'Organisation')) v *= 1.06;
       if (line === 'DEF' && sp(t, 'Park the bus')) v *= 1.08; // a Mourinho back line is strong all game, not just when ahead
@@ -455,7 +464,7 @@ const AD = (() => {
       let pg;
       if (kind === 'oneonone') pg = T.g1v1 * Math.pow(shooter.a.Com / Math.max(1, (k.a.Pos + gkRate) / 2), T.goalExp);
       else if (kind === 'long') pg = T.gLong * Math.pow(fin / Math.max(1, (k.a.Sho + gkRate) / 2), T.goalExp);
-      else if (kind === 'header') pg = T.gHeader * Math.pow(((shooter.a.Fin + shooter.a.Phy) / 2) / ((k.a.Sho + k.a.Pos) / 2), T.goalExp) * (sp(t, 'Direct football') ? 1.2 : 1);
+      else if (kind === 'header') pg = T.gHeader * Math.pow(((shooter.a.Fin + shooter.a.Phy) / 2) / ((k.a.Sho + k.a.Pos) / 2), T.goalExp) * (sp(t, 'Direct football') ? 1.2 : 1) * (sp(t, 'Aerial') ? 1.15 : 1) * (sp(t, 'Set pieces') ? 1.10 : 1) * (sp(t, 'Physical') ? 1.08 : 1);
       else {
         const base = { std: T.gStd, lowcross: T.gLowCross, rebound: T.gRebound, error: T.gError }[kind];
         pg = base * Math.pow(fin / Math.max(1, (k.a.Sho + k.a.Pos) / 2), T.goalExp);
@@ -525,6 +534,9 @@ const AD = (() => {
       let c = T.chanceBase * Math.pow(ratio(att, def), T.chanceExp);
       if (sp(t, 'Entertainers') || sp(o, 'Entertainers')) c *= 1.15;
       if (sp(o, 'Hard to beat')) c *= 0.92;
+      if (sp(o, 'Locked door')) c *= 0.95;
+      if (sp(t, 'Low scoring') || sp(o, 'Low scoring')) c *= 0.88;
+      if (sp(t, 'Fast start') && minute <= 20) c *= 1.12;
       if (counter === ti) c *= STYLE.counterChance;
       [t, o].forEach(x => { if (x.mgr && TEMPO[x.mgr.name]) c *= TEMPO[x.mgr.name]; });
       c = clamp(c, 0.05, 0.9);
@@ -598,7 +610,7 @@ const AD = (() => {
         const a = rand() < pH ? 0 : 1, gs = score[0] + score[1];
         attack(a);
         // a defensive side that has just seen an attack off breaks straight away
-        if (teams[1 - a].style === 'DEF' && score[0] + score[1] === gs && rand() < STYLE.counterRate * (teams[a].style === 'ATT' ? STYLE.counterVsAtt : 1)) { counter = 1 - a; attack(1 - a); counter = null; }
+        if (teams[1 - a].style === 'DEF' && score[0] + score[1] === gs && rand() < STYLE.counterRate * (teams[a].style === 'ATT' ? STYLE.counterVsAtt : 1) * (sp(teams[1 - a], 'Counter') ? 1.5 : 1)) { counter = 1 - a; attack(1 - a); counter = null; }
       }
       const seen = ev.length > n0 && !ev[ev.length - 1].quiet;
       if (!seen) { quietRun++; if (quietRun === 14) push([pick(LULL)], null, { lull: true }); } else quietRun = 0;
@@ -653,8 +665,8 @@ const AD = (() => {
         for (let ti = 0; ti < 2; ti++) {
           const t = teams[ti], o = teams[1 - ti];
           const tk = ord[ti][taken[ti] % 5]; taken[ti]++;
-          const comp = tk.a.Com + (sp(t, 'Calm authority') ? 2 : 0);
-          const kAvg = (o.gk.a.Sho + o.gk.a.Com + (sp(o, 'Calm authority') ? 2 : 0)) / 2;
+          const comp = tk.a.Com + (sp(t, 'Calm authority') ? 2 : 0) + (sp(t, 'Shootout nerve') ? 3 : 0) - (sp(t, 'Shootout jitters') ? 3 : 0);
+          const kAvg = (o.gk.a.Sho + o.gk.a.Com + (sp(o, 'Calm authority') ? 2 : 0) + (sp(o, 'Shootout nerve') ? 2 : 0)) / 2;
           const p = clamp(0.75 + 0.02 * ((tk.pos === 'GK' ? 10 : (tk.a.Fin + comp) / 2) - kAvg), 0.55, 0.92);
           const ctx = { taker: N(tk), keeper: N(o.gk), team: t.name };
           const lines = [line('penalty_build', ctx)];
@@ -870,7 +882,7 @@ const AD = (() => {
     for (const f of wcFixtures(W, st)) {
       let r;
       if (userRes && userIn(W, f) && !W.out) r = userRes;
-      else r = wcRecord(simulate(aiTeam(W, f.a, f.b, true), aiTeam(W, f.b, f.a, false), ko ? { et: true } : { league: true }), f.a, f.b, st, f.g);
+      else r = wcRecord(simulate(aiTeam(W, f.a, f.b, true), aiTeam(W, f.b, f.a, false), ko ? { et: true, stage: st } : { league: true }), f.a, f.b, st, f.g);
       out.push(r);
       if (ko) { const t = W.ko[st].find(x => x.a === f.a && x.b === f.b); t.r = r; }
       if (ko && !W.out && userIn(W, f) && r.w !== W.nat) W.out = { stage: st, opp: f.a === W.nat ? f.b : f.a };
@@ -978,6 +990,6 @@ const AD = (() => {
   }
 
   return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
-    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcMix, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, wcKnow, WC_KNOW, wcMentality, wcBind, wcNewRun, wcFixtures, wcUserFixture, wcRecord, wcPlayStage, wcTable, wcOutcome, wcScorers, wcAITeam, WC_STAGES: STAGES, WC_STAGE_NAME: STAGE_NAME, WC_GROUPS: GROUPS, wcStrength, WC_TEMPER, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
+    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcMix, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, wcKnow, WC_KNOW, wcMentality, wcPerks: nat => WC_PERKS[nat] || null, wcBind, wcNewRun, wcFixtures, wcUserFixture, wcRecord, wcPlayStage, wcTable, wcOutcome, wcScorers, wcAITeam, WC_STAGES: STAGES, WC_STAGE_NAME: STAGE_NAME, WC_GROUPS: GROUPS, wcStrength, WC_TEMPER, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;

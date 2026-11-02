@@ -79,7 +79,7 @@ for nat, cards in nations.items():
             groups[pid][1].add(c[0])
         c.append(pid)
 print('cards merged under another spelling:', merged)
-data = {'commentary': json.loads((here / 'commentary.json').read_text(encoding='utf-8')),
+data = {'perks': json.loads((here / 'perks.json').read_text(encoding='utf-8')), 'commentary': json.loads((here / 'commentary.json').read_text(encoding='utf-8')),
         'nations': {n: {'nick': META[n][0], 'kit': META[n][1:], 'cards': c} for n, c in sorted(nations.items())}}
 t = (here / 'template.html').read_text(encoding='utf-8')
 e = (here / 'engine.js').read_text(encoding='utf-8')

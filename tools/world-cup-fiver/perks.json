@@ -1,0 +1,306 @@
+{
+ "Argentina": {
+  "why": "Argentina have won six of their seven World Cup penalty shootouts, more than any other nation.",
+  "perk": {
+   "name": "Shootout nerve",
+   "blurb": "Penalty takers and the keeper stay calm in a shootout.",
+   "fx": [
+    "Shootout nerve"
+   ]
+  },
+  "src": [
+   "https://theanalyst.com/2022/12/world-cup-penalty-shootouts-the-facts"
+  ]
+ },
+ "Australia": {
+  "why": "2006 v Japan: 0-1 down until the 84th minute, won 3-1 with three goals in the last eight minutes (Cahill twice, Aloisi).",
+  "perk": {
+   "name": "Late surge",
+   "blurb": "Forwards come alive in the last ten minutes when level or behind, and there is extra injury time.",
+   "fx": [
+    "Fergie time"
+   ]
+  }
+ },
+ "Belgium": {
+  "why": "2018 round of 16 v Japan: 0-2 down, won 3-2 with a counter-attack in the 94th minute.",
+  "perk": {
+   "name": "Counter-punch",
+   "blurb": "After repelling an attack they hit back on the counter more often.",
+   "fx": [
+    "Counter"
+   ]
+  }
+ },
+ "Brazil": {
+  "why": "Five World Cups and a name for flair. The wobble is the 7-1 semi-final defeat to Germany in 2014.",
+  "perk": {
+   "name": "Jogo bonito",
+   "blurb": "Forwards get a small flair bonus.",
+   "fx": [
+    "Flair"
+   ]
+  },
+  "quirk": {
+   "name": "Mineirazo",
+   "blurb": "Two or more goals behind and the whole team wobbles.",
+   "fx": [
+    "Collapse"
+   ]
+  }
+ },
+ "Cameroon": {
+  "why": "1990: beat holders Argentina 1-0 in the opener after two Cameroon red cards, and became the first African side in a World Cup quarter-final.",
+  "perk": {
+   "name": "Indomitable",
+   "blurb": "Strong in the tackle and in the air.",
+   "fx": [
+    "Physical"
+   ]
+  }
+ },
+ "Colombia": {
+  "why": "2014: 12 goals in five matches, with James Rodriguez winning the Golden Boot.",
+  "perk": {
+   "name": "Free-scoring",
+   "blurb": "Forwards get a small finishing bonus.",
+   "fx": [
+    "Free-scoring"
+   ]
+  }
+ },
+ "Croatia": {
+  "why": "Won all four of their World Cup shootouts (Denmark, Russia, Japan, Brazil), and in 2018 played extra time in three knockout games in a row.",
+  "perk": {
+   "name": "Never say die",
+   "blurb": "Penalty takers and the keeper stay calm in a shootout, and legs hold up in extra time.",
+   "fx": [
+    "Shootout nerve",
+    "Extra-time legs"
+   ]
+  },
+  "src": [
+   "https://theanalyst.com/2022/12/world-cup-penalty-shootouts-the-facts"
+  ]
+ },
+ "Denmark": {
+  "why": "The nickname dates from 1986, when they beat Uruguay 6-1 and won all three group games.",
+  "perk": {
+   "name": "Danish Dynamite",
+   "blurb": "Explosive starts: more chances in the first twenty minutes.",
+   "fx": [
+    "Fast start"
+   ]
+  }
+ },
+ "England": {
+  "why": "In 2018 England scored 9 of their 12 goals from set pieces, a World Cup record.",
+  "perk": {
+   "name": "Set-piece threat",
+   "blurb": "More goals from headers and set plays.",
+   "fx": [
+    "Set pieces"
+   ]
+  },
+  "src": [
+   "https://www.goal.com/en-us/news/england-set-world-cup-set-piece-record/1c1xmsuse8kwi1a6x9p6jxh0vu"
+  ]
+ },
+ "France": {
+  "why": "2022 final: 0-2 down to Argentina, level at 2-2 within two minutes of Mbappe scoring in the 80th.",
+  "perk": {
+   "name": "Les Bleus never quit",
+   "blurb": "Forwards come alive in the last ten minutes when level or behind, and there is extra injury time.",
+   "fx": [
+    "Fergie time"
+   ]
+  }
+ },
+ "Germany": {
+  "why": "Won their first four World Cup shootouts (1982, 1986, 1990, 2006). They lost their first in 2026, to Paraguay.",
+  "perk": {
+   "name": "Nervenstaerke",
+   "blurb": "Penalty takers and the keeper stay calm in a shootout.",
+   "fx": [
+    "Shootout nerve"
+   ]
+  },
+  "src": [
+   "https://theanalyst.com/2022/12/world-cup-penalty-shootouts-the-facts",
+   "https://www.getfootballnewsgermany.com/2026/germanys-world-cup-ended-in-a-rare-penalty-shootout-defeat/"
+  ]
+ },
+ "Ireland": {
+  "why": "2002 v Germany: Robbie Keane equalised in the 92nd minute to rescue a 1-1 draw.",
+  "perk": {
+   "name": "Boys in Green",
+   "blurb": "Forwards come alive in the last ten minutes when level or behind, and there is extra injury time.",
+   "fx": [
+    "Fergie time"
+   ]
+  }
+ },
+ "Italy": {
+  "why": "2006 winners conceded two goals all tournament (an own goal and a penalty). But Italy lost their first three World Cup shootouts (1990, 1994, 1998).",
+  "perk": {
+   "name": "Catenaccio",
+   "blurb": "Opponents create fewer chances.",
+   "fx": [
+    "Locked door"
+   ]
+  },
+  "quirk": {
+   "name": "Shootout jitters",
+   "blurb": "Penalty takers are less composed in a shootout.",
+   "fx": [
+    "Shootout jitters"
+   ]
+  },
+  "src": [
+   "https://theanalyst.com/2022/12/world-cup-penalty-shootouts-the-facts"
+  ]
+ },
+ "Japan": {
+  "why": "2022: beat Germany and then Spain 2-1, both from a goal down at half-time.",
+  "perk": {
+   "name": "Samurai spirit",
+   "blurb": "Behind at half-time, they change their approach and attack the weakest line.",
+   "fx": [
+    "Half-time switch"
+   ]
+  }
+ },
+ "Morocco": {
+  "why": "2022: conceded one goal in the tournament before the semi-final, an own goal against Canada.",
+  "perk": {
+   "name": "Atlas wall",
+   "blurb": "Opponents create fewer chances.",
+   "fx": [
+    "Locked door"
+   ]
+  },
+  "src": [
+   "https://mothership.sg/2022/12/morocco-concede-1-goal-so-far/"
+  ]
+ },
+ "Netherlands": {
+  "why": "Positional interchange was the Michels and Cruyff idea of 1974. They have also lost three finals (1974, 1978, 2010).",
+  "perk": {
+   "name": "Total Football",
+   "blurb": "Players lose almost nothing when moved out of position.",
+   "fx": [
+    "Total football"
+   ]
+  },
+  "quirk": {
+   "name": "Final jinx",
+   "blurb": "A small dip in a World Cup final.",
+   "fx": [
+    "Final jinx"
+   ]
+  },
+  "src": [
+   "https://www.beinsports.com/en-us/soccer/fifa-world-cup-2026/articles/the-netherlands-and-its-three-lost-world-cup-finals-2026-06-03"
+  ]
+ },
+ "Nigeria": {
+  "why": "Nickname perk: Eagles win the high ball.",
+  "perk": {
+   "name": "Super Eagles",
+   "blurb": "They fly: more goals from headers.",
+   "fx": [
+    "Aerial"
+   ]
+  }
+ },
+ "Norway": {
+  "why": "Egil Olsen's direct style took Norway to 1998, where they beat Brazil 2-1.",
+  "perk": {
+   "name": "Route one",
+   "blurb": "Direct football: more crosses and high balls, and more headed goals.",
+   "fx": [
+    "Direct football"
+   ]
+  }
+ },
+ "Saudi Arabia": {
+  "why": "2022: beat Argentina 2-1 on their way to being the biggest upset of the tournament.",
+  "perk": {
+   "name": "Giant-killers",
+   "blurb": "A rating boost against stronger opponents.",
+   "fx": [
+    "Giant-killer"
+   ]
+  }
+ },
+ "Scotland": {
+  "why": "1978: beat the Netherlands 3-2, the eventual finalists.",
+  "perk": {
+   "name": "Tartan Army",
+   "blurb": "A rating boost against stronger opponents.",
+   "fx": [
+    "Giant-killer"
+   ]
+  }
+ },
+ "South Korea": {
+  "why": "2002: beat Italy 2-1 with a golden goal in extra time, then Spain on penalties after a 0-0 extra time.",
+  "perk": {
+   "name": "Taegeuk fitness",
+   "blurb": "Legs hold up in extra time while opponents tire.",
+   "fx": [
+    "Extra-time legs"
+   ]
+  }
+ },
+ "Spain": {
+  "why": "2010 winners scored eight goals in seven games, the fewest by any champion.",
+  "perk": {
+   "name": "Tiki-taka",
+   "blurb": "Midfield controls the ball and is stronger.",
+   "fx": [
+    "Possession"
+   ]
+  },
+  "quirk": {
+   "name": "1-0 specialists",
+   "blurb": "Low-scoring games: fewer chances at both ends.",
+   "fx": [
+    "Low scoring"
+   ]
+  },
+  "src": [
+   "https://www.timeslive.co.za/sport/soccer/2010-07-12-spain-set-record-of-fewest-goals-for-cup-winners/"
+  ]
+ },
+ "Switzerland": {
+  "why": "2006: first team ever out of a World Cup without conceding a goal in normal play, beaten 3-0 on penalties by Ukraine without scoring one.",
+  "perk": {
+   "name": "Swiss lock",
+   "blurb": "Opponents create fewer chances.",
+   "fx": [
+    "Locked door"
+   ]
+  },
+  "quirk": {
+   "name": "Shootout jitters",
+   "blurb": "Penalty takers are less composed in a shootout.",
+   "fx": [
+    "Shootout jitters"
+   ]
+  },
+  "src": [
+   "https://www.foxsports.com/stories/soccer/on-this-day-switzerland-exits-2006-world-cup"
+  ]
+ },
+ "Uruguay": {
+  "why": "Nickname perk: garra charrua, the fighting spirit of La Celeste.",
+  "perk": {
+   "name": "Garra Charrua",
+   "blurb": "Work rate up: they do not get out-fought.",
+   "fx": [
+    "Intensity"
+   ]
+  }
+ }
+}

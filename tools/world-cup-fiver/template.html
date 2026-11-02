@@ -355,6 +355,10 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
       </div>
     </div>
     <div class="win">
+      <div class="bar"><span>National traits</span></div>
+      <div class="pad"><div class="well" id="sTraits"></div></div>
+    </div>
+    <div class="win">
       <div class="bar"><span>Scouting report</span></div>
       <div class="pad">
         <div class="well" id="sOpp"></div>
@@ -438,7 +442,8 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .nbtn { display: block; text-align: left; font: inherit; color: var(--ink); background: var(--panel); min-height: 52px; padding: 6px 8px 6px 14px; cursor: pointer; touch-action: manipulation;
   border: 2px solid; border-color: var(--panel-hi) var(--panel-lo) var(--panel-lo) var(--panel-hi); position: relative; }
 .nbtn::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--k, #888); border-right: 2px solid var(--k2, #444); }
-.nbtn b { display: block; font-size: 14px; } .nbtn small { color: var(--muted); font-size: 11px; }
+.nbtn b { display: block; font-size: 14px; } .nbtn small { color: var(--muted); font-size: 11px; display: block; } .nbtn small.pkt { color: var(--navy); font-weight: 600; } .nbtn small.pkt i { font-weight: 400; color: #8a2a2a; }
+.perk { margin-top: 4px; font-size: 13px; } .perk.q b { color: #8a2a2a; } .why { margin-top: 4px; font-size: 11px; color: var(--muted); font-style: italic; }
 .nbtn:focus-visible { outline: 2px dashed var(--navy); outline-offset: 2px; }
 .card { background: var(--crt); color: var(--crt-ink); padding: 14px; display: grid; gap: 4px; font-family: var(--f-crt); }
 .card .nm { font-size: 38px; line-height: 1; color: var(--amber); }
@@ -487,7 +492,7 @@ const DATA = __DATA__;
 (() => {
   const $ = s => document.querySelector(s);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  AD.init({ players: [], managers: [], commentary: DATA.commentary });
+  AD.init({ players: [], managers: [], commentary: DATA.commentary, perks: DATA.perks });
   const OUT = ['Fin', 'Pas', 'Dri', 'Pac', 'Def', 'Phy', 'Wrk', 'Com'], GKK = ['Sho', 'Pos', 'Dis', 'Com'];
   const NAMES = Object.keys(DATA.nations);
   const show = id => { document.querySelectorAll('.screen').forEach(s => s.hidden = s.id !== id); window.scrollTo(0, 0); };
@@ -517,12 +522,15 @@ const DATA = __DATA__;
 
   // ---------- pick screen
   let S = null, OPP = null;
+  const perkNames = n => { const e = DATA.perks[n]; return e ? esc(e.perk.name) + (e.quirk ? ' · <i>' + esc(e.quirk.name) + '</i>' : '') : 'No trait yet'; };
+  const perkHTML = n => { const e = DATA.perks[n]; if (!e) return `<b>${esc(n)}</b>: no trait. Nothing in their World Cup record has earned one yet.`;
+    return `<b>${esc(n)}</b> · ${esc(DATA.nations[n].nick)}<div class="perk"><b>+ ${esc(e.perk.name)}.</b> ${esc(e.perk.blurb)}</div>` + (e.quirk ? `<div class="perk q"><b>- ${esc(e.quirk.name)}.</b> ${esc(e.quirk.blurb)}</div>` : '') + `<div class="why">${esc(e.why)}</div>`; };
   const params = new URLSearchParams(location.search);
   const grid = $('#nationGrid');
   NAMES.forEach(n => {
     const k = DATA.nations[n].kit, b = document.createElement('button');
     b.type = 'button'; b.className = 'nbtn'; b.style.setProperty('--k', k[0]); b.style.setProperty('--k2', k[1]);
-    b.innerHTML = `<b>${esc(n)}</b><small>${esc(DATA.nations[n].nick)}</small>`;
+    b.innerHTML = `<b>${esc(n)}</b><small>${esc(DATA.nations[n].nick)}</small><small class="pkt">${perkNames(n)}</small>`;
     b.addEventListener('click', () => startDraft(n)); grid.appendChild(b);
   });
   function startDraft(nat) {
@@ -608,10 +616,11 @@ const DATA = __DATA__;
     $('#styleRow').innerHTML = Object.entries(STYLES).map(([k, v]) => `<button class="sbtn" type="button" data-st="${k}" aria-pressed="${k === S.style}"><b>${v[0]}</b><small>${v[1]}</small></button>`).join('');
     $('#styleRow').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { S.style = b.dataset.st; renderSheet(); }));
     $('#styleNote').textContent = '';
+    $('#sTraits').innerHTML = perkHTML(S.nat);
     const o = OPP, os = STYLES[o.style];
     const ok = kitFor(o.nat, kitFor(S.nat)), olu = o.lu;
     const orow = (p, line) => `<div class="tacrow fixed l-${line}">${shirt(ok, initials(p.n), 30)}<span class="who"><b>${esc(p.n)}</b><span>${when(p)}</span></span><span></span><span class="tag">${line}</span></div>`;
-    $('#sOpp').innerHTML = `<div class="lbl">Opponent</div><b>${esc(o.nat)}</b> · ${esc(DATA.nations[o.nat].nick)}<br>Expect ${o.shape} and a ${os[0].toLowerCase()} approach: ${esc(os[1].toLowerCase())}` +
+    $('#sOpp').innerHTML = `<div class="lbl">Opponent</div><b>${esc(o.nat)}</b> · ${esc(DATA.nations[o.nat].nick)}<br>Expect ${o.shape} and a ${os[0].toLowerCase()} approach: ${esc(os[1].toLowerCase())}` + (DATA.perks[o.nat] ? `<div class="perk"><b>Trait: ${esc(DATA.perks[o.nat].perk.name)}.</b> ${esc(DATA.perks[o.nat].perk.blurb)}</div>` + (DATA.perks[o.nat].quirk ? `<div class="perk q"><b>Weakness: ${esc(DATA.perks[o.nat].quirk.name)}.</b> ${esc(DATA.perks[o.nat].quirk.blurb)}</div>` : '') : '') +
       `<div class="slots" style="gap:4px;margin-top:8px">${orow(olu.gk, 'GK')}${olu.slots.map(x => orow(x.p, x.line)).join('')}</div><span class="note">Their ratings stay hidden until full time.</span>`;
   }
   function toSheet() {
@@ -652,7 +661,7 @@ const DATA = __DATA__;
     const home = kitFor(S.nat), away = kitFor(OPP.nat, home); KITS = [home, away];
     const st = W.stage, ko = st[0] !== 'G';
     TAC = { shape: S.shape, order: S.order.slice(), style: S.style };
-    const res = AD.simulate(AD.makeTeam({ name: S.name, squad: S.squad, style: S.style, tactic: { shape: S.shape, order: S.order } }, true, null), AD.makeTeam({ name: OPP.nat, squad: OPP.squad, style: OPP.style, tactic: { shape: OPP.shape, order: OPP.lu.order } }, false, null), ko ? { et: true } : { league: true });
+    const res = AD.simulate(AD.makeTeam({ name: S.name, squad: S.squad, style: S.style, tactic: { shape: S.shape, order: S.order } }, true, null), AD.makeTeam({ name: OPP.nat, squad: OPP.squad, style: OPP.style, tactic: { shape: OPP.shape, order: OPP.lu.order } }, false, null), ko ? { et: true, stage: st } : { league: true });
     // the whole stage is played and saved before the commentary starts, so leaving mid-match cannot replay a game
     const ROUND = { st, list: AD.wcPlayStage(W, AD.wcRecord(res, W.nat, OPP.nat, st, ko ? null : groupOf(W.nat))) };
     save();
@@ -870,7 +879,7 @@ const DATA = __DATA__;
     while (W.stage !== 'DONE' && !W.out && AD.WC_STAGES.indexOf(W.stage) < stop) {
       const f = AD.wcUserFixture(W), opp = f.a === W.nat ? f.b : f.a, ai = AD.wcAITeam(W, opp, W.nat), ko = W.stage[0] !== 'G';
       const res = AD.simulate(AD.makeTeam({ name: W.nat, squad: sqOf(W.nat), style: TAC.style, tactic: { shape: TAC.shape, order: TAC.order } }, true, null),
-        AD.makeTeam({ name: opp, squad: sqOf(opp), style: ai.style, tactic: { shape: ai.shape, order: ai.order } }, false, null), ko ? { et: true } : { league: true });
+        AD.makeTeam({ name: opp, squad: sqOf(opp), style: ai.style, tactic: { shape: ai.shape, order: ai.order } }, false, null), ko ? { et: true, stage: W.stage } : { league: true });
       AD.wcPlayStage(W, AD.wcRecord(res, W.nat, opp, W.stage, ko ? null : groupOf(W.nat)));
     }
     save();
