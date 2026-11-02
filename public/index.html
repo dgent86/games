@@ -22,6 +22,7 @@ h1 span{color:var(--flood)}
 .games{display:grid;gap:14px}
 .game{display:flex;justify-content:space-between;align-items:center;gap:16px;text-decoration:none;color:inherit;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:12px;padding:18px 20px;transition:transform .15s,border-color .15s}
 a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--flood);outline:none}
+.gimg{flex:none;height:48px;width:auto;image-rendering:pixelated;margin-right:-6px}
 .game h2{margin:0;font:900 34px/1 var(--display);text-transform:uppercase}
 .game h2 span{color:var(--flood)}
 .game p{margin:6px 0 0;color:var(--muted)}
@@ -42,6 +43,11 @@ footer{margin-top:36px;color:var(--muted);font-size:13px}
     </a>
     <a class="game" href="/five-a-sold/">
       <div><h2>Five-a-<span>Sold</span></h2><p>Bid against a famous manager for a five-a-side squad on a £20m budget, then watch the highlights in classic 90s text commentary.</p></div>
+      <span class="go">Play</span>
+    </a>
+    <a class="game" href="/world-cup-fiver/">
+      <img class="gimg" src="/world-cup-fiver/trophy.png" alt="">
+      <div style="flex:1"><h2>World Cup <span>Fiver</span></h2><p>Guide your team to the ultimate prize in football.</p></div>
       <span class="go">Play</span>
     </a>
     <div class="game soon" aria-disabled="true">
