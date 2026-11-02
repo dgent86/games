@@ -240,10 +240,16 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
           <li>Five players: one keeper, four outfield. Cards come up one at a time from a jumbled deck.</li>
           <li>Take him or twist. A twisted card is gone for this run, with no recall. If you run short of cards to finish your squad, the next one must be taken.</li>
           <li>Ratings stay hidden until the team sheet. Then pick a formation and a play style.</li>
-          <li>Private test build: one draft, one match against a random nation. The group draw and knockouts come next.</li>
+          <li>Then the draw: 32 nations, 8 groups of 4. The top two in each group reach the round of 16, then it is knockout to the final, with extra time and penalties.</li>
+          <li>Private test build. Progress is saved in this browser after every match.</li>
         </ol>
         <label class="field" for="teamName"><span class="lbl">Your team name</span>
           <input type="text" id="teamName" placeholder="e.g. Skeffling Rovers" maxlength="20" autocomplete="off"></label>
+        <div class="well" id="resumeBox" hidden>
+          <div class="lbl">Tournament in progress</div>
+          <div id="resumeTxt"></div>
+          <div class="row" style="margin-top:8px"><button class="btn go" type="button" id="resumeBtn">Continue</button><button class="btn" type="button" id="abandonBtn">Abandon run</button></div>
+        </div>
         <div class="lbl">Choose your nation</div>
         <div class="nations" id="nationGrid"></div>
       </div>
@@ -266,7 +272,26 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
     </div>
   </section>
 
+  <section class="screen" id="draw" hidden>
+    <div class="win">
+      <div class="bar"><span>The draw</span><span id="drawCount"></span></div>
+      <div class="pad">
+        <div class="drawnow" id="drawNow" aria-live="polite"></div>
+        <div class="lbl" id="myGroupLbl"></div>
+        <div class="mygroup" id="myGroup"></div>
+        <div class="ggrid" id="allGroups"></div>
+        <button class="btn" type="button" id="skipDraw">Skip to the groups</button>
+        <div id="drawDone" hidden>
+          <div class="lbl">Your group games</div>
+          <div class="fx" id="myFixtures"></div>
+          <button class="btn go" type="button" id="startBtn" style="width:100%;margin-top:10px">Start match 1</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="screen" id="sheet" hidden>
+    <div class="win"><div class="bar stagebar"><span id="sStage"></span><span id="sVs"></span></div></div>
     <div class="win">
       <div class="bar"><span>Formation</span><span id="sShape"></span></div>
       <div class="pad">
@@ -318,7 +343,30 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
         <div id="scorers" class="note"></div>
         <div class="lbl">Ratings revealed · match rating out of 10 · * out of position</div>
         <table class="rt" id="ratings"></table>
-        <button class="btn go" type="button" id="againBtn">Draft again</button>
+      </div>
+    </div>
+    <div class="win" id="roundWin" hidden>
+      <div class="bar"><span id="roundTitle"></span><span id="roundTag"></span></div>
+      <div class="pad">
+        <div class="fx" id="roundRes"></div>
+        <div id="roundTables"></div>
+        <button class="btn go" type="button" id="nextBtn2" style="width:100%"></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="end" hidden>
+    <div class="win">
+      <div class="bar"><span>Tournament over</span><span id="endTag"></span></div>
+      <div class="pad">
+        <div class="result-line" id="endLine"></div>
+        <div class="well" id="endChamp"></div>
+        <div class="lbl">Golden boot</div>
+        <div class="fx" id="endBoot"></div>
+        <div class="lbl">Knockouts</div>
+        <div id="endBracket"></div>
+        <details><summary class="lbl">Final group tables</summary><div id="endGroups"></div></details>
+        <button class="btn go" type="button" id="againBtn">Play again</button>
       </div>
     </div>
   </section>
@@ -346,6 +394,27 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .pkr span { display: flex; gap: 6px; flex-wrap: wrap; }
 .pkd { width: 16px; height: 16px; border-radius: 50%; display: inline-block; }
 .pkd.s { background: var(--amber); } .pkd.m { background: #6f6f67; }
+.stagebar { justify-content: space-between; }
+.drawnow { background: var(--crt); color: var(--amber); font-family: var(--f-crt); font-size: 30px; line-height: 1.1; padding: 12px 14px; min-height: 60px; }
+.mygroup { display: grid; gap: 4px; }
+.mygroup .slot2 { background: var(--well); border: 2px solid var(--panel-lo); padding: 8px 10px; font-weight: bold; min-height: 40px; display: flex; align-items: center; gap: 8px; }
+.mygroup .slot2.empty { border-style: dashed; color: var(--muted); font-weight: normal; }
+.ggrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.gbox { background: var(--well); padding: 6px 8px; font-size: 12px; min-width: 0; border: 2px solid transparent; }
+.gbox b { display: block; font-size: 11px; letter-spacing: .08em; color: var(--muted); }
+.gbox div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gbox.mine { border-color: var(--navy); background: #fff; }
+.me { background: #fff1b8; font-weight: bold; }
+.fx { display: grid; gap: 2px; font-size: 13px; }
+.fx .r { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; padding: 3px 6px; background: var(--well); }
+.fx .r span:first-child { text-align: right; } .fx .r b { font-variant-numeric: tabular-nums; text-align: center; min-width: 3.2em; }
+.fx .r.me { font-weight: normal; } .fx .r .w { font-weight: bold; } .fx .sub { font-size: 11px; color: var(--muted); text-align: center; grid-column: 1 / -1; margin-top: -2px; }
+.fx h4 { margin: 8px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.gt { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; } .gt th, .gt td { padding: 3px 4px; text-align: right; font-variant-numeric: tabular-nums; }
+.gt th:first-child, .gt td:first-child { text-align: left; } .gt thead th { border-bottom: 2px solid var(--panel-lo); } .gt tr.q td:first-child { border-left: 4px solid var(--good); }
+.gt caption { text-align: left; font-weight: bold; font-size: 11px; letter-spacing: .08em; color: var(--muted); padding-top: 6px; }
+details summary { cursor: pointer; padding: 6px 0; }
+@media (prefers-reduced-motion: reduce) { .drawnow { transition: none; } }
 .tacrow.empty { background: transparent; border: 2px dashed var(--panel-lo); } .tacrow.empty .who b { color: var(--muted); font-weight: normal; }
 .slot.empty { color: var(--muted); } .slot b { font-variant-numeric: tabular-nums; }
 .rt { width: 100%; border-collapse: collapse; font-size: 12px; } .rt th, .rt td { padding: 3px 4px; text-align: left; } .rt .n { text-align: right; font-variant-numeric: tabular-nums; }
@@ -371,11 +440,25 @@ const DATA = __DATA__;
     const at = {}; (pos === 'GK' ? GKK : OUT).forEach((k, i) => at[k] = a[i]);
     return { id: uid++, n, pos, sec, club, season: String(yr), born: 0, ovr, a: at, age: ag || 27, ag, pid, yr, caps, leg, nation: nat };
   }
-  const pool = nat => DATA.nations[nat].cards.map(r => mk(nat, r));
+  const POOLS = {};
+  const pool = nat => POOLS[nat] || (POOLS[nat] = DATA.nations[nat].cards.map((r, i) => Object.assign(mk(nat, r), { key: i })));
+  // free agents (only if a deck ever ran dry) are stored by position name
+  const cardOf = (nat, i) => typeof i === 'string' ? AD.freeAgent(i) : pool(nat)[i];
+  AD.wcBind(cardOf);
+  const sqOf = nat => W.sq[nat].map(i => cardOf(nat, i));
+  const keyOf = c => c.fa ? c.pos : c.key;
+  let W = null, TAC = null;
+  const SAVE = 'wcf.run.v1';
+  function save() { try { localStorage.setItem(SAVE, JSON.stringify({ W, TAC })); } catch (e) {} }
+  function load() { try { const s = JSON.parse(localStorage.getItem(SAVE)); return s && s.W && s.W.v === 1 && s.W.stage !== 'DONE' ? s : null; } catch (e) { return null; } }
+  function clearSave() { try { localStorage.removeItem(SAVE); } catch (e) {} }
+  const SN = st => AD.WC_STAGE_NAME[st] || st;
+  const groupOf = nat => AD.WC_GROUPS.find(g => W.groups[g].includes(nat));
   const LINE = { GK: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' };
 
   // ---------- pick screen
   let S = null, OPP = null;
+  const params = new URLSearchParams(location.search);
   const grid = $('#nationGrid');
   NAMES.forEach(n => {
     const k = DATA.nations[n].kit, b = document.createElement('button');
@@ -384,7 +467,7 @@ const DATA = __DATA__;
     b.addEventListener('click', () => startDraft(n)); grid.appendChild(b);
   });
   function startDraft(nat) {
-    const seedParam = new URLSearchParams(location.search).get('seed');
+    const seedParam = params.get('seed');
     const seed = seedParam != null ? (+seedParam >>> 0) : (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     AD.seed(seed);
     S = { nat, seed, name: ($('#teamName').value.trim() || nat), D: AD.wcDeal(pool(nat)), squad: [], passed: 0, style: 'BAL', shape: null, order: null, sel: null };
@@ -423,7 +506,7 @@ const DATA = __DATA__;
     renderSquad($('#dSquad'), S.squad);
     $('#dProg').textContent = `${S.squad.length} of 5 signed`;
     const D = S.D, cur = S.squad.length < 5 ? AD.wcCurrent(D, S.squad) : null;
-    if (S.squad.length === 5 || !cur) { while (S.squad.length < 5) S.squad.push(AD.freeAgent(S.squad.some(p => p.pos === 'GK') ? 'DEF' : 'GK')); return toSheet(); }
+    if (S.squad.length === 5 || !cur) { while (S.squad.length < 5) S.squad.push(AD.freeAgent(S.squad.some(p => p.pos === 'GK') ? 'DEF' : 'GK')); return startRun(); }
     const left = AD.wcLeft(D); left[cur.pos]--;
     $('#dDeck').innerHTML = `<div class="lbl">Still in the deck after this card</div>${mixText(left) || 'Nothing'}`;
     const forced = AD.wcForced(D, S.squad), nd = AD.wcNeeds(S.squad);
@@ -438,7 +521,7 @@ const DATA = __DATA__;
     $('#dCard').innerHTML = cardHTML(c, true); renderSquad($('#dSquad'), S.squad); $('#dProg').textContent = `${S.squad.length} of 5 signed`;
     $('#dActs').hidden = true; $('#dNote').textContent = `${c.n} signs.`;
     const nx = $('#nextBtn') || Object.assign(document.createElement('button'), { id: 'nextBtn', type: 'button', className: 'btn go' });
-    nx.textContent = S.squad.length === 5 ? 'To the formation screen' : 'Next card'; nx.onclick = () => { nx.remove(); renderDraft(); };
+    nx.textContent = S.squad.length === 5 ? 'To the draw' : 'Next card'; nx.onclick = () => { nx.remove(); renderDraft(); };
     $('#dNote').after(nx);
   });
   $('#twistBtn').addEventListener('click', () => { AD.wcTwist(S.D); S.passed++; renderDraft(); });
@@ -473,12 +556,13 @@ const DATA = __DATA__;
       `<div class="slots" style="gap:4px;margin-top:8px">${orow(olu.gk, 'GK')}${olu.slots.map(x => orow(x.p, x.line)).join('')}</div><span class="note">Their ratings stay hidden until full time.</span>`;
   }
   function toSheet() {
-    const others = NAMES.filter(n => n !== S.nat), nat = others[Math.floor(AD.rand() * others.length)];
-    const squad = AD.wcAI(pool(nat));
-    OPP = { nat, squad, shape: AD.lineup(squad).shape, style: 'BAL' };
-    OPP.style = AD.wcMentality(nat, squad, S.squad);
-    OPP.lu = AD.autoLineup(squad, OPP.shape);
-    S.shape = AD.lineup(S.squad).shape; S.order = AD.autoLineup(S.squad, S.shape).order; S.sel = null;
+    const f = AD.wcUserFixture(W), opp = f.a === W.nat ? f.b : f.a, ai = AD.wcAITeam(W, opp, W.nat);
+    OPP = { nat: opp, squad: sqOf(opp), shape: ai.shape, style: ai.style };
+    OPP.lu = AD.buildLineup(OPP.squad, OPP.shape, ai.order);
+    S = { nat: W.nat, name: W.name, squad: sqOf(W.nat), shape: TAC.shape, order: TAC.order.slice(), style: TAC.style, sel: null };
+    const st = W.stage;
+    $('#sStage').textContent = st[0] === 'G' ? `Group ${groupOf(W.nat)} · matchday ${st[1]}` : SN(st);
+    $('#sVs').textContent = `v ${opp}`;
     show('sheet'); renderSheet();
   }
   $('#kickBtn').addEventListener('click', playMatch);
@@ -507,8 +591,13 @@ const DATA = __DATA__;
     const token = ++playToken; speed = 'normal';
     document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.speed === 'normal')));
     const home = kitFor(S.nat), away = kitFor(OPP.nat, home); KITS = [home, away];
-    const res = AD.simulate(AD.makeTeam({ name: S.name, squad: S.squad, style: S.style, tactic: { shape: S.shape, order: S.order } }, true, null), AD.makeTeam({ name: OPP.nat, squad: OPP.squad, style: OPP.style, tactic: { shape: OPP.shape, order: OPP.lu.order } }, false, null));
-    show('match'); $('#resultWin').hidden = true;
+    const st = W.stage, ko = st[0] !== 'G';
+    TAC = { shape: S.shape, order: S.order.slice(), style: S.style };
+    const res = AD.simulate(AD.makeTeam({ name: S.name, squad: S.squad, style: S.style, tactic: { shape: S.shape, order: S.order } }, true, null), AD.makeTeam({ name: OPP.nat, squad: OPP.squad, style: OPP.style, tactic: { shape: OPP.shape, order: OPP.lu.order } }, false, null), ko ? { et: true } : { league: true });
+    // the whole stage is played and saved before the commentary starts, so leaving mid-match cannot replay a game
+    const ROUND = { st, list: AD.wcPlayStage(W, AD.wcRecord(res, W.nat, OPP.nat, st, ko ? null : groupOf(W.nat))) };
+    save();
+    show('match'); $('#resultWin').hidden = true; $('#roundWin').hidden = true;
     $('#nameH').textContent = S.name; $('#nameH').style.background = home.p; $('#nameH').style.color = home.t;
     $('#nameA').textContent = OPP.nat; $('#nameA').style.background = away.p; $('#nameA').style.color = away.t;
     $('#kitH').style.background = home.s; $('#kitA').style.background = away.s;
@@ -522,7 +611,7 @@ const DATA = __DATA__;
       if (ev.pen || ev.pens) $('#clock').textContent = 'PENS';
       else {
         while (clockMin < ev.min - 1 && speed !== 'skip') { clockMin++; $('#clock').textContent = `${clockMin}'`; await wait(speed === 'fast' ? 25 : 110); if (token !== playToken) return; }
-        clockMin = ev.min; $('#clock').textContent = ev.min > 90 ? `90+${ev.min - 90}'` : `${ev.min}'`;
+        clockMin = ev.min; $('#clock').textContent = `${ev.min}'`;
       }
       for (const raw of ev.lines) {
         if (token !== playToken) return;
@@ -531,7 +620,7 @@ const DATA = __DATA__;
           const gl = ev.goal;
           if (gl) {
             const key = short(gl.n) + (gl.own ? ' (og)' : ''), m = scorers[gl.ti];
-            m.set(key, (m.get(key) || []).concat(gl.min > 90 ? `90+${gl.min - 90}'` : `${gl.min}'`));
+            m.set(key, (m.get(key) || []).concat(`${gl.min}'`));
             $(gl.ti === 0 ? '#goalsH' : '#goalsA').innerHTML = [...m].map(([n, mins]) => `<div>${esc(n)} ${mins.join(', ')}</div>`).join('');
           }
           if (speed !== 'skip') {
@@ -543,6 +632,7 @@ const DATA = __DATA__;
         }
         if (raw === '@HT') { say('HALF TIME', null, 'ht'); await wait(delay('') * 1.6); continue; }
         if (raw === '@FT') { say('FULL TIME', null, 'ht'); await wait(delay('') * 1.6); continue; }
+        if (raw === '@ET') { say('EXTRA TIME', null, 'ht'); await wait(delay('') * 1.6); continue; }
         let text = raw, side = ev.team;
         if (text.startsWith('#D')) { text = text.slice(2); side = side == null ? null : 1 - side; }
         for (const b of text.split('|')) { say(b, side, ev.lull ? 'lull' : ''); await wait(delay(b)); }
@@ -556,23 +646,154 @@ const DATA = __DATA__;
       }
       if (ev.pscore) $('#footRight').textContent = `Penalties ${ev.pscore[0]}-${ev.pscore[1]}`;
     }
-    finish(res);
+    finish(res, ROUND);
   }
   const oop = (p, line) => p.pos !== 'GK' && p.pos !== line && p.sec !== line;
-  function finish(res) {
+  function finish(res, ROUND) {
     const [H, A] = res.teams, s = res.score, w = res.winner;
-    $('#resultTag').textContent = w === 0 ? 'You win' : `${OPP.nat} win`;
-    $('#resultLine').textContent = `${H.name} ${s[0]} - ${s[1]} ${A.name}` + (res.pens ? ` (${res.pens.score[0]}-${res.pens.score[1]} pens)` : '');
+    $('#resultTag').textContent = w == null ? 'Draw' : w === 0 ? 'You win' : `${OPP.nat} win`;
+    $('#resultLine').textContent = `${H.name} ${s[0]} - ${s[1]} ${A.name}` + (res.et && !res.pens ? ' (aet)' : '') + (res.pens ? ` (aet, ${res.pens.score[0]}-${res.pens.score[1]} pens)` : '');
     const ogs = res.ratings.flat().filter(x => x.stats.og).map(x => x.p.n);
     $('#scorers').textContent = ogs.length ? `Own goals: ${ogs.join(', ')}.` : '';
     const all = res.ratings.flat(), best = all.reduce((a, b) => b.rating > a.rating ? b : a);
     const rows = list => list.map(x => `<tr><td>${esc(x.p.n)}${x === best ? ' <b>MOTM</b>' : ''}</td><td>${x.line}${oop(x.p, x.line) ? '*' : ''}</td><td class="n">${x.p.ovr}</td><td class="n">${x.stats.g || ''}</td><td class="n">${x.stats.a || ''}</td><td class="n">${x.rating.toFixed(1)}</td></tr>`).join('');
     $('#ratings').innerHTML = `<thead><tr><th>Player</th><th>Slot</th><th class="n">OVR</th><th class="n">G</th><th class="n">A</th><th class="n">Rtg</th></tr></thead><tbody><tr><th colspan="6">${esc(H.name)}</th></tr>${rows(res.ratings[0])}<tr><th colspan="6">${esc(A.name)}</th></tr>${rows(res.ratings[1])}</tbody>`;
-    $('#resultWin').hidden = false; $('#resultWin').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('#resultWin').hidden = false;
+    roundUp(ROUND);
+    $('#resultWin').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-  $('#againBtn').addEventListener('click', () => { playToken++; show('pick'); });
+
+  // ---------- results, tables and the bracket
+  const nm = n => n === W.nat ? esc(W.name) : esc(n);
+  function resRow(r) {
+    const me = r.a === W.nat || r.b === W.nat, wa = r.w === r.a, wb = r.w === r.b;
+    const sub = (r.et ? 'after extra time' : '') + (r.pa != null ? `, ${r.pa}-${r.pb} on penalties` : '');
+    return `<div class="r${me ? ' me' : ''}"><span class="${wa ? 'w' : ''}">${nm(r.a)}</span><b>${r.ga} - ${r.gb}</b><span class="${wb ? 'w' : ''}">${nm(r.b)}</span>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
+  }
+  function tableHTML(g) {
+    const t = AD.wcTable(W, g), done = (W.res.G3 || []).length > 0;
+    return `<table class="gt"><caption>Group ${g}</caption><thead><tr><th>Nation</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>` +
+      t.map((x, i) => `<tr class="${x.nat === W.nat ? 'me ' : ''}${done && i < 2 ? 'q' : ''}"><td>${nm(x.nat)}</td><td>${x.p}</td><td>${x.w}</td><td>${x.d}</td><td>${x.l}</td><td>${x.gd > 0 ? '+' + x.gd : x.gd}</td><td><b>${x.pts}</b></td></tr>`).join('') + '</tbody></table>';
+  }
+  function bracketHTML() {
+    return ['R16', 'QF', 'SF', 'F'].filter(st => W.ko[st]).map(st => `<div class="fx"><h4>${SN(st)}</h4>` +
+      W.ko[st].map(t => t.r ? resRow(t.r) : `<div class="r${t.a === W.nat || t.b === W.nat ? ' me' : ''}"><span>${nm(t.a)}</span><b>v</b><span>${nm(t.b)}</span></div>`).join('') + '</div>').join('');
+  }
+  const allGroups = () => AD.WC_GROUPS.map(tableHTML).join('');
+  function roundUp(R) {
+    const st = R.st, grp = st[0] === 'G';
+    $('#roundTitle').textContent = grp ? `Matchday ${st[1]} results` : `${SN(st)} results`;
+    if (grp) {
+      const mine = groupOf(W.nat);
+      $('#roundRes').innerHTML = `<h4>Group ${mine}</h4>` + R.list.filter(r => r.g === mine).map(resRow).join('') +
+        `<details><summary class="lbl">Other groups</summary>${AD.WC_GROUPS.filter(g => g !== mine).map(g => `<h4>Group ${g}</h4>` + R.list.filter(r => r.g === g).map(resRow).join('')).join('')}</details>`;
+      $('#roundTables').innerHTML = tableHTML(mine) + `<details><summary class="lbl">All group tables</summary>${allGroups()}</details>` + (W.ko.R16 ? bracketHTML() : '');
+    } else {
+      // knockouts: the bracket already carries this round's results
+      $('#roundRes').innerHTML = '';
+      $('#roundTables').innerHTML = bracketHTML();
+    }
+    const out = W.out && W.out.stage === st || (W.out && W.out.stage === 'G' && st === 'G3');
+    $('#roundTag').textContent = out ? 'Knocked out' : '';
+    const b = $('#nextBtn2');
+    if (W.stage === 'DONE') { b.textContent = W.champion === W.nat ? 'Lift the trophy' : 'See the final standings'; b.onclick = showEnd; }
+    else if (W.out) { b.textContent = 'Simulate the rest of the tournament'; b.onclick = () => { while (W.stage !== 'DONE') AD.wcPlayStage(W, null); save(); showEnd(); }; }
+    else { const f = AD.wcUserFixture(W), opp = f.a === W.nat ? f.b : f.a; b.textContent = `Next: ${W.stage[0] === 'G' ? 'matchday ' + W.stage[1] : SN(W.stage)} v ${opp}`; b.onclick = toSheet; }
+    $('#roundWin').hidden = false;
+  }
+  function showEnd() {
+    const oc = AD.wcOutcome(W);
+    $('#endTag').textContent = W.champion === W.nat ? 'Champions' : '';
+    $('#endLine').textContent = `${W.name} - ${W.nat} - ${oc}`;
+    const F = W.ko.F[0].r;
+    $('#endChamp').innerHTML = `<div class="lbl">World champions</div><b>${nm(W.champion)}</b><div class="fx" style="margin-top:6px">${resRow(F)}</div>`;
+    $('#endBoot').innerHTML = AD.wcScorers(W).slice(0, 5).map(x => `<div class="r${x.nat === W.nat ? ' me' : ''}"><span>${esc(x.n)}</span><b>${x.g}</b><span>${nm(x.nat)}</span></div>`).join('');
+    $('#endBracket').innerHTML = bracketHTML();
+    $('#endGroups').innerHTML = allGroups();
+    clearSave(); show('end');
+  }
+  $('#againBtn').addEventListener('click', () => { playToken++; clearSave(); W = null; showResume(); show('pick'); });
+
+  // ---------- the draw: all 32 nations drawn one at a time into groups A to H
+  let drawTimer = null;
+  function startRun() {
+    W = AD.wcNewRun({ seed: S.seed, nat: S.nat, name: S.name, squad: S.squad.map(keyOf), nations: NAMES, pool, cardOf });
+    const sh = AD.lineup(S.squad).shape;
+    TAC = { shape: sh, order: AD.autoLineup(S.squad, sh).order, style: 'BAL' };
+    save();
+    const jump = params.get('jump');
+    if (jump) return jumpTo(jump.toUpperCase());
+    runDraw();
+  }
+  function renderDraw(n) {
+    const placed = W.order.slice(0, n), mine = groupOf(W.nat), myIn = placed.includes(W.nat);
+    const inG = g => W.groups[g].filter(x => placed.includes(x));
+    $('#drawCount').textContent = `${n} of 32`;
+    $('#myGroupLbl').textContent = myIn ? `Your group: Group ${mine}` : `${W.nat} not drawn yet`;
+    const mg = myIn ? inG(mine) : [];
+    $('#myGroup').innerHTML = [0, 1, 2, 3].map(i => mg[i] ? `<div class="slot2${mg[i] === W.nat ? ' me' : ''}">${shirt(kitFor(mg[i]), '', 22)}${nm(mg[i])}</div>` : `<div class="slot2 empty">${i + 1}</div>`).join('');
+    $('#allGroups').innerHTML = AD.WC_GROUPS.map(g => `<div class="gbox${myIn && g === mine ? ' mine' : ''}"><b>GROUP ${g}</b>${inG(g).map(x => `<div class="${x === W.nat ? 'me' : ''}">${nm(x)}</div>`).join('')}</div>`).join('');
+  }
+  function runDraw() {
+    show('draw'); $('#drawDone').hidden = true; $('#skipDraw').hidden = false;
+    let i = 0; clearInterval(drawTimer); renderDraw(0); $('#drawNow').textContent = 'The draw is about to begin...';
+    const fast = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    drawTimer = setInterval(() => {
+      const n = W.order[i]; i++;
+      $('#drawNow').textContent = `${n === W.nat ? W.name + ' (' + n + ')' : n}, Group ${groupOf(n)}`;
+      renderDraw(i);
+      if (i >= 32) drawFinished();
+    }, fast ? 60 : 650);
+  }
+  function drawFinished() {
+    clearInterval(drawTimer); renderDraw(32);
+    $('#drawNow').textContent = `Group ${groupOf(W.nat)} it is.`;
+    $('#skipDraw').hidden = true; $('#drawDone').hidden = false;
+    const g = groupOf(W.nat);
+    $('#myFixtures').innerHTML = ['G1', 'G2', 'G3'].map((st, k) => { const f = AD.wcFixtures(W, st).find(x => x.a === W.nat || x.b === W.nat); return `<div class="r me"><span>${nm(f.a)}</span><b>MD${k + 1}</b><span>${nm(f.b)}</span></div>`; }).join('');
+    $('#startBtn').textContent = `Start match 1 v ${(() => { const f = AD.wcUserFixture(W); return f.a === W.nat ? f.b : f.a; })()}`;
+  }
+  $('#skipDraw').addEventListener('click', drawFinished);
+  $('#startBtn').addEventListener('click', toSheet);
+
+  // test builds: ?jump=r16 (or qf, sf, f) plays your games instantly up to that stage
+  function jumpTo(target) {
+    const stop = AD.WC_STAGES.indexOf(target);
+    while (W.stage !== 'DONE' && !W.out && AD.WC_STAGES.indexOf(W.stage) < stop) {
+      const f = AD.wcUserFixture(W), opp = f.a === W.nat ? f.b : f.a, ai = AD.wcAITeam(W, opp, W.nat), ko = W.stage[0] !== 'G';
+      const res = AD.simulate(AD.makeTeam({ name: W.name, squad: sqOf(W.nat), style: TAC.style, tactic: { shape: TAC.shape, order: TAC.order } }, true, null),
+        AD.makeTeam({ name: opp, squad: sqOf(opp), style: ai.style, tactic: { shape: ai.shape, order: ai.order } }, false, null), ko ? { et: true } : { league: true });
+      AD.wcPlayStage(W, AD.wcRecord(res, W.nat, opp, W.stage, ko ? null : groupOf(W.nat)));
+    }
+    save();
+    if (W.stage === 'DONE') return showEnd();
+    if (W.out) { while (W.stage !== 'DONE') AD.wcPlayStage(W, null); return showEnd(); }
+    toSheet();
+  }
+
+  // ---------- resume a saved run
+  function showResume() {
+    const sv = load();
+    $('#resumeBox').hidden = !sv;
+    if (!sv) return;
+    const w = sv.W, f = (() => { W = w; const x = AD.wcUserFixture(w); return x; })();
+    $('#resumeTxt').innerHTML = `<b>${esc(w.name)}</b> · ${esc(w.nat)} · ${w.out ? 'knocked out' : SN(w.stage)}${f && !w.out ? ` v ${esc(f.a === w.nat ? f.b : f.a)}` : ''}`;
+    W = null;
+  }
+  $('#resumeBtn').addEventListener('click', () => {
+    const sv = load(); if (!sv) return showResume();
+    W = sv.W; TAC = sv.TAC;
+    if (W.out) { while (W.stage !== 'DONE') AD.wcPlayStage(W, null); return showEnd(); }
+    toSheet();
+  });
+  $('#abandonBtn').addEventListener('click', e => {
+    const b = e.currentTarget;
+    if (b.dataset.armed) { clearSave(); delete b.dataset.armed; b.textContent = 'Abandon run'; showResume(); return; }
+    b.dataset.armed = '1'; b.textContent = 'Tap again to abandon';
+  });
+  showResume();
 
   // test hooks for the simulation harness
-  window.WCF = { pool, NAMES, DATA };
+  window.WCF = { pool, NAMES, DATA, get W() { return W; } };
 })();
 </script>

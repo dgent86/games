@@ -585,7 +585,7 @@ const AD = (() => {
     const ctxK = { team: H.name, player: N(pick(outfield(H))) };
     push([line('kickoff', ctxK)], 0);
     let end = T.minutes, quietRun = 0;
-    for (minute = 1; minute <= end; minute++) {
+    const step = () => {
       if (minute === T.minutes) {
         teams.forEach((t, ti) => { if (sp(t, 'Fergie time') && score[ti] <= score[1 - ti]) end = T.minutes + 2 + Math.floor(rand() * 3); });
         if (end > T.minutes) push(['Added time on the board...|The pressure is on !'], null);
@@ -620,9 +620,20 @@ const AD = (() => {
         });
         push([line('second_half', { team: A.name, player: N(pick(outfield(A))) })], null);
       }
-    }
+        };
+    for (minute = 1; minute <= end; minute++) step();
     minute = end;
-    let winner = null, pens = null;
+    let winner = null, pens = null, et = false;
+    // knockout games level after 90 minutes: 30 minutes of extra time, then penalties
+    if (score[0] === score[1] && opts && opts.et) {
+      et = true;
+      push(['@ET', 'Level after ninety minutes. We go to extra time...'], null, { ht: true, et: true });
+      for (minute = T.minutes + 1; minute <= T.minutes + 30; minute++) {
+        step();
+        if (minute === T.minutes + 15) push(['A quick turnaround, and into the second period of extra time'], null, { et: true });
+      }
+      minute = T.minutes + 30;
+    }
     if (score[0] !== score[1]) {
       winner = score[0] > score[1] ? 0 : 1;
       push(['@FT', line('full_time_win', { team: teams[winner].name, scoreline: scoreline() })], null, { ft: true });
@@ -680,7 +691,7 @@ const AD = (() => {
       return { p: x.p, line: x.line, rating: Math.round(clamp(r, 3, 10) * 10) / 10, stats: s };
     });
     const ratings = [rate(H, 0), rate(A, 1)];
-    return { events: ev, score, winner, pens, teams: [H, A], ratings };
+    return { events: ev, score, winner, pens, et, teams: [H, A], ratings };
   }
 
 
@@ -811,6 +822,106 @@ const AD = (() => {
     // attacking nations (temperament +1 or +2, such as Brazil or the West Africans) never drop below balanced
     return m >= 1.5 ? 'ATT' : m <= -1.5 && (WC_TEMPER[nat] || 0) < 1 ? 'DEF' : 'BAL';
   }
+
+  // ---------------- World Cup Fiver tournament: 32 nations, 8 groups of 4, last 16 to the final, no third-place game.
+  // The state is plain JSON (nation names and card indexes), so it can be saved after every match.
+  // cardOf(nat, i) turns a stored card index back into a player; set once by the page or the simulator.
+  const GROUPS = 'ABCDEFGH'.split('');
+  const STAGES = ['G1', 'G2', 'G3', 'R16', 'QF', 'SF', 'F'];
+  const STAGE_NAME = { G1: 'Group stage, matchday 1', G2: 'Group stage, matchday 2', G3: 'Group stage, matchday 3', R16: 'Round of 16', QF: 'Quarter-final', SF: 'Semi-final', F: 'Final' };
+  const R16 = [['A', 'B'], ['C', 'D'], ['E', 'F'], ['G', 'H'], ['B', 'A'], ['D', 'C'], ['F', 'E'], ['H', 'G']]; // group winner v other group's runner-up
+  let cardOf = null;
+  function wcBind(fn) { cardOf = fn; }
+  const sqOf = (W, nat) => W.sq[nat].map(i => cardOf(nat, i));
+  // a new run: every AI nation drafts its five, then the draw puts all 32 into groups one at a time
+  function wcNewRun(o) {
+    cardOf = o.cardOf;
+    const W = { v: 1, seed: o.seed, nat: o.nat, name: o.name, sq: {}, lots: {}, order: [], groups: {}, stage: 'G1', res: {}, ko: {}, out: null, champion: null };
+    W.sq[o.nat] = o.squad;
+    for (const n of o.nations) if (n !== o.nat) { const pool = o.pool(n); W.sq[n] = wcAI(pool).map(c => c.key); }
+    W.order = shuffle(o.nations.slice());
+    W.order.forEach((n, i) => { const g = GROUPS[i % 8]; (W.groups[g] = W.groups[g] || []).push(n); W.lots[n] = rand(); });
+    return W;
+  }
+  // round-robin in three matchdays; each nation plays once per matchday
+  const MD = [[[0, 1], [2, 3]], [[0, 2], [3, 1]], [[3, 0], [1, 2]]];
+  function wcFixtures(W, stage) {
+    if (stage[0] === 'G') { const d = +stage[1] - 1; return GROUPS.flatMap(g => MD[d].map(([i, j]) => ({ g, a: W.groups[g][i], b: W.groups[g][j] }))); }
+    return W.ko[stage].map(t => ({ a: t.a, b: t.b }));
+  }
+  const userIn = (W, fx) => fx.a === W.nat || fx.b === W.nat;
+  function wcUserFixture(W) { if (W.stage === 'DONE') return null; return wcFixtures(W, W.stage).find(f => userIn(W, f)) || null; }
+  // compact record of a finished match, with every goal (for tables, scorers and the golden boot)
+  function wcRecord(res, a, b, stage, g) {
+    const goals = [];
+    res.events.forEach(e => { if (e.goal) goals.push([e.goal.ti === 0 ? a : b, e.goal.n, e.goal.min, e.goal.own ? 1 : 0]); });
+    return { stage, g: g || null, a, b, ga: res.score[0], gb: res.score[1], et: res.et ? 1 : 0, pa: res.pens ? res.pens.score[0] : null, pb: res.pens ? res.pens.score[1] : null,
+      w: res.winner == null ? null : res.winner === 0 ? a : b, goals };
+  }
+  // an AI nation's side for one game: best shape for its five, mentality from temperament and the opponent
+  function aiTeam(W, nat, opp, home) {
+    const sq = sqOf(W, nat), sh = lineup(sq).shape, lu = autoLineup(sq, sh);
+    return makeTeam({ name: nat, squad: sq, style: wcMentality(nat, sq, sqOf(W, opp)), tactic: { shape: sh, order: lu.order } }, home, null);
+  }
+  function wcAITeam(W, nat, opp) { const sq = sqOf(W, nat), sh = lineup(sq).shape; return { shape: sh, order: autoLineup(sq, sh).order, style: wcMentality(nat, sq, sqOf(W, opp)) }; }
+  // play the current stage: every fixture except the user's is simulated here; the user's result is passed in
+  function wcPlayStage(W, userRes) {
+    const st = W.stage, ko = st[0] !== 'G', out = [];
+    for (const f of wcFixtures(W, st)) {
+      let r;
+      if (userRes && userIn(W, f) && !W.out) r = userRes;
+      else r = wcRecord(simulate(aiTeam(W, f.a, f.b, true), aiTeam(W, f.b, f.a, false), ko ? { et: true } : { league: true }), f.a, f.b, st, f.g);
+      out.push(r);
+      if (ko) { const t = W.ko[st].find(x => x.a === f.a && x.b === f.b); t.r = r; }
+      if (ko && !W.out && userIn(W, f) && r.w !== W.nat) W.out = { stage: st, opp: f.a === W.nat ? f.b : f.a };
+    }
+    W.res[st] = out;
+    advance(W);
+    return out;
+  }
+  function wcTable(W, g) {
+    const rows = {}; W.groups[g].forEach(n => rows[n] = { nat: n, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 });
+    const ms = ['G1', 'G2', 'G3'].flatMap(s => (W.res[s] || []).filter(r => r.g === g));
+    ms.forEach(r => {
+      const A = rows[r.a], B = rows[r.b]; A.p++; B.p++; A.gf += r.ga; A.ga += r.gb; B.gf += r.gb; B.ga += r.ga;
+      if (r.ga > r.gb) { A.w++; B.l++; A.pts += 3; } else if (r.ga < r.gb) { B.w++; A.l++; B.pts += 3; } else { A.d++; B.d++; A.pts++; B.pts++; }
+    });
+    const list = Object.values(rows); list.forEach(x => x.gd = x.gf - x.ga);
+    // tie-breakers: points, goal difference, goals scored, then points in games between the tied nations, then the drawing of lots
+    const h2h = (x, tied) => ms.filter(r => tied.includes(r.a) && tied.includes(r.b) && (r.a === x.nat || r.b === x.nat))
+      .reduce((t, r) => { const my = r.a === x.nat ? r.ga : r.gb, th = r.a === x.nat ? r.gb : r.ga; return t + (my > th ? 3 : my === th ? 1 : 0); }, 0);
+    list.sort((x, y) => y.pts - x.pts || y.gd - x.gd || y.gf - x.gf || (() => {
+      const tied = list.filter(z => z.pts === x.pts && z.gd === x.gd && z.gf === x.gf).map(z => z.nat);
+      return h2h(y, tied) - h2h(x, tied);
+    })() || W.lots[y.nat] - W.lots[x.nat]);
+    return list;
+  }
+  function advance(W) {
+    const i = STAGES.indexOf(W.stage), nx = STAGES[i + 1];
+    if (W.stage === 'G3') {
+      const pos = {}; GROUPS.forEach(g => { const t = wcTable(W, g); pos[g + 1] = t[0].nat; pos[g + 2] = t[1].nat; });
+      W.ko.R16 = R16.map(([x, y]) => ({ a: pos[x + 1], b: pos[y + 2] }));
+      if (!W.ko.R16.some(t => t.a === W.nat || t.b === W.nat)) W.out = { stage: 'G', opp: null };
+    } else if (W.stage[0] !== 'G') {
+      if (W.stage === 'F') { W.champion = W.ko.F[0].r.w; W.stage = 'DONE'; return; }
+      const win = W.ko[W.stage].map(t => t.r.w); W.ko[nx] = [];
+      for (let k = 0; k < win.length; k += 2) W.ko[nx].push({ a: win[k], b: win[k + 1] });
+    }
+    W.stage = nx;
+  }
+  // what the user's run comes to, in the leaderboard wording
+  function wcOutcome(W) {
+    if (W.champion === W.nat) return 'World Champions';
+    if (!W.out) return null;
+    if (W.out.stage === 'G') return 'Out in the group stage';
+    const words = { R16: 'Round of 16 defeat to', QF: 'Quarter-final defeat to', SF: 'Semi-final defeat to', F: 'Lost in the Final to' };
+    return `${words[W.out.stage]} ${W.out.opp}`;
+  }
+  function wcScorers(W) {
+    const m = new Map();
+    Object.values(W.res).flat().forEach(r => r.goals.forEach(([nat, n, min, own]) => { if (own) return; const k = nat + '|' + n; m.set(k, (m.get(k) || 0) + 1); }));
+    return [...m].map(([k, g]) => ({ nat: k.split('|')[0], n: k.split('|')[1], g })).sort((a, b) => b.g - a.g || a.n.localeCompare(b.n));
+  }
   // ---------------- World Cup Fiver draft: one jumbled deck (3 GK, 3 to 5 per outfield line) from the nation's own pool, take or twist, no recall.
   // A deck is { deck, idx }. The same real person is never dealt twice.
   // Deck size per line follows the nation's own depth: about a fifth of its distinct players in that line, between 3 and 5,
@@ -859,6 +970,6 @@ const AD = (() => {
   }
 
   return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
-    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcMix, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, wcMentality, wcStrength, WC_TEMPER, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
+    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcMix, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, wcMentality, wcBind, wcNewRun, wcFixtures, wcUserFixture, wcRecord, wcPlayStage, wcTable, wcOutcome, wcScorers, wcAITeam, WC_STAGES: STAGES, WC_STAGE_NAME: STAGE_NAME, WC_GROUPS: GROUPS, wcStrength, WC_TEMPER, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;
