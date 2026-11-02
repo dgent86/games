@@ -18,7 +18,7 @@ const AD = (() => {
 
   // ---------------- Tunable constants (set by simulation)
   const T = {
-    possK: 2, chanceBase: 0.40, chanceExp: 1,
+    possK: 3, chanceBase: 0.40, chanceExp: 1,
     oneOnOneBase: 0.22, crossRate: 0.30,
     gStd: 0.30, g1v1: 0.45, gLong: 0.10, gLowCross: 0.32, gHeader: 0.26, gRebound: 0.38, gError: 0.45,
     goalExp: 1.4, quietShow: 0.12, minutes: 90, actionRate: 0.45
