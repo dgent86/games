@@ -154,13 +154,20 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 .result-line { font-family: var(--f-crt); font-size: 34px; line-height: 1; }
 
 
+/* Champion box on the summary: bold, in the winner's colours, centred */
+.champbox { text-align: center; padding: 14px 10px 12px; border: 4px solid var(--cb-bd, #000); background: var(--cb-bg, #000); color: var(--cb-fg, #fff); }
+.champbox .cl { font-family: var(--f-crt); font-size: 26px; letter-spacing: .2em; line-height: 1; }
+.champbox .cn { font-family: var(--f-crt); font-size: 64px; letter-spacing: .04em; line-height: .95; margin: 2px 0 8px; }
+.champbox .fx { background: transparent; }
+.champbox .fx .r { background: rgba(0,0,0,.18); color: inherit; justify-content: center; }
+.champbox .fx .r span, .champbox .fx .r b { color: inherit; }
 /* Knocked-out screen: one pixel-art image full screen, caption and button over its calm bottom strip */
 .ko { position: fixed; inset: 0; z-index: 100; background: #000; display: flex; flex-direction: column; align-items: center; padding-top: env(safe-area-inset-top, 0px); overflow: hidden; }
-.ko .kimg { flex: 1 1 0; min-height: 0; width: min(100%, 480px); }
-.ko img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; image-rendering: pixelated; display: block; }
-.ko .kob { flex: none; width: min(100%, 440px); box-sizing: border-box; display: grid; gap: 8px; justify-items: center; text-align: center; padding: 12px 16px max(16px, env(safe-area-inset-bottom, 0px)); }
-.ko .kot { font-family: var(--f-crt); font-size: 30px; line-height: 1; letter-spacing: .08em; color: var(--amber); }
-.ko .kos { font-family: var(--f-crt); font-size: 24px; line-height: 1; letter-spacing: .06em; color: var(--crt-ink); }
+.ko .kimg { flex: 1 1 0; min-height: 0; width: 100%; display: flex; justify-content: center; padding-top: 8px; box-sizing: border-box; }
+.ko img { max-width: 100%; max-height: 100%; width: auto; height: 100%; object-fit: contain; image-rendering: pixelated; display: block; }
+.ko .kob { flex: none; width: min(100%, 440px); box-sizing: border-box; display: grid; gap: 8px; justify-items: center; text-align: center; padding: 8px 16px max(14px, env(safe-area-inset-bottom, 0px)); }
+.ko .kot { font-family: var(--f-crt); font-size: 26px; line-height: 1; letter-spacing: .08em; color: var(--amber); }
+.ko .kos { font-family: var(--f-crt); font-size: 21px; line-height: 1; letter-spacing: .06em; color: var(--crt-ink); }
 .ko .btn { min-width: 200px; }
 /* Champions screen: full-screen flashing banner in the winner's kit colours with falling trophies */
 .champ { position: fixed; inset: 0; z-index: 100; background: var(--crt); overflow: hidden; container-type: inline-size; }
@@ -1769,11 +1776,15 @@ const DATA = {"commentary":{"kickoff":["{team} get things going","{player} rolls
     $('#endTag').textContent = W.champion === W.nat ? 'Champions' : '';
     $('#endLine').textContent = `${W.name} - ${W.nat} - ${oc}`;
     const F = W.ko.F[0].r;
-    $('#endChamp').innerHTML = `<div class="lbl">World champions</div><b>${nm(W.champion)}</b><div class="fx" style="margin-top:6px">${resRow(F)}</div>`;
+    const ck = kitFor(W.champion), lum = c => { const n = parseInt(c.slice(1), 16), f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(n >> 16) + .7152 * f(n >> 8 & 255) + .0722 * f(n & 255); };
+    const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+    const ink = [ck.s, ck.t].find(c => /^#[0-9a-f]{6}$/i.test(c) && cr(c, ck.p) >= 3) || (cr('#FFFFFF', ck.p) >= cr('#111111', ck.p) ? '#FFFFFF' : '#111111');
+    const ec = $('#endChamp'); ec.className = 'champbox'; ec.style.setProperty('--cb-bg', ck.p); ec.style.setProperty('--cb-fg', ink); ec.style.setProperty('--cb-bd', ink);
+    ec.innerHTML = `<div class="cl">WORLD CHAMPIONS</div><div class="cn">${nm(W.champion).toUpperCase()}</div><div class="fx">${resRow(F)}</div>`;
     $('#endBoot').innerHTML = AD.wcScorers(W).slice(0, 5).map(x => `<div class="r${x.nat === W.nat ? ' me' : ''}"><span>${esc(x.n)}</span><b>${x.g}</b><span>${nm(x.nat)}</span></div>`).join('');
     $('#endBracket').innerHTML = bracketHTML();
     $('#endGroups').innerHTML = allGroups();
-    const ck = kitFor(W.champion), eb = document.querySelector('#end .bar'); eb.style.background = ck.p; eb.style.color = ck.s; eb.style.borderColor = ck.s;
+    const eb = document.querySelector('#end .bar'); eb.style.background = ck.p; eb.style.color = ink; eb.style.borderColor = ink;
     clearSave(); show('end');
     if (W.champion === W.nat) showChampions();
   }
