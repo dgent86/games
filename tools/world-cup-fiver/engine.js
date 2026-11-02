@@ -957,19 +957,27 @@ const AD = (() => {
   function wcTake(D, squad) { squad.push(D.deck[D.idx]); D.idx++; }
   function wcTwist(D) { D.idx++; }
   // AI nations run the same draft: take anything above a target (70th percentile of their own pool), the target relaxing with every card passed
-  function wcAI(cards) {
-    const q = pos => { const r = cards.filter(c => pos === 'GK' ? c.pos === 'GK' : c.pos !== 'GK').map(c => c.ovr).sort((a, b) => a - b); return r[Math.floor(r.length * 0.7)]; };
+  // ball knowledge: the coach's feel for his own pool (0 = a part-timer, 1 = a master). Big football nations breed it.
+  // It lifts the bar for what he will take, sharpens how well he reads a card, and slows how fast he settles for less.
+  const WC_KNOW = { pct: [0.70, 0.86], decay: [2.0, 1.2], noise: [2.5, 1.0] };
+  function wcKnow(cards) {
+    const top = cards.map(c => c.ovr).sort((a, b) => b - a).slice(0, 20), avg = top.reduce((t, x) => t + x, 0) / top.length;
+    return Math.max(0, Math.min(1, (avg - 80) / 8)); // about 80 for the smaller nations, 88 and over for the giants
+  }
+  function wcAI(cards, know) {
+    const k = know == null ? wcKnow(cards) : know, L = key => WC_KNOW[key][0] + (WC_KNOW[key][1] - WC_KNOW[key][0]) * k;
+    const q = pos => { const r = cards.filter(c => pos === 'GK' ? c.pos === 'GK' : c.pos !== 'GK').map(c => c.ovr).sort((a, b) => a - b); return r[Math.floor(r.length * L('pct'))]; };
     const base = { GK: q('GK'), OUT: q('OUT') }, D = wcDeal(cards), squad = []; let seen = 0;
     while (squad.length < 5) {
       const c = wcCurrent(D, squad); if (!c) break;
-      const t = (c.pos === 'GK' ? base.GK : base.OUT) - 2 * seen;
-      if (wcForced(D, squad) || c.ovr + gauss() * 2.5 >= t) wcTake(D, squad); else { wcTwist(D); seen++; }
+      const t = (c.pos === 'GK' ? base.GK : base.OUT) - L('decay') * seen;
+      if (wcForced(D, squad) || c.ovr + gauss() * L('noise') >= t) wcTake(D, squad); else { wcTwist(D); seen++; }
     }
     while (squad.length < 5) squad.push(freeAgent(squad.some(p => p.pos === 'GK') ? 'DEF' : 'GK'));
     return squad;
   }
 
   return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
-    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcMix, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, wcMentality, wcBind, wcNewRun, wcFixtures, wcUserFixture, wcRecord, wcPlayStage, wcTable, wcOutcome, wcScorers, wcAITeam, WC_STAGES: STAGES, WC_STAGE_NAME: STAGE_NAME, WC_GROUPS: GROUPS, wcStrength, WC_TEMPER, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
+    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, wcDeal, wcMix, wcCurrent, wcForced, wcLeft, wcTake, wcTwist, wcNeeds, wcAI, wcKnow, WC_KNOW, wcMentality, wcBind, wcNewRun, wcFixtures, wcUserFixture, wcRecord, wcPlayStage, wcTable, wcOutcome, wcScorers, wcAITeam, WC_STAGES: STAGES, WC_STAGE_NAME: STAGE_NAME, WC_GROUPS: GROUPS, wcStrength, WC_TEMPER, T, STYLE, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;
