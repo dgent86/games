@@ -191,8 +191,8 @@ Argentina,2022,Lautaro Martínez,FWD,,FC Internazionale,46,,86,20 12 15 18 5 16 
 Argentina,2022,Julián Álvarez,FWD,,Manchester City FC,19,,84,20 12 14 18 4 16 14 16
 Argentina,2022,Alexis Mac Allister,MID,,Brighton & Hove Albion FC,14,,84,14 20 16 14 14 14 16 18
 Argentina,2022,Paulo Dybala,FWD,,AS Roma,36,,84,17 16 19 17 6 13 15 17
-Argentina,2022,Enzo Fernández,MID,,SL Ben ca,10,,84,14 20 16 14 14 14 16 18
-Argentina,2022,Nicolás Otamendi,DEF,,SL Ben ca,100,,83,7 13 10 14 19 18 16 16
+Argentina,2022,Enzo Fernández,MID,,SL Benfica,10,,84,14 20 16 14 14 14 16 18
+Argentina,2022,Nicolás Otamendi,DEF,,SL Benfica,100,,83,7 13 10 14 19 18 16 16
 Argentina,2022,Lisandro Martínez,DEF,,Manchester United FC,15,,83,7 13 10 14 19 18 16 16
 Argentina,2022,Leandro Paredes,MID,,Juventus FC,51,,82,14 19 16 14 13 13 16 18
 Argentina,2022,Marcos Acuña,DEF,MID,Sevilla FC,49,,82,11 17 17 20 15 15 19 16
@@ -220,7 +220,7 @@ Argentina,2026,Rodrigo De Paul,MID,,Inter Miami CF,94,,83,13 17 15 16 16 18 20 1
 Argentina,2026,Nahuel Molina,DEF,,Atlético De Madrid,65,,82,11 17 17 20 15 15 19 16
 Argentina,2026,Nico Paz,MID,,Como,11,,82,18 17 20 18 7 14 16 18
 Argentina,2026,Nicolás González,FWD,,Atlético De Madrid,58,,81,15 16 19 19 10 12 16 15
-Argentina,2026,Nicolás Otamendi,DEF,,SL Ben ca,139,,80,6 12 10 14 18 18 16 16
+Argentina,2026,Nicolás Otamendi,DEF,,SL Benfica,139,,80,6 12 10 14 18 18 16 16
 Argentina,2026,Leandro Paredes,MID,,CA Boca Juniors,84,,80,14 18 16 14 12 12 16 18
 Argentina,2026,Giovani Lo Celso,MID,,Real Betis,68,,80,18 16 20 18 6 14 16 18
 Argentina,2026,Exequiel Palacios,MID,,Bayer 04 Leverkusen,41,,80,14 18 16 14 12 12 16 18
@@ -554,7 +554,7 @@ Belgium,2026,Amadou Onana,MID,,Aston Villa FC,33,,80,10 16 12 14 20 18 20 18
 Belgium,2026,Arthur Theate,DEF,,Eintracht Frankfurt,36,,78,6 12 9 13 18 17 15 15
 Belgium,2026,Alexis Saelemaekers,MID,DEF,AC Milan,28,,78,15 16 19 19 10 12 16 15
 Belgium,2026,Axel Witsel,MID,,Girona FC,140,,77,8 16 12 14 18 18 20 16
-Belgium,2026,Dodi Lukébakio,FWD,MID,SL Ben ca,33,,77,14 16 18 18 10 12 16 14
+Belgium,2026,Dodi Lukébakio,FWD,MID,SL Benfica,33,,77,14 16 18 18 10 12 16 14
 Belgium,2026,Hans Vanaken,MID,,Club Brugge,40,,77,13 18 15 13 12 12 15 17
 Belgium,2026,Maxim De Cuyper,DEF,,Brighton & Hove Albion FC,25,,76,10 16 16 18 14 14 18 14
 Belgium,2026,Diego Moreira,MID,FWD,RC Strasbourg,4,,76,14 16 18 18 10 12 16 14
@@ -1079,7 +1079,7 @@ Colombia,2018,Farid Díaz,DEF,,Olimpia,13,,68,6 12 12 16 14 12 14 12
 Colombia,2018,José Fernando Cuadrado,GK,,Once Caldas,1,,66,13 13 10 13
 Colombia,2026,Luis Díaz,FWD,,FC Bayern München,79,,89,17 18 20 20 12 14 18 17
 Colombia,2026,Daniel Muñoz,DEF,,Crystal Palace FC,51,,82,11 17 17 20 15 15 19 16
-Colombia,2026,Richard Ríos,MID,,SL Ben ca,37,,80,12 16 14 16 16 18 20 16
+Colombia,2026,Richard Ríos,MID,,SL Benfica,37,,80,12 16 14 16 16 18 20 16
 Colombia,2026,Jhon Arias,MID,FWD,SE Palmeiras,43,,80,16 16 20 20 10 12 16 16
 Colombia,2026,Davinson Sánchez,DEF,,Galatasaray SK,84,,80,6 12 10 14 18 18 16 16
 Colombia,2026,Jhon Lucumí,DEF,,Bologna FC,42,,78,6 12 9 13 18 17 15 15
@@ -1099,7 +1099,7 @@ Colombia,2026,Deiver Machado,DEF,,FC Nantes,16,,72,9 15 15 18 13 13 17 14
 Colombia,2026,David Ospina,GK,,Atlético Nacional,130,,71,14 14 11 14
 Colombia,2026,Jaminton Campaz,FWD,,CA Rosario Central,13,,71,13 14 17 17 8 10 14 13
 Colombia,2026,Camilo Vargas,GK,,Atlas FC,47,,70,14 14 11 14
-Colombia,2026,Álvaro Montero,GK,,CA Vélez Sars eld,12,,70,14 14 11 14
+Colombia,2026,Álvaro Montero,GK,,CA Vélez Sarsfield,12,,70,14 14 11 14
 Colombia,2026,Willer Ditta,DEF,,CF Cruz Azul,5,,68,4 10 7 11 16 15 13 13
 Colombia,2026,Carlos Andrés Gómez,FWD,,CR Vasco Da Gama,9,,68,14 10 14 18 2 10 12 12
 Colombia,2026,Portilla,MID,,Athletico Paranaense,10,,67,11 16 13 11 10 10 13 15
@@ -1394,7 +1394,7 @@ Denmark,2022,Victor Nelsson,DEF,,Galatasaray SK,8,,73,5 11 8 12 17 16 14 14
 Denmark,2022,Jens Stryger Larsen,DEF,,Trabzonspor,49,,72,9 15 15 18 13 13 17 14
 Denmark,2022,Daniel Wass,DEF,MID,Brøndby IF,44,,72,9 15 15 18 13 13 17 14
 Denmark,2022,Frederik Rønnow,GK,,1. FC Union Berlin,8,,72,14 14 11 14
-Denmark,2022,Alexander Bah,DEF,,SL Ben ca,6,,72,9 15 15 18 13 13 17 14
+Denmark,2022,Alexander Bah,DEF,,SL Benfica,6,,72,9 15 15 18 13 13 17 14
 Denmark,2022,Oliver Christensen,GK,,Hertha BSC,1,,70,14 14 11 14
 England,1966,Bobby Moore,DEF,,West Ham United,,Y,88,8 14 11 15 20 19 17 17
 England,1970,Bobby Moore,DEF,,West Ham United,,Y,88,8 14 11 15 20 19 17 17
@@ -3306,8 +3306,8 @@ Norway,2026,Sander Berge,MID,,Fulham FC,71,,80,10 16 12 14 20 18 20 18
 Norway,2026,Jørgen Strand Larsen,FWD,,Crystal Palace FC,30,,80,18 13 13 14 6 20 17 16
 Norway,2026,Torbjørn Heggem,DEF,,Bologna FC,20,,78,6 12 9 13 18 17 15 15
 Norway,2026,Julian Ryerson,DEF,MID,Borussia Dortmund,47,,78,10 16 16 19 14 14 18 15
-Norway,2026,Fredrik Aursnes,MID,,SL Ben ca,28,,78,12 16 14 15 15 17 19 16
-Norway,2026,Andreas Schjelderup,MID,FWD,SL Ben ca,18,,78,15 16 19 19 10 12 16 15
+Norway,2026,Fredrik Aursnes,MID,,SL Benfica,28,,78,12 16 14 15 15 17 19 16
+Norway,2026,Andreas Schjelderup,MID,FWD,SL Benfica,18,,78,15 16 19 19 10 12 16 15
 Norway,2026,Oscar Bobb,MID,FWD,Fulham FC,26,,78,15 16 19 19 10 12 16 15
 Norway,2026,Patrick Berg,MID,,FK Bodø/Glimt,49,,77,8 16 12 14 18 18 20 16
 Norway,2026,Ørjan Nyland,GK,,Sevilla FC,76,,76,15 15 12 15
@@ -3455,12 +3455,12 @@ Portugal,2022,Raphaël Guerreiro,DEF,MID,Borussia Dortmund,61,,82,11 17 17 20 15
 Portugal,2022,Vitinha,MID,,Paris Saint-Germain FC,8,,82,14 19 16 14 13 13 16 18
 Portugal,2022,Rúben Neves,MID,,Wolverhampton Wanderers FC,37,,82,14 19 16 14 13 13 16 18
 Portugal,2022,André Silva,FWD,,RB Leipzig,53,,81,19 11 14 17 4 15 14 16
-Portugal,2022,Gonçalo Ramos,FWD,,SL Ben ca,5,,81,19 11 14 17 4 15 14 16
+Portugal,2022,Gonçalo Ramos,FWD,,SL Benfica,5,,81,19 11 14 17 4 15 14 16
 Portugal,2022,Pepe,DEF,,FC Porto,133,,80,6 12 10 14 18 18 16 16
-Portugal,2022,João Mário,MID,,SL Ben ca,55,,80,18 16 20 18 6 14 16 18
+Portugal,2022,João Mário,MID,,SL Benfica,55,,80,18 16 20 18 6 14 16 18
 Portugal,2022,Otávio,MID,,FC Porto,11,,80,14 18 16 14 12 12 16 18
 Portugal,2022,Rui Patrício,GK,,AS Roma,105,,78,16 16 13 16
-Portugal,2022,António Silva,DEF,,SL Ben ca,2,,78,6 12 9 13 18 17 15 15
+Portugal,2022,António Silva,DEF,,SL Benfica,2,,78,6 12 9 13 18 17 15 15
 Portugal,2022,William Carvalho,MID,,Real Betis,80,,78,9 16 12 14 19 18 20 17
 Portugal,2022,Matheus Nunes,MID,,Wolverhampton Wanderers FC,11,,78,12 16 14 15 15 17 19 16
 Portugal,2022,José Sá,GK,,Wolverhampton Wanderers FC,0,,77,15 15 12 15
@@ -3487,7 +3487,7 @@ Portugal,2026,Francisco Trincão,FWD,MID,Sporting CP,19,,81,15 16 19 19 10 12 16
 Portugal,2026,Nélson Semedo,DEF,,Fenerbahçe SK,54,,80,9 15 14 18 16 15 17 14
 Portugal,2026,Gonçalo Guedes,FWD,MID,Real Sociedad,35,,79,16 12 16 20 4 14 16 14
 Portugal,2026,Renato Veiga,DEF,MID,Villarreal CF,18,,78,6 12 9 13 18 17 15 15
-Portugal,2026,Tomás Araújo,DEF,,SL Ben ca,6,,78,6 12 9 13 18 17 15 15
+Portugal,2026,Tomás Araújo,DEF,,SL Benfica,6,,78,6 12 9 13 18 17 15 15
 Portugal,2026,Rui Silva,GK,,Sporting CP,3,,77,15 15 12 15
 Portugal,2026,José Sá,GK,,Wolverhampton Wanderers FC,5,,77,15 15 12 15
 Portugal,2026,Samú Costa,MID,,RCD Mallorca,7,,77,8 16 12 14 18 18 20 16
@@ -5107,7 +5107,7 @@ Uruguay,2022,Ronald Araújo,DEF,,FC Barcelona,12,,85,8 14 10 14 20 18 16 16
 Uruguay,2022,Rodrigo Bentancur,MID,,Tottenham Hotspur FC,54,,84,14 20 16 14 14 14 16 18
 Uruguay,2022,Darwin Núñez,FWD,,Liverpool FC,16,,84,19 14 14 15 7 20 18 17
 Uruguay,2022,Edinson Cavani,FWD,,Valencia CF,136,,84,20 12 14 18 4 16 14 16
-Uruguay,2022,Diego Godín,DEF,,CA Vélez Sars eld,161,,83,7 13 10 14 19 18 16 16
+Uruguay,2022,Diego Godín,DEF,,CA Vélez Sarsfield,161,,83,7 13 10 14 19 18 16 16
 Uruguay,2022,Giorgian de Arrascaeta,MID,FWD,CR Flamengo,42,,82,18 17 20 18 7 14 16 18
 Uruguay,2022,Luis Suárez,FWD,,Club Nacional,137,,81,19 11 14 17 4 15 14 16
 Uruguay,2022,Nicolás de la Cruz,MID,,CA River Plate,19,,80,18 16 20 18 6 14 16 18
@@ -5175,8 +5175,8 @@ Wales,2022,Ben Cabango,DEF,,Swansea City AFC,5,,73,5 11 8 12 17 16 14 14
 Wales,2022,Chris Gunter,DEF,,AFC Wimbledon,109,,72,8 14 12 16 14 14 16 12
 Wales,2022,Jonny Williams,MID,,Swindon Town FC,33,,72,12 17 14 12 11 11 14 16
 Wales,2022,Rubin Colwill,MID,,Cardiff City FC,8,,72,16 15 18 16 5 12 14 16
-Wales,2022,Adam Davies,GK,,She eld United FC,4,,70,14 14 11 14
-Wales,2022,Sorba Thomas,MID,,Hudders eld Town FC,7,,70,14 14 18 18 8 10 14 14
+Wales,2022,Adam Davies,GK,,Sheffield United FC,4,,70,14 14 11 14
+Wales,2022,Sorba Thomas,MID,,Huddersfield Town FC,7,,70,14 14 18 18 8 10 14 14
 Wales,2022,Dylan Levitt,MID,,Dundee United FC,13,,70,12 16 14 12 10 10 14 16
 Wales,2022,Matthew Smith,MID,,MK Dons FC,19,,70,12 16 14 12 10 10 14 16
 Wales,2022,Mark Harris,FWD,,Cardiff City FC,5,,70,16 11 11 12 4 18 15 14
