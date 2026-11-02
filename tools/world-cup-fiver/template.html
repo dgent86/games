@@ -367,9 +367,9 @@ const DATA = __DATA__;
   // ---------- cards
   let uid = 0;
   function mk(nat, r) {
-    const [n, pos, sec, club, yr, caps, leg, ovr, a, ag] = r;
+    const [n, pos, sec, club, yr, caps, leg, ovr, a, ag, pid] = r;
     const at = {}; (pos === 'GK' ? GKK : OUT).forEach((k, i) => at[k] = a[i]);
-    return { id: uid++, n, pos, sec, club, season: String(yr), born: 0, ovr, a: at, age: ag || 27, ag, yr, caps, leg, nation: nat };
+    return { id: uid++, n, pos, sec, club, season: String(yr), born: 0, ovr, a: at, age: ag || 27, ag, pid, yr, caps, leg, nation: nat };
   }
   const pool = nat => DATA.nations[nat].cards.map(r => mk(nat, r));
   const LINE = { GK: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' };

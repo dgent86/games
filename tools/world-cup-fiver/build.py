@@ -49,6 +49,36 @@ for r in csv.DictReader(open(here / 'cards.csv', encoding='utf-8')):
     y = r['tournament']
     nations.setdefault(r['nation'], []).append([r['name'], r['pos'], r['secondary'], r['club'], int(y) if y.isdigit() else y, caps, 1 if r['legend'] == 'Y' else 0, int(r['rating']), a, age(r.get('dob', ''), y, r['club'])])
 assert set(nations) == set(META), set(nations) ^ set(META)
+# person id per nation: two cards are the same person when they share a date of birth and the names agree:
+# one name contains the other, or the first names match, or the surnames match and the first names start alike
+# (catches "Patrick Mboma"/"Patrick M'Boma", "Cammy"/"Cameron Devlin"; keeps twins such as Frank and Ronald de Boer apart,
+# and two different "Fred"s apart because their dates differ)
+import unicodedata
+def toks(n):
+    n = unicodedata.normalize('NFKD', n).encode('ascii', 'ignore').decode().lower().replace("'", '')
+    return [t for t in n.replace('-', ' ').split() if len(t) >= 2]
+def same(a, b):
+    ta, tb = toks(a), toks(b)
+    if not ta or not tb: return False
+    if set(ta) <= set(tb) or set(tb) <= set(ta) or ta[0] == tb[0]: return True
+    return ta[-1] == tb[-1] and ta[0][:3] == tb[0][:3]
+dobs = {}
+for r in csv.DictReader(open(here / 'cards.csv', encoding='utf-8')):
+    dobs[(r['nation'], r['name'], r['tournament'])] = r.get('dob', '')
+merged = 0
+for nat, cards in nations.items():
+    groups = []  # [dob, names, pid]
+    for c in cards:
+        dob, pid = dobs.get((nat, c[0], str(c[4])), ''), None
+        for g in groups:
+            if c[0] in g[1] and (not dob or not g[0] or g[0] == dob): pid = g[2]; break
+            if dob and g[0] == dob and any(same(c[0], x) for x in g[1]): pid = g[2]; break
+        if pid is None: pid = len(groups); groups.append([dob, {c[0]}, pid])
+        else:
+            if c[0] not in groups[pid][1]: merged += 1
+            groups[pid][1].add(c[0])
+        c.append(pid)
+print('cards merged under another spelling:', merged)
 data = {'commentary': json.loads((here / 'commentary.json').read_text(encoding='utf-8')),
         'nations': {n: {'nick': META[n][0], 'kit': META[n][1:], 'cards': c} for n, c in sorted(nations.items())}}
 t = (here / 'template.html').read_text(encoding='utf-8')

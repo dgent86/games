@@ -817,14 +817,15 @@ const AD = (() => {
   // so a thin pool does not hand out its one star most runs. Always 3 keepers.
   function wcMix(cards) {
     const m = { GK: 3 };
-    for (const pos of ['DEF', 'MID', 'FWD']) m[pos] = Math.max(3, Math.min(5, Math.round(new Set(cards.filter(c => c.pos === pos).map(c => c.n)).size * 0.2)));
+    for (const pos of ['DEF', 'MID', 'FWD']) m[pos] = Math.max(3, Math.min(5, Math.round(new Set(cards.filter(c => c.pos === pos).map(c => c.pid != null ? c.pid : c.n)).size * 0.2)));
     return m;
   }
   function wcDeal(cards) {
     const mix = wcMix(cards), names = new Set(), got = { GK: 0, DEF: 0, MID: 0, FWD: 0 }, deck = [];
     for (const c of shuffle(cards.slice())) {
-      if (names.has(c.n) || got[c.pos] >= mix[c.pos]) continue;
-      names.add(c.n); got[c.pos]++; deck.push(c);
+      const who = c.pid != null ? c.pid : c.n;
+      if (names.has(who) || got[c.pos] >= mix[c.pos]) continue;
+      names.add(who); got[c.pos]++; deck.push(c);
     }
     return { deck: shuffle(deck), idx: 0 };
   }
