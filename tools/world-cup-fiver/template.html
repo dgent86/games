@@ -152,6 +152,16 @@ table.rt th, table.rt td { padding: 3px 4px; text-align: left; border-bottom: 1p
 table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-nums; }
 .result-line { font-family: var(--f-crt); font-size: 34px; line-height: 1; }
 
+
+/* Knocked-out screen: one pixel-art image full screen, caption and button over its calm bottom strip */
+.ko { position: fixed; inset: 0; z-index: 100; background: #000; display: grid; grid-template: 100% / 100%; overflow: hidden; }
+.ko img { grid-area: 1 / 1; width: 100%; height: 100%; min-height: 0; min-width: 0; object-fit: cover; image-rendering: pixelated; display: block; }
+@media (min-aspect-ratio: 3/5) { .ko img { object-fit: contain; } }
+.ko .kob { grid-area: 1 / 1; align-self: end; justify-self: center; width: min(100%, 440px); box-sizing: border-box; display: grid; gap: 10px; justify-items: center; text-align: center;
+  padding: 36px 16px max(20px, env(safe-area-inset-bottom, 0px)); background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.82) 45%); z-index: 2; }
+.ko .kot { font-family: var(--f-crt); font-size: 30px; line-height: 1; letter-spacing: .08em; color: var(--amber); text-shadow: 2px 2px 0 #000; }
+.ko .kos { font-family: var(--f-crt); font-size: 24px; line-height: 1; letter-spacing: .06em; color: var(--crt-ink); text-shadow: 2px 2px 0 #000; }
+.ko .btn { min-width: 200px; }
 /* Champions screen: full-screen flashing banner in the winner's kit colours with falling trophies */
 .champ { position: fixed; inset: 0; z-index: 100; background: var(--crt); overflow: hidden; container-type: inline-size; }
 .champ canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; image-rendering: pixelated; }
@@ -386,6 +396,11 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
       </div>
     </div>
   </section>
+
+  <div class="ko" id="ko" hidden>
+    <img id="koImg" alt="">
+    <div class="kob"><div class="kot">KNOCKED OUT</div><div class="kos" id="koTxt"></div><button class="btn go" type="button" id="koBtn">Continue</button></div>
+  </div>
   <div class="champ" id="champ" hidden>
     <canvas id="champCv"></canvas>
     <div class="banner" id="champBanner"><span class="ck">WORLD CUP</span><span class="cc">CHAMPIONS</span><span class="cn" id="champN"></span><span class="cm" id="champM"></span></div>
@@ -724,6 +739,19 @@ const DATA = __DATA__;
     $('#roundWin').hidden = false;
   }
 
+
+  // knocked-out screen: a pixel-art image of a famous exit, one from the user's own nation when there is one
+  const KO = __KO__;
+  let koLast = -1;
+  function showKnockedOut(done) {
+    const mine = KO.map((k, i) => [k, i]).filter(([k]) => k.nat.includes(W.nat)), list = mine.length ? mine : KO.map((k, i) => [k, i]);
+    let pick = list[Math.floor(Math.random() * list.length)];
+    if (list.length > 1 && pick[1] === koLast) pick = list[(list.indexOf(pick) + 1) % list.length];
+    koLast = pick[1];
+    $('#koImg').src = pick[0].src; $('#koTxt').textContent = AD.wcOutcome(W) || '';
+    $('#ko').hidden = false;
+    $('#koBtn').onclick = () => { $('#ko').hidden = true; if (done) done(); };
+  }
   // champions screen: 30 trophies, 64px, 1.2x fall, banner flashing twice a second between the two kit colours
   let champRaf = 0;
   function showChampions(done) {
@@ -763,7 +791,7 @@ const DATA = __DATA__;
     $('#endBracket').innerHTML = bracketHTML();
     $('#endGroups').innerHTML = allGroups();
     clearSave(); show('end');
-    if (W.champion === W.nat) showChampions();
+    if (W.champion === W.nat) showChampions(); else showKnockedOut();
   }
   $('#againBtn').addEventListener('click', () => { playToken++; clearSave(); W = null; showResume(); show('pick'); });
 

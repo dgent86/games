@@ -87,7 +87,14 @@ d = json.dumps(data, ensure_ascii=False, separators=(',', ':')).replace('</', '<
 assert t.count('__DATA__') == 1 and t.count('__ENGINE__') == 1
 import base64
 trophy = 'data:image/png;base64,' + base64.b64encode((here / 'trophy.png').read_bytes()).decode()
-page = t.replace('__DATA__', d).replace('__ENGINE__', e).replace('__TROPHY__', trophy)
+import glob, os
+NATS = {'baggio': ['Italy'], 'gascoigne': ['England'], 'maradona': ['Argentina'], 'eusebio': ['Portugal'], 'beckham': ['England'], 'batty': ['England'], 'baresi': ['Italy'], 'di_biagio': ['Italy'], 'zidane': ['France'], 'ronaldo_2006': ['Portugal'], 'ronaldo_nazario': ['Brazil'], 'gyan': ['Ghana'], 'messi': ['Argentina'], 'david_luiz': ['Brazil'], 'neymar': ['Brazil']}
+ko = []
+for f in sorted(glob.glob(str(here / 'ko' / '*.png'))):
+    key = [k for k in NATS if os.path.basename(f)[3:-4].startswith(k)]
+    key = max(key, key=len)
+    ko.append({'nat': NATS[key], 'src': 'data:image/png;base64,' + base64.b64encode(open(f, 'rb').read()).decode()})
+page = t.replace('__KO__', json.dumps(ko)).replace('__DATA__', d).replace('__ENGINE__', e).replace('__TROPHY__', trophy)
 head = ('<!doctype html><html lang="en-GB"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
         '<meta name="robots" content="noindex">'
