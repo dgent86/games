@@ -53,7 +53,7 @@ h1, h2 { margin: 0; text-wrap: balance; }
 /* Title */
 .logo { font-family: var(--f-crt); font-size: 64px; line-height: .9; color: var(--crt-ink); background: var(--crt); padding: 14px 14px 10px; letter-spacing: .02em; }
 .logo span { color: var(--amber); display: block; font-size: 30px; letter-spacing: .12em; }
-.rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.rules { margin: 0 0 8px; padding-left: 18px; display: grid; gap: 1px; line-height: 1.25; }
 label.field { display: grid; gap: 4px; }
 .nameErr { color: var(--alarm); font-weight: bold; margin: 6px 0 0; }
 input.bad { outline: 2px solid var(--alarm); }
@@ -237,12 +237,12 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
       <div class="logo">World Cup<br>Fiver<span>5-A-SIDE · 32 NATIONS · STICK OR TWIST</span></div>
       <div class="pad">
         <ol class="rules">
-          <li>Pick a nation. Your squad comes from its own World Cup history, 1990 to 2026, plus the odd legend.</li>
-          <li>Five players: one keeper, four outfield. Cards come up one at a time from a jumbled deck.</li>
-          <li>Take him or twist. A twisted card is gone for this run, with no recall. If you run short of cards to finish your squad, the next one must be taken.</li>
-          <li>You only see a player's overall rating once you sign him. Then pick a formation and a play style.</li>
-          <li>Then the draw: 32 nations, 8 groups of 4. The top two in each group reach the round of 16, then it is knockout to the final, with extra time and penalties.</li>
-          <li>Private test build. Progress is saved in this browser after every match.</li>
+          <li>Pick a nation.</li>
+          <li>Five players: one keeper, four outfield.</li>
+          <li>Take him or twist. A twisted card is gone.</li>
+          <li>You only see a player's overall rating once you sign him.</li>
+          <li>Pick a formation and play style.</li>
+          <li>32 nations, 8 groups of 4. The top two into the knockouts.</li>
         </ol>
         <label class="field" for="teamName"><span class="lbl">Your manager name</span>
           <input type="text" id="teamName" placeholder="e.g. Big Sam" maxlength="20" autocomplete="off"></label>
