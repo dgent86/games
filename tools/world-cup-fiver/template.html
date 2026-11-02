@@ -474,7 +474,7 @@ const DATA = __DATA__;
     const seedParam = params.get('seed');
     const seed = seedParam != null ? (+seedParam >>> 0) : (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     AD.seed(seed);
-    S = { nat, seed, name: ($('#teamName').value.trim() || nat), D: AD.wcDeal(pool(nat)), squad: [], passed: 0, style: 'BAL', shape: null, order: null, sel: null };
+    S = { nat, seed, name: nat, mgr: ($('#teamName').value.trim() || 'Manager'), D: AD.wcDeal(pool(nat)), squad: [], passed: 0, style: 'BAL', shape: null, order: null, sel: null };
     $('#dNation').textContent = `${nat} · ${DATA.nations[nat].nick}`;
     show('draft'); renderDraft();
   }
@@ -563,7 +563,7 @@ const DATA = __DATA__;
     const f = AD.wcUserFixture(W), opp = f.a === W.nat ? f.b : f.a, ai = AD.wcAITeam(W, opp, W.nat);
     OPP = { nat: opp, squad: sqOf(opp), shape: ai.shape, style: ai.style };
     OPP.lu = AD.buildLineup(OPP.squad, OPP.shape, ai.order);
-    S = { nat: W.nat, name: W.name, squad: sqOf(W.nat), shape: TAC.shape, order: TAC.order.slice(), style: TAC.style, sel: null };
+    S = { nat: W.nat, name: W.nat, squad: sqOf(W.nat), shape: TAC.shape, order: TAC.order.slice(), style: TAC.style, sel: null };
     const st = W.stage;
     $('#sStage').textContent = st[0] === 'G' ? `Group ${groupOf(W.nat)} · matchday ${st[1]}` : SN(st);
     $('#sVs').textContent = `v ${opp}`;
@@ -668,7 +668,7 @@ const DATA = __DATA__;
   }
 
   // ---------- results, tables and the bracket
-  const nm = n => n === W.nat ? esc(W.name) : esc(n);
+  const nm = n => esc(n);
   function resRow(r) {
     const me = r.a === W.nat || r.b === W.nat, wa = r.w === r.a, wb = r.w === r.b;
     const sub = (r.et ? 'after extra time' : '') + (r.pa != null ? `, ${r.pa}-${r.pb} on penalties` : '');
@@ -721,7 +721,7 @@ const DATA = __DATA__;
   // ---------- the draw: all 32 nations drawn one at a time into groups A to H
   let drawTimer = null;
   function startRun() {
-    W = AD.wcNewRun({ seed: S.seed, nat: S.nat, name: S.name, squad: S.squad.map(keyOf), nations: NAMES, pool, cardOf });
+    W = AD.wcNewRun({ seed: S.seed, nat: S.nat, name: S.mgr, squad: S.squad.map(keyOf), nations: NAMES, pool, cardOf });
     const sh = AD.lineup(S.squad).shape;
     TAC = { shape: sh, order: AD.autoLineup(S.squad, sh).order, style: 'BAL' };
     save();
@@ -744,7 +744,7 @@ const DATA = __DATA__;
     const fast = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     drawTimer = setInterval(() => {
       const n = W.order[i]; i++;
-      $('#drawNow').textContent = `${n === W.nat ? W.name + ' (' + n + ')' : n}, Group ${groupOf(n)}`;
+      $('#drawNow').textContent = `${n}, Group ${groupOf(n)}`;
       renderDraw(i);
       if (i >= 32) drawFinished();
     }, fast ? 60 : 650);
@@ -765,7 +765,7 @@ const DATA = __DATA__;
     const stop = AD.WC_STAGES.indexOf(target);
     while (W.stage !== 'DONE' && !W.out && AD.WC_STAGES.indexOf(W.stage) < stop) {
       const f = AD.wcUserFixture(W), opp = f.a === W.nat ? f.b : f.a, ai = AD.wcAITeam(W, opp, W.nat), ko = W.stage[0] !== 'G';
-      const res = AD.simulate(AD.makeTeam({ name: W.name, squad: sqOf(W.nat), style: TAC.style, tactic: { shape: TAC.shape, order: TAC.order } }, true, null),
+      const res = AD.simulate(AD.makeTeam({ name: W.nat, squad: sqOf(W.nat), style: TAC.style, tactic: { shape: TAC.shape, order: TAC.order } }, true, null),
         AD.makeTeam({ name: opp, squad: sqOf(opp), style: ai.style, tactic: { shape: ai.shape, order: ai.order } }, false, null), ko ? { et: true } : { league: true });
       AD.wcPlayStage(W, AD.wcRecord(res, W.nat, opp, W.stage, ko ? null : groupOf(W.nat)));
     }
