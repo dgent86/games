@@ -900,14 +900,14 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
         ['Longest losing run', 'losses', x => [x.team, x.n, plural(x.n, 'defeat') + ' in a row']],
         ['Record signing', 'signing', x => [x.player, fmt(x.n), x.team]],
         ['Cheapest champions', 'cheapest', x => [x.team, fmt(x.n), 'Total spent on the title-winning squad']],
-        ['Best window signing', 'bestSign', x => [x.player, `+${x.d.toFixed(2)} PPG`, `${x.team} · ${fmt(x.n)} · ${x.pre.toFixed(2)} to ${x.post.toFixed(2)} PPG`], 'Points per game after the window minus before. Tie: cheapest wins'],
-        ['Worst window signing', 'worstSign', x => [x.player, `${x.d.toFixed(2)} PPG`, `${x.team} · ${fmt(x.n)} · ${x.pre.toFixed(2)} to ${x.post.toFixed(2)} PPG`], 'Points per game after the window minus before. Tie: dearest loses']
+        ['Best window signing', 'bestSign', x => [x.team, `+${x.d.toFixed(2)} PPG`, [`${x.player} - ${fmt(x.n)} - ${x.pre.toFixed(2)} to ${x.post.toFixed(2)} PPG`, 'Points per game after the window minus before']]],
+        ['Worst window signing', 'worstSign', x => [x.team, `${x.d.toFixed(2)} PPG`, [`${x.player} - ${fmt(x.n)} - ${x.pre.toFixed(2)} to ${x.post.toFixed(2)} PPG`, 'Points per game after the window minus before']]]
       ];
-      list.innerHTML = rows.map(([label, k, f, hint]) => {
-        const x = R[k], lb = label + (hint ? `<small style="display:block;font-weight:normal;font-size:11px;opacity:.75">${hint}</small>` : '');
+      list.innerHTML = rows.map(([label, k, f]) => {
+        const x = R[k], lb = label;
         if (!x) return `<div><span class="lbl">${lb}</span><b class="none">No record yet</b><span></span></div>`;
         const [who, val, sub] = f(x);
-        return `<div><span class="lbl">${lb}</span><b>${esc(who)}</b><span class="val">${esc(val)}</span>${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</div>`;
+        return `<div><span class="lbl">${lb}</span><b>${esc(who)}</b><span class="val">${esc(val)}</span>${[].concat(sub || []).map(t => `<span class="sub">${esc(t)}</span>`).join('')}</div>`;
       }).join('');
       note.textContent = `Users only, from ${plural(d.seasons, 'completed campaign')}, including seasons since removed from the global table. Assists and fastest goals count from 1 November 2026. First to set a record keeps it on a tie.`;
     }).catch(() => { note.textContent = 'Could not load the records. Try again in a moment.'; });
