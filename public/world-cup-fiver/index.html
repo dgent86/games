@@ -154,6 +154,25 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 .result-line { font-family: var(--f-crt); font-size: 34px; line-height: 1; }
 
 
+
+/* Leaderboards: large kit-coloured tiles like the nation picker, then one board per nation */
+.lbgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.lbtile { display: grid; align-content: space-between; gap: 6px; text-align: left; font: inherit; min-height: 104px; padding: 10px 12px 10px 20px; cursor: pointer; position: relative; touch-action: manipulation; min-width: 0;
+  background: var(--tb, #888); color: var(--tf, #fff); border: 3px solid; border-color: var(--panel-hi) var(--panel-lo) var(--panel-lo) var(--panel-hi); outline: 2px solid #000; }
+.lbtile::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: var(--ts, #444); }
+.lbtile:focus-visible { outline: 3px dashed var(--navy); outline-offset: 2px; }
+.lbtile b { display: block; font-size: 17px; line-height: 1.15; } .lbtile .nk { display: block; font-size: 11px; opacity: .85; margin-top: 1px; }
+.lbtile .st { font-size: 12px; line-height: 1.3; } .lbtile .st i { font-style: normal; font-weight: 700; display: block; }
+.lbtile.world { grid-column: 1 / -1; min-height: 84px; --tb: #14245e; --tf: #fff; --ts: #ffc83a; }
+.lbstats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
+.lbstats div { background: var(--well); padding: 6px 8px; font-size: 12px; min-width: 0; } .lbstats b { display: block; font-size: 16px; line-height: 1.2; } .lbstats span { color: var(--muted); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.lbstats .w { grid-column: span 3; }
+.lbt { width: 100%; border-collapse: collapse; font-size: 13px; } .lbt th, .lbt td { padding: 5px 4px; text-align: left; vertical-align: top; }
+.lbt thead th { border-bottom: 2px solid var(--panel-lo); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.lbt td.n, .lbt th.n { text-align: right; font-variant-numeric: tabular-nums; } .lbt tr.me td { background: #fff1b8; font-weight: bold; }
+.lbt .res { color: var(--muted); font-size: 12px; } .lbt tr.gap td { text-align: center; color: var(--muted); padding: 2px; }
+.lbt .flag { display: inline-block; width: 8px; height: 8px; margin-right: 4px; background: var(--fl, #888); border: 1px solid #0006; }
+.lbsample { background: #fff1b8; border: 2px dashed #8a6d00; padding: 6px 8px; font-size: 12px; margin-bottom: 8px; }
 /* Champion box on the summary: bold, in the winner's colours, centred */
 .champbox { text-align: center; padding: 14px 10px 12px; border: 4px solid var(--cb-bd, #000); background: var(--cb-bg, #000); color: var(--cb-fg, #fff); }
 .champbox .cl { font-family: var(--f-crt); font-size: 26px; letter-spacing: .2em; line-height: 1; }
@@ -298,6 +317,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
           <div id="resumeTxt"></div>
           <div class="row" style="margin-top:8px"><button class="btn go" type="button" id="resumeBtn">Continue</button><button class="btn" type="button" id="abandonBtn">Abandon run</button></div>
         </div>
+        <button class="btn" type="button" id="lbOpen">Leaderboards</button>
         <div class="lbl">Choose your nation</div>
         <div class="nations" id="nationGrid"></div>
       </div>
@@ -407,6 +427,28 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
     </div>
   </section>
 
+
+  <section class="screen" id="lb" hidden>
+    <div class="win">
+      <div class="bar"><span>Leaderboards</span><span id="lbTotal"></span></div>
+      <div class="pad">
+        <div class="lbsample" id="lbSample" hidden>Sample data. Live tables switch on when the game is released.</div>
+        <div class="lbgrid" id="lbGrid"></div>
+        <button class="btn" type="button" id="lbBack">Back</button>
+      </div>
+    </div>
+  </section>
+  <section class="screen" id="lbb" hidden>
+    <div class="win">
+      <div class="bar" id="lbbBar"><span id="lbbTitle"></span><span id="lbbRuns"></span></div>
+      <div class="pad">
+        <div class="lbsample" id="lbbSample" hidden>Sample data. Live tables switch on when the game is released.</div>
+        <div class="lbstats" id="lbbStats"></div>
+        <div id="lbbTable"></div>
+        <div class="row" style="margin-top:10px"><button class="btn go" type="button" id="lbbBack">All nations</button><button class="btn" type="button" id="lbbDone" hidden>Finish</button></div>
+      </div>
+    </div>
+  </section>
   <section class="screen" id="end" hidden>
     <div class="win">
       <div class="bar"><span>Tournament over</span><span id="endTag"></span></div>
@@ -418,6 +460,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
         <div class="lbl">Knockouts</div>
         <div id="endBracket"></div>
         <details><summary class="lbl">Final group tables</summary><div id="endGroups"></div></details>
+        <button class="btn" type="button" id="endLb">Leaderboard</button>
         <button class="btn go" type="button" id="againBtn">Play again</button>
       </div>
     </div>
@@ -1530,6 +1573,7 @@ const DATA = {"perks":{"Argentina":{"why":"Argentina have won six of their seven
     b.addEventListener('click', () => startDraft(n)); grid.appendChild(b);
   });
   function startDraft(nat) {
+    ev('start', nat);
     const seedParam = params.get('seed');
     const seed = seedParam != null ? (+seedParam >>> 0) : (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     AD.seed(seed);
@@ -1822,6 +1866,7 @@ const DATA = {"perks":{"Argentina":{"why":"Argentina have won six of their seven
     $('#endBracket').innerHTML = bracketHTML();
     $('#endGroups').innerHTML = allGroups();
     const eb = document.querySelector('#end .bar'); eb.style.background = ck.p; eb.style.color = ink; eb.style.borderColor = ink;
+    W.cid = W.cid || newCid(); LASTRUN = { nat: W.nat }; MYID = null; submitRun(runPayload()); ev('finish', W.nat + ' ' + OUTCOME[stageOf()].replace(/ to$/, '')); if (W.champion === W.nat) ev('champion', W.nat);
     clearSave(); show('end');
     if (W.champion === W.nat) showChampions();
   }
@@ -1831,6 +1876,7 @@ const DATA = {"perks":{"Argentina":{"why":"Argentina have won six of their seven
   let drawTimer = null;
   function startRun() {
     W = AD.wcNewRun({ seed: S.seed, nat: S.nat, name: S.mgr, squad: S.squad.map(keyOf), nations: NAMES, pool, cardOf });
+    W.cid = newCid();
     const sh = AD.lineup(S.squad).shape;
     TAC = { shape: sh, order: AD.autoLineup(S.squad, sh).order, style: 'BAL' };
     save();
@@ -1906,6 +1952,93 @@ const DATA = {"perks":{"Argentina":{"why":"Argentina have won six of their seven
   });
   showResume();
 
+  // ---------- online leaderboard (live on dangent.uk; anywhere else it shows clearly marked sample tables)
+  const LIVE = /(^|\.)dangent\.uk$/.test(location.hostname), API = params.get('api') || (LIVE ? '' : null);
+  const post = (fn, body) => fetch(API + '/api/' + fn, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(r => { if (!r.ok) throw new Error(r.status); return r.status === 204 ? null : r.json(); });
+  const sid = Math.random().toString(36).slice(2, 12);
+  function ev(e, d) { if (API === null) return; try { post('event', { g: 'world-cup-fiver', e, d: d || '', s: sid }).catch(() => {}); } catch (x) {} }
+  const PEND = 'wcf.pending.v1', MINE = 'wcf.mine.v1';
+  const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (x) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (x) {} };
+  const newCid = () => Array.from({ length: 12 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
+  const BEST = ['Group stage', 'Round of 16', 'Quarter-final', 'Semi-final', 'Runners-up', 'Champions'];
+  const OUTCOME = ['Out in the group stage', 'Round of 16 defeat to', 'Quarter-final defeat to', 'Semi-final defeat to', 'Lost in the Final to', 'World Champions'];
+  const stageOf = () => W.champion === W.nat ? 5 : W.out.stage === 'G' ? 0 : { R16: 1, QF: 2, SF: 3, F: 4 }[W.out.stage];
+  function runPayload() {
+    const st = stageOf(); let gf = 0, ga = 0;
+    Object.values(W.res).flat().forEach(r => { if (r.a === W.nat) { gf += r.ga; ga += r.gb; } else if (r.b === W.nat) { gf += r.gb; ga += r.ga; } });
+    const me = AD.wcScorers(W).find(x => x.nat === W.nat);
+    return { cid: W.cid, name: W.name || 'Manager', nat: W.nat, stage: st, opp: st >= 1 && st <= 4 ? (W.out.opp || '') : '', gf, ga, scorer: me ? me.n : '', sg: me ? me.g : 0 };
+  }
+  function submitRun(payload) {
+    const q = lsGet(PEND, []); if (!q.some(x => x.cid === payload.cid)) { q.push(payload); lsSet(PEND, q); }
+    flushPending();
+  }
+  function flushPending() {
+    if (API === null) return;
+    lsGet(PEND, []).forEach(p => post('wcf_submit', p).then(r => {
+      lsSet(PEND, lsGet(PEND, []).filter(x => x.cid !== p.cid));
+      const m = lsGet(MINE, {}); m[p.cid] = r.id; lsSet(MINE, m); MYID = r.id;
+    }).catch(() => {}));
+  }
+  let MYID = null;
+  const inkOn = (k) => { // readable lettering on a kit colour
+    const lum = c => { const n = parseInt(c.slice(1), 16), f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(n >> 16) + .7152 * f(n >> 8 & 255) + .0722 * f(n & 255); };
+    const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+    return [k.s, k.t].find(c => /^#[0-9a-f]{6}$/i.test(c) && cr(c, k.p) >= 3) || (cr('#FFFFFF', k.p) >= cr('#111111', k.p) ? '#FFFFFF' : '#111111');
+  };
+  // sample tables for builds that are not on dangent.uk (clearly labelled), so the layout can be reviewed
+  const demoNations = () => ({ total: 1240, nations: NAMES.map((n, i) => ({ nat: n, runs: 20 + ((i * 37) % 90), titles: (i * 7) % 5 === 0 ? 1 + i % 3 : 0, best: (i * 5) % 6, most: 8 + (i * 3) % 19 })) });
+  const demoBoard = nat => {
+    const pool = nat === 'all' ? NAMES : [nat], rows = [];
+    for (let i = 0; i < 12; i++) rows.push({ rank: i + 1, id: -i - 1, name: 'Sample ' + String.fromCharCode(65 + i), nat: pool[i % pool.length], stage: Math.max(0, 5 - Math.floor(i / 2)), opp: NAMES[(i * 5 + 3) % NAMES.length], gf: 24 - i, ga: 5 + i, scorer: '', sg: 0 });
+    return { rows, stats: { runs: 48, titles: 3, finals: 7, best: 5, most: 'Sample A|' + (pool[0]) + '|24', boot: null, tight: 'Sample A|' + pool[0] + '|5' } };
+  };
+  function tileHTML(nat, info, nick) {
+    const k = nat === 'all' ? null : DATA.nations[nat].kit, kit = k ? { p: k[0], s: k[1], t: k[2] } : null;
+    const st = info && info.runs ? `${info.runs} run${info.runs === 1 ? '' : 's'}${info.titles ? ' · ' + info.titles + ' title' + (info.titles === 1 ? '' : 's') : ''}<i>Best: ${esc(BEST[info.best])}</i>` : 'No runs yet';
+    return `<button type="button" class="lbtile${nat === 'all' ? ' world' : ''}" data-n="${esc(nat)}"${kit ? ` style="--tb:${kit.p};--tf:${inkOn(kit)};--ts:${kit.s}"` : ''}><span><b>${nat === 'all' ? 'World table' : esc(nat)}</b><span class="nk">${esc(nick)}</span></span><span class="st">${st}</span></button>`;
+  }
+  let lbEnd = false;
+  async function openLb(fromEnd) {
+    lbEnd = fromEnd === true; show('lb');
+    $('#lbSample').hidden = API !== null;
+    $('#lbGrid').innerHTML = '<div class="note">Loading...</div>';
+    let d; try { d = API === null ? demoNations() : await post('wcf_nations', {}); } catch (e) { $('#lbGrid').innerHTML = '<div class="note">The leaderboards cannot be reached right now. Try again in a moment.</div>'; return; }
+    const by = {}; d.nations.forEach(x => by[x.nat] = x);
+    const all = { runs: d.total, titles: d.nations.reduce((t, x) => t + x.titles, 0), best: d.nations.reduce((m, x) => Math.max(m, x.best), -1) };
+    $('#lbTotal').textContent = d.total ? d.total.toLocaleString('en-GB') + ' runs' : '';
+    $('#lbGrid').innerHTML = tileHTML('all', all, 'Every nation, one table') + NAMES.map(n => tileHTML(n, by[n], DATA.nations[n].nick)).join('');
+    $('#lbGrid').querySelectorAll('.lbtile').forEach(b => b.addEventListener('click', () => openBoard(b.dataset.n, null, lbEnd)));
+  }
+  async function openBoard(nat, mine, fromEnd) {
+    show('lbb'); $('#lbbDone').hidden = !fromEnd; $('#lbbDone').textContent = 'Back to results'; $('#lbbDone').onclick = () => show('end');
+    const bar = $('#lbbBar'), k = nat === 'all' ? null : DATA.nations[nat].kit;
+    bar.style.background = k ? k[0] : ''; bar.style.color = k ? inkOn({ p: k[0], s: k[1], t: k[2] }) : '';
+    $('#lbbTitle').textContent = nat === 'all' ? 'World table' : nat; $('#lbbRuns').textContent = '';
+    $('#lbbSample').hidden = API !== null; $('#lbbStats').innerHTML = ''; $('#lbbTable').innerHTML = '<div class="note">Loading...</div>';
+    $('#lbbBack').onclick = () => openLb(fromEnd);
+    let d; try { d = API === null ? demoBoard(nat) : await post('wcf_board', { nat, p_id: mine == null ? MYID : mine }); } catch (e) { $('#lbbTable').innerHTML = '<div class="note">The leaderboard cannot be reached right now. Try again in a moment.</div>'; return; }
+    const st = d.stats, pc = v => v ? v.split('|') : null, most = pc(st.most), boot = pc(st.boot), tight = pc(st.tight);
+    $('#lbbRuns').textContent = st.runs + ' run' + (st.runs === 1 ? '' : 's');
+    $('#lbbStats').innerHTML = st.runs ? `<div><span>Titles</span><b>${st.titles}</b></div><div><span>Finals</span><b>${st.finals}</b></div><div><span>Best</span><b>${esc(BEST[st.best])}</b></div>` +
+      (most ? `<div class="w"><span>Most goals in a run</span><b>${esc(most[2])} · ${esc(most[0])}${nat === 'all' ? ' (' + esc(most[1]) + ')' : ''}</b></div>` : '') +
+      (boot ? `<div class="w"><span>Top scorer in a run</span><b>${esc(boot[0])} · ${esc(boot[2])} goals${nat === 'all' ? ' (' + esc(boot[1]) + ')' : ''}</b></div>` : '') +
+      (tight ? `<div class="w"><span>Meanest title defence</span><b>${esc(tight[2])} conceded · ${esc(tight[0])}${nat === 'all' ? ' (' + esc(tight[1]) + ')' : ''}</b></div>` : '') : '';
+    const myid = mine == null ? MYID : mine; let prev = 0;
+    $('#lbbTable').innerHTML = st.runs ? `<table class="lbt"><thead><tr><th class="n">#</th><th>Manager</th><th>Result</th><th class="n">Goals</th></tr></thead><tbody>` + d.rows.map(r => {
+      const gap = prev && r.rank > prev + 1 ? '<tr class="gap"><td colspan="4">...</td></tr>' : ''; prev = r.rank;
+      const kk = DATA.nations[r.nat] ? DATA.nations[r.nat].kit : null;
+      const res = OUTCOME[r.stage] + (r.stage >= 1 && r.stage <= 4 ? ' ' + r.opp : '');
+      return gap + `<tr class="${r.id === myid ? 'me' : ''}"><td class="n">${r.rank}</td><td>${nat === 'all' && kk ? `<span class="flag" style="--fl:${kk[0]}"></span>` : ''}${esc(r.name)}${nat === 'all' ? `<div class="res">${esc(r.nat)}</div>` : ''}</td><td class="res">${esc(res)}</td><td class="n">${r.gf}</td></tr>`;
+    }).join('') + '</tbody></table>' : '<div class="note">Nobody has finished a tournament with this nation yet. Be the first.</div>';
+  }
+  $('#lbOpen').addEventListener('click', () => openLb(false));
+  $('#lbBack').addEventListener('click', () => show(lbEnd ? 'end' : 'pick'));
+  $('#endLb').addEventListener('click', () => openBoard(LASTRUN ? LASTRUN.nat : 'all', null, true));
+  let LASTRUN = null;
+
+  ev('view'); flushPending();
   // test hooks for the simulation harness
   window.WCF = { pool, NAMES, DATA, get W() { return W; } };
 })();

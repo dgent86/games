@@ -7,6 +7,9 @@
 //                           optional log {order, results, table, boot, squads} is kept in campaign_log
 //   POST /api/seasons       {p_id?}                                  -> global table: top 50 plus two either side of you
 //   POST /api/records       {}                                       -> Five-a-Sold record holders, users only (cached 2 minutes)
+//   POST /api/wcf_submit    {cid, name, nat, stage, opp, gf, ga, scorer, sg} -> {id}; a finished World Cup Fiver run (stage 0 group, 1 R16 ... 4 lost final, 5 champions)
+//   POST /api/wcf_nations   {}                                       -> per-nation summary for the leaderboard tiles
+//   POST /api/wcf_board     {nat | 'all', p_id?}                     -> top 25 plus two either side of you, with that board's records
 // Scores can only be added or read here. Edit or delete rows in the Cloudflare dashboard (D1 > dangent-scores > Console).
 
 const SCHEMA = [
@@ -46,6 +49,21 @@ const SCHEMA = [
      data TEXT NOT NULL,
      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`,
   `CREATE INDEX IF NOT EXISTS seasons_board ON seasons (pts DESC, gd DESC, gf DESC)`,
+  // World Cup Fiver: one row per finished run. cid is a random id made when the run starts, so a resend can't log it twice.
+  // stage: 0 out in the group, 1 round of 16, 2 quarter-final, 3 semi-final, 4 lost the final, 5 world champions.
+  `CREATE TABLE IF NOT EXISTS wcf_runs (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     cid TEXT NOT NULL UNIQUE,
+     name TEXT NOT NULL,
+     nat TEXT NOT NULL,
+     stage INTEGER NOT NULL,
+     opp TEXT NOT NULL DEFAULT '',
+     gf INTEGER NOT NULL, ga INTEGER NOT NULL,
+     scorer TEXT NOT NULL DEFAULT '',
+     sg INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')))`,
+  `CREATE INDEX IF NOT EXISTS wcf_board ON wcf_runs (nat, stage DESC, gf DESC, created_at, id)`,
+  `CREATE INDEX IF NOT EXISTS wcf_world ON wcf_runs (stage DESC, gf DESC, created_at, id)`,
 ];
 let ready = null;
 const init = (db) => (ready ||= db.batch(SCHEMA.map((s) => db.prepare(s))).catch((e) => { ready = null; throw e; }));
@@ -53,8 +71,9 @@ const init = (db) => (ready ||= db.batch(SCHEMA.map((s) => db.prepare(s))).catch
 const BLOCK = /\b(fuck\w*|f\*ck|cunts?|nigg\w*|nigga|faggots?|fags?|rape|raped|rapist|wank\w*|paki|spastic|spaz|retard\w*|nonce|kike|shit\w*|twat|bellend|knobhead|dickhead)\b/i;
 const MODES = new Set(['all', 'pl']);
 const SECS = new Set([15, 30, 45, 60]);
-const GAMES = new Set(['home', 'streaker', 'five-a-sold']);
-const EVENTS = new Set(['view', 'start', 'auction_done', 'kickoff', 'finish']);
+const GAMES = new Set(['home', 'streaker', 'five-a-sold', 'world-cup-fiver']);
+const WCF_NATS = new Set(['Argentina', 'Australia', 'Belgium', 'Brazil', 'Cameroon', 'Colombia', 'Croatia', 'Denmark', 'England', 'France', 'Germany', 'Iran', 'Ireland', 'Italy', 'Japan', 'Mexico', 'Morocco', 'Netherlands', 'Nigeria', 'Norway', 'Portugal', 'Saudi Arabia', 'Scotland', 'Serbia', 'South Korea', 'Spain', 'Sweden', 'Switzerland', 'Tunisia', 'USA', 'Uruguay', 'Wales']);
+const EVENTS = new Set(['view', 'start', 'auction_done', 'kickoff', 'finish', 'draft_done', 'champion']);
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
@@ -146,6 +165,28 @@ async function records(env) {
   return { rec, seasons: results.length, games };
 }
 
+// World Cup Fiver boards. Furthest stage first, then goals scored, then the earlier run. A manager name shows at most its best 3 runs on a board.
+const WCF_BOARD = `
+  WITH b AS (
+    SELECT *, row_number() OVER (PARTITION BY name ORDER BY stage DESC, gf DESC, created_at, id) AS nth
+    FROM wcf_runs WHERE (?1 = 'all' OR nat = ?1)),
+  r AS (
+    SELECT row_number() OVER (ORDER BY stage DESC, gf DESC, created_at, id) AS rank,
+           id, name, nat, stage, opp, gf, ga, scorer, sg, count(*) OVER () AS shown
+    FROM b WHERE nth <= 3),
+  me AS (SELECT (SELECT rank FROM r WHERE id = ?2) AS rk)
+  SELECT r.* FROM r, me
+  WHERE r.rank <= 25 OR (me.rk IS NOT NULL AND r.rank BETWEEN me.rk - 2 AND me.rk + 2)
+  ORDER BY r.rank`;
+const WCF_STATS = `
+  SELECT count(*) AS runs, COALESCE(sum(stage = 5), 0) AS titles, COALESCE(sum(stage >= 4), 0) AS finals, COALESCE(max(stage), -1) AS best,
+         (SELECT name || '|' || nat || '|' || gf FROM wcf_runs WHERE (?1 = 'all' OR nat = ?1) ORDER BY gf DESC, created_at, id LIMIT 1) AS most,
+         (SELECT scorer || '|' || nat || '|' || sg || '|' || name FROM wcf_runs WHERE (?1 = 'all' OR nat = ?1) AND scorer <> '' ORDER BY sg DESC, created_at, id LIMIT 1) AS boot,
+         (SELECT name || '|' || nat || '|' || ga FROM wcf_runs WHERE (?1 = 'all' OR nat = ?1) AND stage = 5 ORDER BY ga, created_at, id LIMIT 1) AS tight
+  FROM wcf_runs WHERE (?1 = 'all' OR nat = ?1)`;
+const WCF_NATIONS = `
+  SELECT nat, count(*) AS runs, COALESCE(sum(stage = 5), 0) AS titles, max(stage) AS best, max(gf) AS most FROM wcf_runs GROUP BY nat`;
+
 const ALL = `
   SELECT row_number() OVER (ORDER BY streak DESC, created_at, id) AS rank,
          id, name, streak, secs, created_at, count(*) OVER () AS total
@@ -197,6 +238,34 @@ async function api(fn, request, env) {
     await cache.put(key, res.clone());
     return res;
   }
+  if (fn === 'wcf_submit') {
+    const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+    const cid = String(b.cid ?? '');
+    let name = String(b.name ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20);
+    if (!name || BLOCK.test(name)) name = 'Mystery manager';
+    const nat = String(b.nat ?? ''), opp = String(b.opp ?? ''), scorer = String(b.scorer ?? '').replace(/[^\p{L}\p{M}\p{N} '.-]/gu, '').trim().slice(0, 40);
+    const { stage, gf, ga, sg } = b;
+    if (!/^[a-z0-9]{8,16}$/.test(cid)) return json({ message: 'Bad id' }, 400);
+    if (!WCF_NATS.has(nat) || (opp && !WCF_NATS.has(opp))) return json({ message: 'Bad nation' }, 400);
+    if (!int(stage, 0, 5) || !int(gf, 0, 120) || !int(ga, 0, 120) || !int(sg ?? 0, 0, gf)) return json({ message: 'Bad record' }, 400);
+    if ((stage === 5) !== (opp === '') && stage !== 0) return json({ message: 'Bad record' }, 400);
+    await env.DB.prepare(`INSERT INTO wcf_runs (cid, name, nat, stage, opp, gf, ga, scorer, sg) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9) ON CONFLICT(cid) DO NOTHING`)
+      .bind(cid, name, nat, stage, stage === 5 || stage === 0 ? '' : opp, gf, ga, scorer, scorer ? (sg ?? 0) : 0).run();
+    const row = await env.DB.prepare('SELECT id FROM wcf_runs WHERE cid = ?1').bind(cid).first();
+    return json({ id: row.id });
+  }
+  if (fn === 'wcf_nations') {
+    const { results } = await env.DB.prepare(WCF_NATIONS).all();
+    const total = results.reduce((t, r) => t + r.runs, 0);
+    return json({ total, nations: results });
+  }
+  if (fn === 'wcf_board') {
+    const nat = String(b.nat ?? 'all');
+    if (nat !== 'all' && !WCF_NATS.has(nat)) return json({ message: 'Bad nation' }, 400);
+    const id = Number.isInteger(b.p_id) ? b.p_id : null;
+    const [rows, stats] = await env.DB.batch([env.DB.prepare(WCF_BOARD).bind(nat, id), env.DB.prepare(WCF_STATS).bind(nat)]);
+    return json({ rows: rows.results, stats: stats.results[0] });
+  }
   if (fn === 'board') {
     const mode = String(b.p_mode);
     if (!MODES.has(mode)) return json({ message: 'Bad mode' }, 400);
@@ -228,7 +297,7 @@ async function api(fn, request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons|records)\/?$/);
+    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons|records|wcf_submit|wcf_nations|wcf_board)\/?$/);
     if (m) {
       try { return await api(m[1], request, env); }
       catch (e) { return json({ message: 'Server error' }, 500); }
