@@ -1242,11 +1242,11 @@ const DATA = {"commentary":{"kickoff":["{team} get things going","{player} rolls
   const initials = n => n === 'Free agent' ? 'FA' : n.split(/[\s-]+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
   const ORDER = ['GK', 'DEF', 'MID', 'FWD'];
   const when = c => typeof c.yr === 'number' ? `${esc(c.club)} · ${c.yr}` : esc(c.club);
-  // the five-man line-up fills as players sign: keeper on top, then defenders, midfielders, forwards; no ratings during the draft
+  // the five-man line-up fills as players sign: keeper on top, then defenders, midfielders, forwards, each with his overall rating
   function renderSquad(el, squad) {
     const kit = kitFor(S.nat), gk = squad.find(p => p.pos === 'GK');
     const outs = squad.filter(p => p.pos !== 'GK').sort((a, b) => ORDER.indexOf(a.pos) - ORDER.indexOf(b.pos));
-    const row = p => `<div class="tacrow fixed l-${p.pos}">${shirt(kit, initials(p.n), 30)}<span class="who"><b>${esc(p.n)}</b><span>${p.sec ? p.pos + '/' + p.sec + ' · ' : ''}${when(p)}</span></span><span></span><span class="tag">${p.pos}</span></div>`;
+    const row = p => `<div class="tacrow fixed l-${p.pos}">${shirt(kit, initials(p.n), 30)}<span class="who"><b>${esc(p.n)}</b><span>${p.sec ? p.pos + '/' + p.sec + ' · ' : ''}${when(p)}</span></span><span class="rv" title="Overall rating">${p.ovr}</span><span class="tag">${p.pos}</span></div>`;
     const empty = (l, txt) => `<div class="tacrow fixed empty${l ? ' l-' + l : ''}">${shirt({ p: '#d8d8d0', t: '#888' }, '', 30)}<span class="who"><b>${txt}</b></span><span></span><span class="tag">${l || 'OUT'}</span></div>`;
     const rows = [gk ? row(gk) : empty('GK', 'Goalkeeper')];
     outs.forEach(p => rows.push(row(p)));
@@ -1302,7 +1302,10 @@ const DATA = {"commentary":{"kickoff":["{team} get things going","{player} rolls
     $('#styleRow').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { S.style = b.dataset.st; renderSheet(); }));
     $('#styleNote').textContent = '';
     const o = OPP, os = STYLES[o.style];
-    $('#sOpp').innerHTML = `<div class="lbl">Opponent</div><b>${esc(o.nat)}</b> · ${esc(DATA.nations[o.nat].nick)}<br>Expect ${o.shape} and a ${os[0].toLowerCase()} approach: ${esc(os[1].toLowerCase())}<br><span class="note">Squad drafted from their own World Cup history. No ratings shown.</span>`;
+    const ok = kitFor(o.nat, kitFor(S.nat)), olu = o.lu;
+    const orow = (p, line) => `<div class="tacrow fixed l-${line}">${shirt(ok, initials(p.n), 30)}<span class="who"><b>${esc(p.n)}</b><span>${when(p)}</span></span><span></span><span class="tag">${line}</span></div>`;
+    $('#sOpp').innerHTML = `<div class="lbl">Opponent</div><b>${esc(o.nat)}</b> · ${esc(DATA.nations[o.nat].nick)}<br>Expect ${o.shape} and a ${os[0].toLowerCase()} approach: ${esc(os[1].toLowerCase())}` +
+      `<div class="slots" style="gap:4px;margin-top:8px">${orow(olu.gk, 'GK')}${olu.slots.map(x => orow(x.p, x.line)).join('')}</div><span class="note">Their ratings stay hidden until full time.</span>`;
   }
   function toSheet() {
     const others = NAMES.filter(n => n !== S.nat), nat = others[Math.floor(AD.rand() * others.length)];
