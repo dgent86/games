@@ -313,6 +313,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
         </ol>
         <label class="field" for="teamName"><span class="lbl">Your manager name</span>
           <input type="text" id="teamName" placeholder="e.g. Big Sam" maxlength="20" autocomplete="off"></label>
+        <p class="note nameErr" id="nameErr" hidden>Enter your manager name first. It goes on the leaderboard.</p>
         <div class="well" id="resumeBox" hidden>
           <div class="lbl">Tournament in progress</div>
           <div id="resumeTxt"></div>
@@ -1574,12 +1575,15 @@ const DATA = {"perks":{"Argentina":{"why":"Argentina have won six of their seven
     b.innerHTML = `<b>${esc(n)}</b><small>${esc(DATA.nations[n].nick)}</small><small class="pkt">${perkNames(n)}</small>`;
     b.addEventListener('click', () => startDraft(n)); grid.appendChild(b);
   });
+  $('#teamName').addEventListener('input', () => { $('#teamName').classList.remove('bad'); $('#nameErr').hidden = true; });
   function startDraft(nat) {
+    const nm = $('#teamName').value.replace(/\s+/g, ' ').trim();
+    if (!nm) { $('#nameErr').hidden = false; $('#teamName').classList.add('bad'); $('#teamName').scrollIntoView({ block: 'center' }); $('#teamName').focus(); return; }
     ev('start', nat);
     const seedParam = params.get('seed');
     const seed = seedParam != null ? (+seedParam >>> 0) : (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     AD.seed(seed);
-    S = { nat, seed, name: nat, mgr: ($('#teamName').value.trim() || 'Manager'), D: AD.wcDeal(pool(nat)), squad: [], passed: 0, style: 'BAL', shape: null, order: null, sel: null };
+    S = { nat, seed, name: nat, mgr: nm, D: AD.wcDeal(pool(nat)), squad: [], passed: 0, style: 'BAL', shape: null, order: null, sel: null };
     $('#dNation').textContent = `${nat} · ${DATA.nations[nat].nick}`;
     show('draft'); renderDraft();
   }
