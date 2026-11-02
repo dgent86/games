@@ -156,6 +156,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 
 
 /* Leaderboards: large kit-coloured tiles like the nation picker, then one board per nation */
+.btn.lbtop { justify-self: start; min-height: 32px; display: inline-block; padding: 6px 12px; font-size: 14px; margin: 0 0 10px; }
 .lbgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .lbtile { display: grid; align-content: space-between; gap: 6px; text-align: left; font: inherit; min-height: 104px; padding: 10px 12px 10px 20px; cursor: pointer; position: relative; touch-action: manipulation; min-width: 0;
   background: var(--tb, #888); color: var(--tf, #fff); border: 3px solid; border-color: var(--panel-hi) var(--panel-lo) var(--panel-lo) var(--panel-hi); outline: 2px solid #000; }
@@ -432,6 +433,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
     <div class="win">
       <div class="bar"><span>Leaderboards</span><span id="lbTotal"></span></div>
       <div class="pad">
+        <button class="btn lbtop" type="button" id="lbBackTop">&larr; Back</button>
         <div class="lbsample" id="lbSample" hidden>Sample data. Live tables switch on when the game is released.</div>
         <div class="lbgrid" id="lbGrid"></div>
         <button class="btn" type="button" id="lbBack">Back</button>
@@ -2035,6 +2037,7 @@ const DATA = {"perks":{"Argentina":{"why":"Argentina have won six of their seven
   }
   $('#lbOpen').addEventListener('click', () => openLb(false));
   $('#lbBack').addEventListener('click', () => show(lbEnd ? 'end' : 'pick'));
+  $('#lbBackTop').addEventListener('click', () => show(lbEnd ? 'end' : 'pick'));
   $('#endLb').addEventListener('click', () => openBoard(LASTRUN ? LASTRUN.nat : 'all', null, true));
   let LASTRUN = null;
 
