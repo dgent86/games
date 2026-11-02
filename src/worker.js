@@ -121,6 +121,7 @@ async function records(env) {
   const rec = {};
   const beat = (k, v, row) => { if (v > 0 && (!rec[k] || v > rec[k].v)) rec[k] = Object.assign({ v }, row); };
   let games = 0;
+  const signs = [];
   for (const s of results) {
     const team = s.name;
     let L = null;
@@ -157,11 +158,28 @@ async function records(env) {
     const buys = L.window ? (L.window.res || []).filter(x => x[2] === me) : [];
     for (const [p, , , price] of auction.concat(sq(L.squads))) if (p !== 'Free agent') beat('signing', price, { team, player: p, n: price });
     for (const [, p, , price] of buys) beat('signing', price, { team, player: p, n: price });
+    // window signing impact: the user's points per game after the window (games 8-15) minus before it (games 1-7)
+    if (buys.length && buys[0][3] > 0) {
+      let pre = 0, post = 0, np = 0, nq = 0;
+      for (const x of mine) {
+        const home = x[1] === me, f = home ? x[3] : x[4], a = home ? x[4] : x[3], pts = f > a ? 3 : f === a ? 1 : 0;
+        if (x[0] <= 7) { pre += pts; np++; } else { post += pts; nq++; }
+      }
+      if (np && nq) signs.push({ team, player: buys[0][1], n: buys[0][3], pre: +(pre / np).toFixed(2), post: +(post / nq).toFixed(2), d: post / nq - pre / np });
+    }
     if (pos === 1) {
       const spend = auction.reduce((t, x) => t + (x[3] || 0), 0) + buys.reduce((t, x) => t + (x[3] || 0), 0);
       beat('cheapest', 1000 - spend, { team, n: spend });
     }
   }
+  // best: biggest rise, ties to the cheapest signing; worst: biggest fall, ties to the dearest. Earlier season keeps a full tie.
+  let best = null, worst = null;
+  for (const x of signs) {
+    if (x.d > 1e-9 && (!best || x.d > best.d + 1e-9 || (Math.abs(x.d - best.d) < 1e-9 && x.n < best.n))) best = x;
+    if (x.d < -1e-9 && (!worst || x.d < worst.d - 1e-9 || (Math.abs(x.d - worst.d) < 1e-9 && x.n > worst.n))) worst = x;
+  }
+  if (best) rec.bestSign = best;
+  if (worst) rec.worstSign = worst;
   return { rec, seasons: results.length, games };
 }
 
