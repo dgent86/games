@@ -105,11 +105,11 @@ input[type=text] { font: 16px var(--f-ui); padding: 8px; border: 2px solid; bord
 /* Match: one CRT screen; team names with yellow scorers above, a solid commentary band across the centre */
 .screenbox { min-width: 0; background: var(--crt); color: var(--crt-ink); font-family: var(--f-crt); border: 2px solid; border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr); min-height: 360px; }
 .sb-top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; padding: 10px 10px 4px; align-items: start; }
-.sb-team { min-width: 0; display: grid; gap: 4px; align-content: start; }
+.sb-team { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; align-content: start; }
 .sb-team.r { text-align: right; }
 .sb-name { font-size: 24px; line-height: 1; padding: 4px 6px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sb-kit { height: 5px; }
-.sb-goals { color: var(--amber); font-size: 20px; line-height: 1.05; overflow-wrap: break-word; display: grid; gap: 1px; }
+.sb-goals { color: var(--amber); font-size: 20px; line-height: 1.05; overflow-wrap: anywhere; display: grid; gap: 1px; }
 .sb-score { text-align: center; font-size: 46px; line-height: .9; color: var(--amber); font-variant-numeric: tabular-nums; padding-top: 2px; }
 .sb-score small { display: block; font-size: 24px; color: var(--cyan); margin-top: 4px; }
 .band { --fa: var(--amber); --fb: var(--crt); display: grid; place-items: center; text-align: center; align-self: center; min-height: 118px; padding: 10px 14px; margin-block: 8px; font-size: 28px; line-height: 1.1; background: var(--navy); color: var(--on-navy); overflow-wrap: anywhere; }
@@ -222,6 +222,42 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .sitefoot { text-align: center; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; padding-top: 4px; }
 .sitefoot a { color: var(--amber); text-decoration: none; font-weight: bold; }
 .sitefoot a:hover, .sitefoot a:focus-visible { text-decoration: underline; }
+
+/* Challenge mode */
+.pips { display: flex; gap: 3px; flex-wrap: wrap; }
+.pips i { flex: 1 1 0; min-width: 10px; height: 10px; background: var(--well); border: 1px solid var(--panel-lo); }
+.pips i.done { background: var(--navy); }
+.pips i.cur { background: var(--amber); }
+.stepper { display: grid; grid-template-columns: 64px 1fr 64px; gap: 8px; align-items: center; }
+.stepper .btn { font-size: 26px; min-height: 56px; }
+.bidval { font-family: var(--f-crt); font-size: 52px; line-height: 1; text-align: center; background: var(--crt); color: var(--amber); padding: 6px 0 2px; font-variant-numeric: tabular-nums; }
+#bQuick .btn { min-height: 40px; font-size: 13px; padding-inline: 4px; }
+.mgrline { display: flex; align-items: center; gap: 10px; }
+.mgrline b { font-size: 16px; overflow-wrap: anywhere; }
+.kits { display: flex; gap: 6px; flex-wrap: wrap; }
+.kitbtn { background: var(--well); border: 2px solid transparent; padding: 4px; min-width: 52px; min-height: 52px; cursor: pointer; display: grid; place-items: center; }
+.kitbtn[aria-pressed=true] { border-color: var(--navy); background: #fff; }
+.kitbtn:focus-visible { outline: 2px dashed var(--navy); outline-offset: 2px; }
+.kitcustom { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: end; }
+.kitcustom label { display: grid; gap: 3px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.kitcustom input[type=color] { width: 100%; height: 40px; border: 2px solid var(--panel-lo); padding: 0; background: #fff; }
+select { font: 14px var(--f-ui); padding: 8px; min-height: 40px; border: 2px solid; border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); background: #fff; color: var(--ink); min-width: 0; width: 100%; }
+.chl { display: grid; gap: 4px; }
+.chl > div { background: var(--well); padding: 6px 8px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; }
+.chl > div b { overflow-wrap: anywhere; }
+.chl > div span { font-size: 12px; color: var(--muted); }
+.chl > div .btn { grid-row: span 2; min-height: 40px; font-size: 13px; }
+.chl .w { color: var(--good); font-weight: bold; }
+.chl .l { color: var(--alarm); font-weight: bold; }
+.code { font-family: var(--f-crt); font-size: 30px; line-height: 1; background: var(--crt); color: var(--amber); padding: 8px 10px 4px; overflow-wrap: anywhere; user-select: all; }
+.linkbox { font-size: 12px; background: #fff; border: 1px solid var(--panel-lo); padding: 6px 8px; overflow-wrap: anywhere; user-select: all; }
+.err { color: var(--alarm); font-weight: bold; margin: 0; }
+table.cl th:nth-child(2), table.cl td:nth-child(2) { text-align: left; }
+table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rvbids { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: var(--f-crt); font-size: 24px; line-height: 1; }
+.rvbids div { padding: 4px 6px 2px; background: #10180f; color: var(--crt-dim); }
+.rvbids div.won { color: var(--crt); background: var(--amber); }
+.rvhow { font-family: var(--f-crt); font-size: 20px; color: var(--cyan); min-height: 20px; }
 </style>
 
 <div class="wrap">
@@ -248,6 +284,7 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
         <button class="btn" id="contBtn" type="button" hidden></button>
         <button class="btn" id="globalBtn" type="button">Global table</button>
         <button class="btn" id="recBtn" type="button">Record holders</button>
+        <button class="btn go" id="chBtn" type="button">Challenge a friend<small>Head to head against a real manager</small></button>
       </div>
     </div>
   </section>
@@ -388,6 +425,18 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
         <button class="btn go" id="againBtn" type="button">Play again</button>
       </div>
     </div>
+    <div class="win" id="chResWin" hidden>
+      <div class="bar"><span>Full time</span><span id="chResTag"></span></div>
+      <div class="pad">
+        <div class="result-line" id="chResLine"></div>
+        <div class="note" id="chKitNote"></div>
+        <div class="lbl">Ratings revealed · match rating out of 10 · * out of position</div>
+        <div style="overflow-x:auto"><table class="rt" id="chRatings"></table></div>
+        <div class="well" id="chH2H"></div>
+        <button class="btn go" id="chRematch" type="button">Rematch</button>
+        <div class="row"><button class="btn" id="chToHub" type="button">Challenge hub</button><button class="btn" id="chToLeague" type="button">League table</button></div>
+      </div>
+    </div>
     <div class="win" id="campWin" hidden>
       <div class="bar"><span id="campTitle">League table</span><span id="campRound"></span></div>
       <div class="pad">
@@ -434,6 +483,86 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
         <div style="overflow-x:auto"><table class="lt gt" id="gTable"></table></div>
         <p class="note" id="gTotal" style="margin:0"></p>
         <button class="btn" id="gBack" type="button">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="ch" hidden>
+    <div class="win">
+      <div class="bar"><span>Challenge a friend</span><span id="chTag">Head to head</span></div>
+      <div class="pad" id="chBody"><p class="note">Loading...</p></div>
+    </div>
+    <button class="btn" id="chHome" type="button">Back to the title screen</button>
+  </section>
+
+  <section class="screen" id="chBid" hidden>
+    <div class="win">
+      <div class="bar"><span id="bidStage"></span><span id="bidVs"></span></div>
+      <div class="pad">
+        <div class="side-head"><span class="side-name" id="potLbl">Keeper pot</span><span class="money" id="pot"></span></div>
+        <div class="pips" id="pips"></div>
+      </div>
+    </div>
+    <div class="card" id="bCard" aria-live="polite"></div>
+    <div class="win">
+      <div class="pad">
+        <div class="stepper">
+          <button class="btn" id="bMinus" type="button" aria-label="Bid £1m less">-</button>
+          <div class="bidval" id="bVal" aria-live="polite">£0m</div>
+          <button class="btn" id="bPlus" type="button" aria-label="Bid £1m more">+</button>
+        </div>
+        <div class="row" id="bQuick"></div>
+        <button class="btn go" id="bLock" type="button">Lock bid</button>
+        <p class="note" id="bNote" style="margin:0"></p>
+      </div>
+    </div>
+    <div class="log" id="bLog" aria-label="Your bids"></div>
+  </section>
+
+  <section class="screen" id="chTriv" hidden>
+    <div class="win">
+      <div class="bar"><span>Tiebreak question</span><span id="tvClock"></span></div>
+      <div class="pad">
+        <p style="margin:0">If you and your opponent bid the same on a player, the closest answer wins him.</p>
+        <div class="timer" id="tvTimer"><i id="tvFill"></i></div>
+      </div>
+    </div>
+    <div class="card" id="tvCard"></div>
+    <div class="win">
+      <div class="pad">
+        <label class="field" for="tvYear"><span class="lbl">Year of birth</span>
+          <input type="text" id="tvYear" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="e.g. 1985"></label>
+        <button class="btn go" id="tvGo" type="button">Lock in my entry</button>
+        <p class="note" id="tvNote" style="margin:0"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="chShow" hidden>
+    <div class="win">
+      <div class="bar"><span id="rvStage">The reveal</span><span id="rvCount"></span></div>
+      <div class="pad">
+        <div class="sides" id="rvSides"></div>
+      </div>
+    </div>
+    <div class="card" id="rvCard" aria-live="polite"></div>
+    <div class="win">
+      <div class="pad">
+        <div class="row"><button class="btn go" id="rvNext" type="button">Next card</button><button class="btn" id="rvAll" type="button">Reveal all</button></div>
+        <button class="btn go" id="rvKick" type="button" hidden>Kick off</button>
+      </div>
+    </div>
+    <div class="log" id="rvLog" aria-label="Reveal log"></div>
+  </section>
+
+  <section class="screen" id="chLeague" hidden>
+    <div class="win">
+      <div class="bar"><span>Challenge league</span><span>All time</span></div>
+      <div class="pad">
+        <p class="note" id="lgNote" style="margin:0"></p>
+        <div style="overflow-x:auto"><table class="lt cl" id="lgTable"></table></div>
+        <div id="lgBelow"></div>
+        <button class="btn" id="lgBack" type="button">Back</button>
       </div>
     </div>
   </section>
@@ -1227,8 +1356,113 @@ const AD = (() => {
     return { key: top.key, price: Math.max(cur || 1, Math.min(top.max, second + 1)) };
   }
 
+  // ---------------- Challenge mode: two players, one seeded deck, sealed bids resolved against each other
+  const CH = { KEEPERS: 4, OUTFIELD: 15, GK_POT: 5, OUT_POT: 20, OUT_SLOTS: 4 };
+  function hashRand(sd, key) { // deterministic 0..1 from a seed and a short key, without touching the shared RNG
+    let h = (sd ^ 0x9E3779B9) >>> 0;
+    for (let i = 0; i < key.length; i++) { h = Math.imul(h ^ key.charCodeAt(i), 0x85EBCA6B) >>> 0; h ^= h >>> 13; }
+    h = Math.imul(h ^ (h >>> 16), 0x45D9F3B) >>> 0; h = (h ^ (h >>> 16)) >>> 0;
+    return h / 4294967296;
+  }
+  // 15 outfield cards, 4 keepers (3 from the normal deal plus one more) and a trivia player who is not in the deck
+  function challengeDeck(sd) {
+    const keep = seedState; seed(sd);
+    const used = new Set(), d = buildDeck(used);
+    const out = d.filter(p => p.pos !== 'GK'), gks = d.filter(p => p.pos === 'GK');
+    const pool = PLAYERS.filter(p => p.pos === 'GK' && !used.has(p.id));
+    const extra = weighted(pool, pool.map(q => q.ovr >= 84 ? 3 : q.ovr >= 82 ? 2 : 1)); used.add(extra.id);
+    const keepers = shuffle([...gks, extra]);
+    const rest = PLAYERS.filter(p => !used.has(p.id));
+    const trivia = pick(rest);
+    seed(keep);
+    return { out: out.map(p => p.id), gk: keepers.map(p => p.id), trivia: trivia.id };
+  }
+  // entry: { gk: [4 whole numbers], out: [15 whole numbers], year } or an error string
+  function checkEntry(e) {
+    const ints = (a, n, max, pot) => Array.isArray(a) && a.length === n && a.every(x => Number.isInteger(x) && x >= 0 && x <= max) && a.reduce((s, x) => s + x, 0) <= pot;
+    if (!e || !ints(e.gk, CH.KEEPERS, CH.GK_POT, CH.GK_POT)) return 'Keeper bids must be whole numbers adding up to no more than £' + CH.GK_POT + 'm.';
+    if (!ints(e.out, CH.OUTFIELD, CH.OUT_POT, CH.OUT_POT)) return 'Outfield bids must be whole numbers adding up to no more than £' + CH.OUT_POT + 'm.';
+    if (!Number.isInteger(e.year) || e.year < 1900 || e.year > 2030) return 'Enter a birth year.';
+    return null;
+  }
+  function resolveChallenge(deck, E, sd) {
+    const tri = PLAYERS[deck.trivia].born;
+    const dist = i => Math.abs(E[i].year - tri);
+    const rem = i => CH.OUT_POT - E[i].out.reduce((s, x) => s + x, 0);
+    const coin = key => hashRand(sd, key) < 0.5 ? 0 : 1;
+    const tie = (kind, idx) => {
+      if (dist(0) !== dist(1)) return { win: dist(0) < dist(1) ? 0 : 1, how: 'trivia' };
+      if (kind === 'out' && rem(0) !== rem(1)) return { win: rem(0) > rem(1) ? 0 : 1, how: 'budget' };
+      return { win: coin(kind + idx), how: 'coin' };
+    };
+    const log = [], squad = [[], []];
+    const phase = (kind, ids, maxHave) => {
+      const have = [0, 0], taken = new Set(), items = [], ties = {};
+      ids.forEach((id, idx) => [0, 1].forEach(i => { const b = E[i][kind][idx]; if (b > 0) items.push({ idx, i, b }); }));
+      items.forEach(it => { if (!(it.idx in ties) && E[0][kind][it.idx] > 0 && E[0][kind][it.idx] === E[1][kind][it.idx]) ties[it.idx] = tie(kind, it.idx); });
+      items.sort((a, b) => b.b - a.b || a.idx - b.idx || ((ties[a.idx] ? (ties[a.idx].win === a.i ? 0 : 1) : 0) - (ties[b.idx] ? (ties[b.idx].win === b.i ? 0 : 1) : 0)));
+      items.forEach(({ idx, i, b }) => {
+        if (taken.has(idx) || have[i] >= maxHave) return;
+        taken.add(idx); have[i]++;
+        const other = E[1 - i][kind][idx];
+        log.push({ kind, idx, id: ids[idx], win: i, price: Math.min(b, Math.max(1, other + 1)), bids: [E[0][kind][idx], E[1][kind][idx]], how: ties[idx] ? ties[idx].how : other > 0 ? 'bid' : 'only' });
+        squad[i].push(ids[idx]);
+      });
+      // anyone short takes the lowest rated cards left, £1 each; whoever needs more goes first, then a coin
+      const left = ids.map((id, idx) => ({ id, idx })).filter(x => !taken.has(x.idx)).sort((a, b) => PLAYERS[a.id].ovr - PLAYERS[b.id].ovr || a.idx - b.idx);
+      const first = coin('fill' + kind);
+      const order = (maxHave - have[0]) === (maxHave - have[1]) ? [first, 1 - first] : (maxHave - have[0]) > (maxHave - have[1]) ? [0, 1] : [1, 0];
+      let guard = 0;
+      while ((have[0] < maxHave || have[1] < maxHave) && left.length && guard++ < 40) {
+        for (const i of order) if (have[i] < maxHave && left.length) { const c = left.shift(); have[i]++; log.push({ kind, idx: c.idx, id: c.id, win: i, price: 1, bids: [E[0][kind][c.idx], E[1][kind][c.idx]], how: 'fill' }); squad[i].push(c.id); }
+      }
+    };
+    phase('gk', deck.gk, 1);
+    phase('out', deck.out, CH.OUT_SLOTS);
+    return { squad, log, trivia: { id: deck.trivia, born: tri, years: [E[0].year, E[1].year] }, rem: [rem(0), rem(1)] };
+  }
+  // ---------- kits: colour distance, clash and change strip
+  function toLab(h) {
+    h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    const c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    const x = (c[0] * 0.4124 + c[1] * 0.3576 + c[2] * 0.1805) / 0.95047, y = c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722, z = (c[0] * 0.0193 + c[1] * 0.1192 + c[2] * 0.9505) / 1.08883;
+    const f = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+    return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
+  }
+  const deltaE = (a, b) => { const A = toLab(a), B = toLab(b); return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]); };
+  const KIT_STYLES = ['plain', 'stripes', 'hoops', 'halves', 'sleeves'];
+  const patterned = k => k.style === 'stripes' || k.style === 'hoops' || k.style === 'halves';
+  const CLASH = 36;
+  function kitClash(a, b) {
+    if (deltaE(a.p, b.p) < CLASH) return true;
+    if (patterned(a) && deltaE(a.s, b.p) < CLASH) return true;
+    if (patterned(b) && deltaE(a.p, b.s) < CLASH) return true;
+    if (patterned(a) && patterned(b) && deltaE(a.s, b.s) < CLASH && deltaE(a.p, b.p) < CLASH * 1.6) return true;
+    return false;
+  }
+  const FALLBACK_KITS = [
+    { name: 'White', p: '#ffffff', s: '#111111', t: '#111111', style: 'plain' },
+    { name: 'Black', p: '#111111', s: '#ffffff', t: '#ffffff', style: 'plain' },
+    { name: 'Yellow', p: '#f6d40a', s: '#111111', t: '#111111', style: 'plain' },
+    { name: 'Sky blue', p: '#7fc4ea', s: '#ffffff', t: '#111111', style: 'plain' }
+  ];
+  // home: the kit that stays; kit: the side that may need to change. Returns { kit, changed }
+  function changeStrip(kit, home) {
+    if (!kitClash(kit, home)) return { kit, changed: false };
+    const opts = [kit.away, ...FALLBACK_KITS].filter(Boolean);
+    const ok = opts.find(k => !kitClash(k, home)) || FALLBACK_KITS[0];
+    return { kit: ok, changed: true };
+  }
+  // the two sides' kits for a match: homeSide is 0 or 1 (the side that keeps its home kit)
+  function matchKits(k0, k1, homeSide) {
+    const kits = [k0, k1], ch = [false, false], away = 1 - homeSide;
+    const r = changeStrip(kits[away], kits[homeSide]);
+    kits[away] = r.kit; ch[away] = r.changed;
+    return { kits, changed: ch };
+  }
+
   return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
-    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, T, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
+    match, simulate, lineup, makeTeam, challengeDeck, checkEntry, resolveChallenge, hashRand, CH, deltaE, kitClash, changeStrip, matchKits, FALLBACK_KITS, KIT_STYLES, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, T, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;
 </script>
@@ -1247,14 +1481,18 @@ if (typeof module !== 'undefined') module.exports = AD;
   function kitBg(k) {
     if (k.style === 'stripes') return `repeating-linear-gradient(90deg, ${k.p} 0 12px, ${k.s} 12px 24px)`;
     if (k.style === 'sleeves') return `linear-gradient(90deg, ${k.s} 0 14%, ${k.p} 14% 86%, ${k.s} 86%)`;
+    if (k.style === 'hoops') return `repeating-linear-gradient(180deg, ${k.p} 0 3px, ${k.s} 3px 6px)`;
+    if (k.style === 'halves') return `linear-gradient(90deg, ${k.p} 0 50%, ${k.s} 50%)`;
     return k.p;
   }
   let pid = 0;
   function shirt(k, label, size) {
     size = size || 30; const id = 'pt' + (pid++); let fill = k.p, defs = '';
     if (k.style === 'stripes') { defs = `<defs><pattern id="${id}" width="8" height="40" patternUnits="userSpaceOnUse"><rect width="4" height="40" fill="${k.p}"/><rect x="4" width="4" height="40" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
+    if (k.style === 'hoops') { defs = `<defs><pattern id="${id}" width="40" height="8" patternUnits="userSpaceOnUse"><rect width="40" height="4" fill="${k.p}"/><rect y="4" width="40" height="4" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
+    if (k.style === 'halves') { defs = `<defs><linearGradient id="${id}" x1="0" x2="1" y1="0" y2="0"><stop offset=".5" stop-color="${k.p}"/><stop offset=".5" stop-color="${k.s}"/></linearGradient></defs>`; fill = `url(#${id})`; }
     const sl = k.style === 'sleeves' ? `<path d="M12 4 L4 9 L7 16 L11 14 Z M28 4 L36 9 L33 16 L29 14 Z" fill="${k.s}" stroke="#222" stroke-width="1"/>` : '';
-    const st = k.style === 'stripes';
+    const st = ['stripes', 'hoops', 'halves'].includes(k.style);
     const tx = label ? `<text x="20" y="27" text-anchor="middle" font-family="Verdana,sans-serif" font-size="9" font-weight="bold" fill="${st ? '#111' : k.t}" ${st ? 'stroke="#fff" stroke-width="3" paint-order="stroke"' : ''}>${esc(label)}</text>` : '';
     return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true">${defs}<path d="M12 4 L4 9 L7 16 L11 14 L11 36 L29 36 L29 14 L33 16 L36 9 L28 4 Q20 9 12 4 Z" fill="${fill}" stroke="#222" stroke-width="1"/>${sl}${tx}</svg>`;
   }
@@ -1488,7 +1726,9 @@ if (typeof module !== 'undefined') module.exports = AD;
     const base = speed === 'fast' ? 320 : 1150;
     return /\.\.\.$/.test(text) ? base * 1.4 : base;
   }
+  let MX = null; // set while a challenge match is replaying: {names, kits}
   function sideColours(side) {
+    if (MX && (side === 0 || side === 1)) { const k = MX.kits[side]; return { bg: k.p, fg: k.t, a: k.s === k.p ? k.t : k.s, b: k.p }; }
     if (side === 0) return { bg: '#ffffff', fg: '#111111', a: '#ffffff', b: '#111111' };
     if (side === 1) { const k = G.A.mgr.kit; return { bg: k.p, fg: k.t, a: k.s, b: k.p }; }
     return null;
@@ -1502,19 +1742,22 @@ if (typeof module !== 'undefined') module.exports = AD;
     $('#bandTxt').textContent = text;
   }
   const short = n => n === 'Free agent' ? n : n.split(' ').slice(-1)[0];
-  async function playMatch() {
+  // X (challenge mode only): {res, names, kits, done(res)}; otherwise the current quick match or campaign game is played
+  async function playMatch(X) {
     const token = ++playToken;
     speed = 'normal';
     document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.speed === 'normal')));
-    const res = AD.match(G, C ? { league: true } : undefined);
-    if (C) recordRound(res);
-    track('five-a-sold','kickoff',G.A.mgr.name);
+    MX = X || null;
+    const res = X ? X.res : AD.match(G, C ? { league: true } : undefined);
+    if (!X && C) recordRound(res);
+    if (!X) track('five-a-sold','kickoff',G.A.mgr.name);
     show('match');
-    $('#resultWin').hidden = true; $('#campWin').hidden = true;
+    $('#resultWin').hidden = true; $('#campWin').hidden = true; $('#chResWin').hidden = true;
     const cH = sideColours(0), cA = sideColours(1);
-    $('#nameH').textContent = G.H.name; $('#nameH').style.background = cH.bg; $('#nameH').style.color = cH.fg;
-    $('#nameA').textContent = G.A.mgr.name; $('#nameA').style.background = cA.bg; $('#nameA').style.color = cA.fg;
-    $('#kitH').style.background = kitBg(HUMAN_KIT); $('#kitA').style.background = kitBg(G.A.mgr.kit);
+    const nm = X ? X.names : [G.H.name, G.A.mgr.name], kt = X ? X.kits : [HUMAN_KIT, G.A.mgr.kit];
+    $('#nameH').textContent = nm[0]; $('#nameH').style.background = cH.bg; $('#nameH').style.color = cH.fg;
+    $('#nameA').textContent = nm[1]; $('#nameA').style.background = cA.bg; $('#nameA').style.color = cA.fg;
+    $('#kitH').style.background = kitBg(kt[0]); $('#kitA').style.background = kitBg(kt[1]);
     $('#goalsH').innerHTML = ''; $('#goalsA').innerHTML = ''; $('#prevLine').textContent = ''; $('#footRight').textContent = '';
     $('#scoreTxt').textContent = '0 - 0'; $('#clock').textContent = "0'";
     $('#bandTxt').textContent = ''; $('#band').className = 'band'; $('#band').style.background = ''; $('#band').style.color = '';
@@ -1555,7 +1798,7 @@ if (typeof module !== 'undefined') module.exports = AD;
       }
       if (ev.pscore) $('#footRight').textContent = `Penalties ${ev.pscore[0]}-${ev.pscore[1]}`;
     }
-    finishMatch(res);
+    if (X) X.done(res); else finishMatch(res);
   }
   function finishMatch(res) {
     const [H, A] = res.teams, s = res.score, w = res.winner;
@@ -2072,6 +2315,454 @@ if (typeof module !== 'undefined') module.exports = AD;
       C.round = 7; store.set(C);
       openWindow();
     });
+  }
+  // ---------- challenge mode: head to head against a real manager. Both managers bid blind on the same deck;
+  // the server resolves the bids and plays the match, and each phone replays it from the stored seed.
+  const CHK = AD.CH, DEVK = 'fiveasold.dev';
+  const chPost = (fn, body) => {
+    const dev = ls.get(DEVK);
+    return fetch('/api/fas_' + fn, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json', ...(dev ? { 'x-fas-dev': dev } : {}) }, body: JSON.stringify(body || {}) })
+      .then(async r => {
+        let j = null; try { j = await r.json(); } catch (_) {}
+        if (!r.ok) throw Object.assign(new Error((j && j.message) || 'Something went wrong. Try again.'), { status: r.status });
+        return j;
+      }, () => { throw new Error('Could not reach the server. Check your connection and try again.'); });
+  };
+  const PRESETS = [
+    { name: 'Red', p: '#c8102e', s: '#ffffff', t: '#ffffff', style: 'plain' },
+    { name: 'Royal blue', p: '#1d3fa5', s: '#ffffff', t: '#ffffff', style: 'plain' },
+    { name: 'Black and white stripes', p: '#111111', s: '#ffffff', t: '#ffffff', style: 'stripes' },
+    { name: 'Red and white stripes', p: '#c8102e', s: '#ffffff', t: '#ffffff', style: 'stripes' },
+    { name: 'Blue and black stripes', p: '#1d3fa5', s: '#111111', t: '#ffffff', style: 'stripes' },
+    { name: 'Claret and blue', p: '#7a1e3a', s: '#8cc4ec', t: '#ffffff', style: 'sleeves' },
+    { name: 'Red with white sleeves', p: '#c8102e', s: '#ffffff', t: '#ffffff', style: 'sleeves' },
+    { name: 'Green and white hoops', p: '#0b7a3b', s: '#ffffff', t: '#ffffff', style: 'hoops' },
+    { name: 'Blue and white hoops', p: '#1d3fa5', s: '#ffffff', t: '#ffffff', style: 'hoops' },
+    { name: 'Blue and white halves', p: '#1d3fa5', s: '#ffffff', t: '#ffffff', style: 'halves' },
+    { name: 'Amber and black', p: '#f5a300', s: '#111111', t: '#111111', style: 'plain' },
+    { name: 'Tangerine', p: '#f26a1b', s: '#111111', t: '#111111', style: 'plain' },
+    { name: 'Navy', p: '#14245e', s: '#ffffff', t: '#ffffff', style: 'plain' },
+    { name: 'Sky blue', p: '#7fc4ea', s: '#ffffff', t: '#111111', style: 'plain' },
+    { name: 'Yellow and green', p: '#f6d40a', s: '#0b7a3b', t: '#111111', style: 'sleeves' },
+    { name: 'All white', p: '#ffffff', s: '#111111', t: '#111111', style: 'plain' }
+  ];
+  const KIT_WORDS = { plain: 'Plain', stripes: 'Stripes', hoops: 'Hoops', halves: 'Halves', sleeves: 'Contrast sleeves' };
+  const lumOf = h => { const n = parseInt(h.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+  const sameKit = (a, b) => a && b && a.p === b.p && a.s === b.s && a.style === b.style;
+  const kitName = k => { const m = PRESETS.find(p => sameKit(p, k)); return m ? m.name : (k.name || 'Own design'); };
+  let ME = null, PEND = null, pollT = null;
+  const stopPoll = () => { clearInterval(pollT); pollT = null; };
+  const linkOf = id => `${location.origin}${location.pathname}?c=${id}`;
+  function leftTxt(t) {
+    const m = Math.max(0, Math.round((t - Date.now()) / 60000));
+    return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m left` : `${m}m left`;
+  }
+  async function shareLink(id, btn) {
+    const url = linkOf(id), text = `${ME ? ME.name : 'A manager'} has challenged you to Five-a-Sold. Sealed bids, one match.`;
+    if (navigator.share) { try { await navigator.share({ title: 'Five-a-Sold challenge', text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+    try { await navigator.clipboard.writeText(url); btn.textContent = 'Link copied'; } catch (_) { btn.textContent = 'Copy the link above'; }
+  }
+  const errBox = (body, msg, retry) => {
+    body.innerHTML = `<p class="err">${esc(msg)}</p><div class="row"><button class="btn" type="button" data-a="retry">Try again</button><button class="btn" type="button" data-a="hub">Challenge hub</button></div>`;
+    body.querySelector('[data-a=retry]').onclick = retry; body.querySelector('[data-a=hub]').onclick = () => openHub();
+  };
+  const RULES = `<ul class="rules">
+    <li>You both bid on the same cards: 4 keepers, then 15 outfield players, one at a time. Ratings stay hidden.</li>
+    <li>Sealed bids in whole £m. £5m for keepers (you sign one) and £20m for four outfielders. £0 is fine.</li>
+    <li>Every bid is locked and comes off your pot as you place it, win or lose, so don't blow it all on the first card.</li>
+    <li>Highest bid wins. The winner pays £1m more than the losing bid, never more than his own bid.</li>
+    <li>Short of players at the end? You get the lowest-rated cards left for £1m each.</li>
+    <li>Level bids: closest guess at a player's year of birth wins, then the most outfield money left, then a coin toss.</li>
+    <li>Your formation is picked for you. Nobody sees anything until you have both locked in.</li></ul>`;
+
+  // kit picker: presets, your own colours and pattern, and an optional change strip
+  function kitPicker(host, init) {
+    let k = init ? { p: init.p, s: init.s, t: init.t, style: init.style } : { ...PRESETS[0] };
+    let away = init && init.away ? init.away : null;
+    delete k.name;
+    host.innerHTML = `<div class="mgrline"><span data-k="prev"></span><span><b data-k="nm"></b><br><span class="note" data-k="aw"></span></span></div>
+      <div class="kits">${PRESETS.map((p, i) => `<button class="kitbtn" type="button" data-i="${i}" aria-label="${esc(p.name)}" aria-pressed="false">${shirt(p, '', 40)}</button>`).join('')}</div>
+      <details><summary>Make your own</summary><div class="kitcustom" style="margin-top:8px">
+        <label>Main colour<input type="color" data-k="p"></label><label>Second colour<input type="color" data-k="s"></label>
+        <label>Pattern<select data-k="st">${AD.KIT_STYLES.map(x => `<option value="${x}">${KIT_WORDS[x] || x}</option>`).join('')}</select></label></div></details>
+      <label class="field"><span class="lbl">Change strip, worn when your kit clashes</span><select data-k="away"><option value="">Pick one for me</option>${PRESETS.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('')}</select></label>`;
+    const q = s => host.querySelector(`[data-k=${s}]`);
+    function draw() {
+      q('prev').innerHTML = shirt(k, '', 56);
+      q('nm').textContent = kitName(k);
+      host.querySelectorAll('.kitbtn').forEach(b => b.setAttribute('aria-pressed', String(sameKit(PRESETS[+b.dataset.i], k))));
+      q('p').value = k.p; q('s').value = k.s; q('st').value = k.style;
+      const ai = away ? PRESETS.findIndex(p => sameKit(p, away)) : -1;
+      q('away').value = ai >= 0 ? String(ai) : '';
+      q('aw').textContent = away ? `Change strip: ${kitName(away)}` : 'Change strip picked for you if needed';
+    }
+    host.querySelectorAll('.kitbtn').forEach(b => b.addEventListener('click', () => { const p = PRESETS[+b.dataset.i]; k = { p: p.p, s: p.s, t: p.t, style: p.style }; if (away && AD.kitClash(k, away)) away = null; draw(); }));
+    const custom = () => { k = { p: q('p').value, s: q('s').value, style: q('st').value }; k.t = lumOf(k.p) > 0.6 ? '#111111' : '#ffffff'; if (away && AD.kitClash(k, away)) away = null; draw(); };
+    q('p').addEventListener('input', custom); q('s').addEventListener('input', custom); q('st').addEventListener('change', custom);
+    q('away').addEventListener('change', () => {
+      const v = q('away').value; const p = v === '' ? null : PRESETS[+v];
+      if (p && AD.kitClash(k, p)) { away = null; draw(); q('aw').textContent = 'Too close to your main kit. One will be picked for you.'; return; }
+      away = p ? { p: p.p, s: p.s, t: p.t, style: p.style } : null; draw();
+    });
+    draw();
+    return () => ({ ...k, ...(away ? { away } : {}) });
+  }
+
+  // ---------- hub
+  async function openHub(flash) {
+    stopPoll(); show('ch'); $('#chTag').textContent = 'Head to head';
+    const body = $('#chBody'); body.innerHTML = '<p class="note">Loading...</p>';
+    let d; try { d = await chPost('me'); } catch (e) { return errBox(body, e.message, () => openHub(flash)); }
+    ME = d.me;
+    if (!ME) return signUpView(body);
+    if (PEND) { const id = PEND; PEND = null; return openChallenge(id); }
+    const yourMove = [...d.todo.filter(r => !r.entered).map(r => ({ ...r, who: r.from, mine: false })), ...d.open.filter(r => !r.entered).map(r => ({ ...r, who: r.opp || r.for, mine: true }))];
+    const waiting = [...d.open.filter(r => r.entered).map(r => ({ ...r, who: r.opp || r.for, mine: true })), ...d.todo.filter(r => r.entered).map(r => ({ ...r, who: r.from, mine: false }))];
+    const item = r => {
+      const what = r.mine ? (r.who ? `Your challenge to ${esc(r.who)}` : 'Your open challenge') : `${esc(r.who)} challenged you`;
+      const sub = r.mine && !r.opp ? (r.for ? `Rematch, waiting for ${esc(r.for)} to accept` : 'Nobody has accepted yet') : r.entered ? `Waiting for ${esc(r.who || 'them')} to bid` : r.status === 'open' ? 'Not accepted yet' : 'Your bids are needed';
+      return `<div><b>${what}</b><button class="btn ${r.entered ? '' : 'go'}" type="button" data-open="${r.id}">${r.entered ? 'View' : 'Play'}</button><span>${sub} · ${leftTxt(r.expires_at)}</span></div>`;
+    };
+    const res = r => { const o = r.gf > r.ga ? ['w', 'W'] : r.gf === r.ga ? ['', 'D'] : ['l', 'L']; return `<div><b><span class="${o[0]}">${o[1]}</span> ${r.gf}-${r.ga} v ${esc(r.opp)}</b><button class="btn" type="button" data-res="${r.id}">View</button><span>${new Date(r.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span></div>`; };
+    body.innerHTML = `<div class="mgrline">${shirt(ME.kit, '', 44)}<b>${esc(ME.name)}</b></div>
+      ${flash ? `<p class="note" style="margin:0">${esc(flash)}</p>` : ''}
+      <button class="btn go" type="button" data-a="new">New challenge<small>Get a link to send to a friend</small></button>
+      <div class="row"><button class="btn" type="button" data-a="league">League table</button><button class="btn" type="button" data-a="acct">Your manager</button></div>
+      ${yourMove.length ? `<div class="lbl">Your move</div><div class="chl">${yourMove.map(item).join('')}</div>` : ''}
+      ${waiting.length ? `<div class="lbl">Waiting</div><div class="chl">${waiting.map(item).join('')}</div>` : ''}
+      ${d.recent.length ? `<div class="lbl">Recent results</div><div class="chl">${d.recent.map(res).join('')}</div>` : ''}
+      ${!yourMove.length && !waiting.length && !d.recent.length ? '<p class="note" style="margin:0">No challenges yet. Start one and send the link to a friend. It stays open for 48 hours.</p>' : ''}
+      <details><summary>How it works</summary>${RULES}</details>`;
+    body.querySelector('[data-a=new]').onclick = newChallenge;
+    body.querySelector('[data-a=league]').onclick = openLeague;
+    body.querySelector('[data-a=acct]').onclick = () => accountView(body);
+    body.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openChallenge(b.dataset.open));
+    body.querySelectorAll('[data-res]').forEach(b => b.onclick = () => openResult(b.dataset.res));
+  }
+  async function newChallenge(e, rematch) {
+    const body = $('#chBody'); body.innerHTML = '<p class="note">Setting up the deck...</p>';
+    let d; try { d = await chPost('new', rematch ? { rematch } : {}); } catch (err) { return errBox(body, err.message, () => newChallenge(e, rematch)); }
+    show('ch'); $('#chTag').textContent = rematch ? 'Rematch' : 'New challenge';
+    body.innerHTML = `<p style="margin:0"><b>${rematch ? 'Rematch set up.' : 'Challenge set up.'}</b> ${rematch ? 'It shows in their Challenge hub, or send them the link.' : 'Send this link to the manager you want to play. The first person to accept it is your opponent.'} It stays open for 48 hours.</p>
+      <div class="linkbox">${esc(linkOf(d.id))}</div>
+      <div class="row"><button class="btn" type="button" data-a="share">Share the link</button><button class="btn go" type="button" data-a="bid">Do my bids now</button></div>
+      <button class="btn" type="button" data-a="hub">Challenge hub</button>`;
+    body.querySelector('[data-a=share]').onclick = ev => shareLink(d.id, ev.currentTarget);
+    body.querySelector('[data-a=bid]').onclick = () => openChallenge(d.id);
+    body.querySelector('[data-a=hub]').onclick = () => openHub();
+  }
+
+  // ---------- sign up, recovery code, your manager
+  function signUpView(body, c) {
+    show('ch'); $('#chTag').textContent = 'Your manager';
+    body.innerHTML = `${c && c.creator ? `<div class="mgrline">${c.creator.kit ? shirt(c.creator.kit, '', 44) : ''}<b>${esc(c.creator.name)} has challenged you</b></div>` : ''}
+      <p style="margin:0">Pick a manager name and a kit. That is your account: no email, no password. You also get a recovery code to sign in on another phone or browser.</p>
+      <label class="field" for="chName"><span class="lbl">Manager name</span><input type="text" id="chName" maxlength="16" autocomplete="off" placeholder="e.g. Skeffling Rovers"></label>
+      <div class="lbl">Your kit</div><div data-k="kp" class="pad" style="padding:0"></div>
+      <p class="err" data-k="err" hidden></p>
+      <button class="btn go" type="button" data-a="make">${c ? 'Create my manager and accept' : 'Create my manager'}</button>
+      <details><summary>Already have a manager? Sign in with your recovery code</summary>
+        <div class="pad" style="padding:8px 0 0">
+          <label class="field" for="rcName"><span class="lbl">Manager name</span><input type="text" id="rcName" maxlength="16" autocomplete="off"></label>
+          <label class="field" for="rcCode"><span class="lbl">Recovery code</span><input type="text" id="rcCode" maxlength="40" autocomplete="off" autocapitalize="none" placeholder="word-word-word-12"></label>
+          <p class="err" data-k="rerr" hidden></p>
+          <button class="btn" type="button" data-a="rec">Sign in</button></div></details>`;
+    const tn = ($('#teamName').value || '').trim(); if (tn) body.querySelector('#chName').value = tn.slice(0, 16);
+    const getKit = kitPicker(body.querySelector('[data-k=kp]'));
+    const err = (k, m) => { const e = body.querySelector(`[data-k=${k}]`); e.textContent = m; e.hidden = !m; };
+    body.querySelector('[data-a=make]').onclick = async ev => {
+      const name = body.querySelector('#chName').value.trim();
+      if (name.length < 3) return err('err', 'Pick a name of at least 3 letters.');
+      ev.currentTarget.disabled = true; err('err', '');
+      try { const d = await chPost('signup', { name, kit: getKit() }); ls.set(DEVK, d.dev); ME = d.me; codeView(body, d.code, true); }
+      catch (e) { err('err', e.message); ev.currentTarget.disabled = false; }
+    };
+    body.querySelector('[data-a=rec]').onclick = async ev => {
+      ev.currentTarget.disabled = true; err('rerr', '');
+      try { const d = await chPost('recover', { name: body.querySelector('#rcName').value, code: body.querySelector('#rcCode').value }); ls.set(DEVK, d.dev); ME = d.me; openHub(`Welcome back, ${ME.name}.`); }
+      catch (e) { err('rerr', e.message); ev.currentTarget.disabled = false; }
+    };
+  }
+  function codeView(body, code, fresh) {
+    show('ch'); $('#chTag').textContent = 'Recovery code';
+    body.innerHTML = `${fresh ? `<div class="mgrline">${shirt(ME.kit, '', 44)}<b>${esc(ME.name)}</b></div>` : ''}
+      <div class="lbl">Your recovery code</div><div class="code">${esc(code)}</div>
+      <p style="margin:0">Write it down or take a screenshot. It is the only way back into your manager on another phone or browser, or if this browser's data is cleared. It won't be shown again.</p>
+      <button class="btn go" type="button" data-a="ok">I've saved it</button>`;
+    body.querySelector('[data-a=ok]').onclick = () => { if (PEND) { const id = PEND; PEND = null; openChallenge(id, true); } else openHub(); };
+  }
+  function accountView(body) {
+    $('#chTag').textContent = 'Your manager';
+    body.innerHTML = `<div class="mgrline">${shirt(ME.kit, '', 44)}<b>${esc(ME.name)}</b></div>
+      <div class="lbl">Kit</div><div data-k="kp" class="pad" style="padding:0"></div>
+      <button class="btn go" type="button" data-a="kit">Save kit</button><p class="note" data-k="kn" style="margin:0"></p>
+      <div class="lbl">Recovery code</div>
+      <p style="margin:0" class="note">Lost your code? Get a new one. The old one stops working straight away.</p>
+      <button class="btn" type="button" data-a="code">Get a new recovery code</button>
+      <div class="lbl">This browser</div>
+      <button class="btn" type="button" data-a="out">Sign out of this browser</button>
+      <button class="btn" type="button" data-a="hub">Back</button>`;
+    const getKit = kitPicker(body.querySelector('[data-k=kp]'), ME.kit);
+    body.querySelector('[data-a=kit]').onclick = async () => {
+      try { const d = await chPost('kit', { kit: getKit() }); ME = d.me; body.querySelector('[data-k=kn]').textContent = 'Kit saved. It is used from your next match.'; }
+      catch (e) { body.querySelector('[data-k=kn]').textContent = e.message; }
+    };
+    body.querySelector('[data-a=code]').onclick = async () => { try { const d = await chPost('newcode'); codeView(body, d.code, false); } catch (e) { body.querySelector('[data-k=kn]').textContent = e.message; } };
+    const out = body.querySelector('[data-a=out]');
+    out.onclick = async () => {
+      if (!out.dataset.sure) { out.dataset.sure = '1'; out.textContent = 'Tap again to sign out. You need your recovery code to get back in.'; return; }
+      try { await chPost('logout'); } catch (_) {}
+      ls.del(DEVK); ME = null; openHub();
+    };
+    body.querySelector('[data-a=hub]').onclick = () => openHub();
+  }
+
+  // ---------- a single challenge: accept, bid, wait, or see the result
+  async function openChallenge(id, autoAccept) {
+    stopPoll(); show('ch'); $('#chTag').textContent = 'Challenge';
+    const body = $('#chBody'); body.innerHTML = '<p class="note">Loading...</p>';
+    let c; try { c = await chPost('get', { id }); } catch (e) { return errBox(body, e.message, () => openChallenge(id)); }
+    const back = '<button class="btn" type="button" data-a="hub">Challenge hub</button>';
+    const msg = t => { body.innerHTML = `<p style="margin:0">${t}</p>${back}`; body.querySelector('[data-a=hub]').onclick = () => openHub(); };
+    if (c.status === 'expired') return msg('This challenge has run out. Challenges stay open for 48 hours.');
+    if (c.status === 'closed' || c.status === 'taken') return msg(`Someone else has already taken ${esc(c.creator.name)}'s challenge.`);
+    if (c.status === 'private') return msg(`This rematch is for ${esc(c.forName)}.`);
+    if (c.status === 'done') return openResult(id);
+    if (c.role === 'viewer') {
+      if (!ME) { PEND = id; return signUpView(body, c); }
+      if (autoAccept) return accept(c);
+      const h = c.h2h;
+      body.innerHTML = `<div class="mgrline">${shirt(c.creator.kit, '', 44)}<b>${esc(c.creator.name)} has challenged you</b></div>
+        ${h && h.p ? `<div class="well">Head to head: played ${h.p}, won ${h.w}, drawn ${h.d}, lost ${h.l}. Goals ${h.gf}-${h.ga}.</div>` : ''}
+        ${RULES}<p class="note" style="margin:0">${leftTxt(c.expires_at)} to play.</p>
+        <button class="btn go" type="button" data-a="acc">Accept the challenge</button>${back}`;
+      body.querySelector('[data-a=acc]').onclick = () => accept(c);
+      body.querySelector('[data-a=hub]').onclick = () => openHub();
+      return;
+    }
+    if (c.entered) return waitingView(c);
+    startBidding(c);
+  }
+  async function accept(c) {
+    const body = $('#chBody'); body.innerHTML = '<p class="note">Accepting...</p>';
+    try { await chPost('join', { id: c.id }); } catch (e) { return errBox(body, e.message, () => openChallenge(c.id)); }
+    openChallenge(c.id);
+  }
+  function waitingView(c) {
+    show('ch'); $('#chTag').textContent = 'Locked in';
+    const body = $('#chBody'), opp = c.role === 'creator' ? c.opponent : c.creator;
+    body.innerHTML = `<p style="margin:0"><b>Your bids are locked in.</b></p>
+      ${opp ? `<p style="margin:0">Waiting for ${esc(opp.name)} to lock in their bids. The result shows here, and in your Challenge hub, once they do.</p>`
+        : `<p style="margin:0">${c.for ? `Waiting for ${esc(c.for)} to accept the rematch.` : 'Nobody has accepted yet. Send the link to the manager you want to play.'}</p><div class="linkbox">${esc(linkOf(c.id))}</div><button class="btn" type="button" data-a="share">Share the link</button>`}
+      <p class="note" style="margin:0">${leftTxt(c.expires_at)}. If it runs out, the challenge disappears.</p>
+      <div class="row"><button class="btn go" type="button" data-a="chk">Check now</button><button class="btn" type="button" data-a="hub">Challenge hub</button></div>`;
+    const sh = body.querySelector('[data-a=share]'); if (sh) sh.onclick = ev => shareLink(c.id, ev.currentTarget);
+    body.querySelector('[data-a=chk]').onclick = () => openChallenge(c.id);
+    body.querySelector('[data-a=hub]').onclick = () => openHub();
+    stopPoll();
+    pollT = setInterval(async () => {
+      if ($('#ch').hidden) return stopPoll();
+      try { const d = await chPost('get', { id: c.id }); if (d.status === 'done') { stopPoll(); openResult(c.id); } } catch (_) {}
+    }, 15000);
+  }
+
+  // ---------- sealed bidding
+  let B = null, bVal = 0, tvT = null;
+  const bKey = id => 'fiveasold.ch.' + id;
+  const bSave = () => ls.set(bKey(B.c.id), { gk: B.gk, out: B.out, tv: B.tv });
+  function startBidding(c) {
+    const s = ls.get(bKey(c.id)) || {};
+    B = { c, gk: s.gk || [], out: s.out || [], tv: s.tv || null, opp: c.role === 'creator' ? c.opponent : c.creator };
+    bVal = 0; nextBid();
+  }
+  function bidState() {
+    const kind = B.gk.length < CHK.KEEPERS ? 'gk' : 'out', ids = B.c.deck[kind], bids = B[kind];
+    return { kind, ids, bids, i: bids.length, n: ids.length, pot: (kind === 'gk' ? CHK.GK_POT : CHK.OUT_POT) - bids.reduce((a, b) => a + b, 0) };
+  }
+  function nextBid() {
+    if (B.out.length >= CHK.OUTFIELD) return trivia();
+    const st = bidState(), p = AD.players[st.ids[st.i]], gk = st.kind === 'gk';
+    show('chBid');
+    bVal = Math.min(bVal, st.pot);
+    $('#bidStage').textContent = `${gk ? 'Keeper' : 'Outfield'} ${st.i + 1} of ${st.n}`;
+    $('#bidVs').textContent = B.opp ? `v ${B.opp.name}` : 'Opponent to be confirmed';
+    $('#potLbl').textContent = gk ? 'Keeper pot left' : 'Outfield pot left';
+    $('#pot').textContent = fmt(st.pot);
+    $('#pips').innerHTML = st.ids.map((_, i) => `<i class="${i < st.i ? 'done' : i === st.i ? 'cur' : ''}"></i>`).join('');
+    $('#bCard').innerHTML = `<div class="pos">${gk ? 'GOALKEEPER' : p.pos + (p.sec ? ' / ' + p.sec : '')}</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div><div class="bid" id="bBid"></div>`;
+    $('#bNote').textContent = gk
+      ? (st.i === 0 ? 'Keepers first, from a separate £5m pot. You sign one. Four keepers are coming up.' : `${st.n - st.i - 1} keeper${st.n - st.i - 1 === 1 ? '' : 's'} still to come after this one.`)
+      : (st.i === 0 ? 'Keepers done. Now the outfield: £20m for four players, 15 cards to come.' : `${st.n - st.i - 1} card${st.n - st.i - 1 === 1 ? '' : 's'} still to come after this one. You need four outfielders.`);
+    const quick = [...new Set([0, 1, 2, 3, ...(gk ? [] : [5]), st.pot])].filter(v => v <= st.pot);
+    $('#bQuick').innerHTML = quick.map(v => `<button class="btn" type="button" data-v="${v}">${v === st.pot && v > 3 ? 'All ' : ''}${fmt(v)}</button>`).join('');
+    $('#bQuick').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { bVal = +b.dataset.v; drawBid(); });
+    const kindBids = st.bids.map((b, i) => `<div>${esc(AD.players[st.ids[i]].n)}: ${fmt(b)}</div>`);
+    $('#bLog').innerHTML = kindBids.join('');
+    $('#bLog').scrollTop = 1e6;
+    drawBid();
+  }
+  function drawBid() {
+    const st = bidState();
+    $('#bVal').textContent = fmt(bVal);
+    $('#bMinus').disabled = bVal <= 0; $('#bPlus').disabled = bVal >= st.pot;
+    $('#bLock').textContent = `Lock bid: ${fmt(bVal)}`;
+  }
+  $('#bMinus').addEventListener('click', () => { if (bVal > 0) { bVal--; drawBid(); } });
+  $('#bPlus').addEventListener('click', () => { if (bVal < bidState().pot) { bVal++; drawBid(); } });
+  $('#bLock').addEventListener('click', () => { const st = bidState(); B[st.kind].push(Math.min(bVal, st.pot)); bSave(); bVal = 0; nextBid(); });
+
+  const TV_MS = 15000;
+  function trivia() {
+    const p = AD.players[B.c.deck.trivia];
+    show('chTriv');
+    if (!B.tv) { B.tv = Date.now(); bSave(); }
+    $('#tvCard').innerHTML = `<div class="pos">WHAT YEAR WAS HE BORN?</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div>`;
+    $('#tvYear').value = ''; $('#tvNote').textContent = 'You have 15 seconds. Then your bids are sent.'; $('#tvGo').disabled = false; $('#tvGo').textContent = 'Lock in my entry';
+    B.year = null;
+    clearInterval(tvT);
+    const tickTv = () => {
+      const left = Math.max(0, TV_MS - (Date.now() - B.tv));
+      $('#tvClock').textContent = Math.ceil(left / 1000) + 's';
+      $('#tvFill').style.transform = `scaleX(${left / TV_MS})`;
+      $('#tvTimer').classList.toggle('low', left < 5000);
+      if (!left) { clearInterval(tvT); submitEntry(true); }
+    };
+    tickTv(); tvT = setInterval(tickTv, 200);
+    setTimeout(() => $('#tvYear').focus(), 60);
+  }
+  async function submitEntry(timeUp) {
+    if (B.year == null) {
+      const y = parseInt($('#tvYear').value, 10);
+      if (y >= 1900 && y <= 2030) B.year = y;
+      else if (timeUp) B.year = 1900;
+      else { $('#tvNote').textContent = 'Enter a year, like 1985.'; return; }
+    }
+    clearInterval(tvT);
+    $('#tvGo').disabled = true; $('#tvNote').textContent = timeUp && B.year === 1900 ? "Time's up. Sending your bids..." : 'Sending your bids...';
+    try {
+      const d = await chPost('entry', { id: B.c.id, gk: B.gk, out: B.out, year: B.year });
+      ls.del(bKey(B.c.id));
+      if (d.status === 'done') openResult(B.c.id); else openChallenge(B.c.id);
+    } catch (e) {
+      if (e.status === 409 || e.status === 410) { ls.del(bKey(B.c.id)); return openChallenge(B.c.id); }
+      $('#tvNote').textContent = e.message; $('#tvGo').disabled = false; $('#tvGo').textContent = 'Try again';
+    }
+  }
+  $('#tvGo').addEventListener('click', () => submitEntry(false));
+  $('#tvYear').addEventListener('keydown', e => { if (e.key === 'Enter') submitEntry(false); });
+
+  // ---------- the reveal, card by card, then the match
+  let RV = null;
+  async function openResult(id) {
+    stopPoll(); show('ch'); $('#chTag').textContent = 'Result';
+    const body = $('#chBody'); body.innerHTML = '<p class="note">Loading the result...</p>';
+    let R; try { R = await chPost('result', { id }); } catch (e) { return errBox(body, e.message, () => openResult(id)); }
+    const m = R.match, me = R.side, nm = i => i === me ? 'You' : m.names[i];
+    const steps = [{ trivia: true }];
+    ['gk', 'out'].forEach(kind => R.deck[kind].forEach((pid, idx) => steps.push({ kind, idx, id: pid, L: m.log.find(l => l.kind === kind && l.idx === idx) })));
+    RV = { R, steps, i: 0, nm, got: [[], []] };
+    show('chShow');
+    $('#rvLog').innerHTML = ''; $('#rvKick').hidden = true; $('#rvNext').hidden = false; $('#rvAll').hidden = false;
+    rvDraw(); rvStep();
+  }
+  function rvDraw() {
+    const { R, got } = RV, m = R.match, me = R.side;
+    $('#rvSides').innerHTML = [me, 1 - me].map(i => {
+      const sp = got[i].reduce((a, x) => a + x.price, 0);
+      return `<div class="side"><div class="side-head"><span class="side-name">${shirt(m.homeKits[i], '', 18)} ${esc(i === me ? 'You' : m.names[i])}</span><span class="note">${fmt(sp)}</span></div>
+      <div class="slots">${got[i].map(x => `<div class="slot"><span class="pos">${x.p.pos}</span><span class="nm">${esc(x.p.n)}</span><span>${fmt(x.price)}</span></div>`).join('') || '<div class="slot empty"><span></span><span>No signings yet</span><span></span></div>'}</div></div>`;
+    }).join('');
+  }
+  function rvLine(t) { const d = document.createElement('div'); d.textContent = t; $('#rvLog').appendChild(d); $('#rvLog').scrollTop = 1e6; }
+  function rvStep() {
+    const { R, steps, nm, got } = RV, m = R.match, me = R.side, op = 1 - me;
+    if (RV.i >= steps.length) return rvEnd();
+    const s = steps[RV.i++];
+    $('#rvCount').textContent = `${RV.i} of ${steps.length}`;
+    if (s.trivia) {
+      const t = m.trivia, p = AD.players[t.id];
+      $('#rvStage').textContent = 'Tiebreak question';
+      $('#rvCard').innerHTML = `<div class="pos">BORN IN ${t.born}</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div>
+        <div class="rvbids"><div>You: ${t.years[me]}</div><div>${esc(m.names[op])}: ${t.years[op]}</div></div><div class="rvhow">Only used if bids are level</div>`;
+      rvLine(`Tiebreak: ${p.n} was born in ${t.born}. You said ${t.years[me]}, ${m.names[op]} said ${t.years[op]}.`);
+      return;
+    }
+    const p = AD.players[s.id], L = s.L, bids = [m.entries[0][s.kind][s.idx], m.entries[1][s.kind][s.idx]];
+    $('#rvStage').textContent = s.kind === 'gk' ? `Keeper ${s.idx + 1} of ${R.deck.gk.length}` : `Outfield ${s.idx + 1} of ${R.deck.out.length}`;
+    let how = 'Unsold';
+    if (L) {
+      const who = L.win === me ? 'You sign' : `${m.names[L.win]} signs`;
+      how = L.how === 'fill' ? `${who} him to fill a gap: ${fmt(L.price)}`
+        : L.how === 'trivia' ? `Level bids. ${nm(L.win)} ${L.win === me ? 'win' : 'wins'} on the tiebreak: ${fmt(L.price)}`
+        : L.how === 'budget' ? `Level bids, level tiebreak. ${nm(L.win)} ${L.win === me ? 'have' : 'has'} more money left: ${fmt(L.price)}`
+        : L.how === 'coin' ? `Level all round. ${nm(L.win)} ${L.win === me ? 'win' : 'wins'} the coin toss: ${fmt(L.price)}`
+        : `${who} him for ${fmt(L.price)}`;
+      got[L.win].push({ p, price: L.price });
+    }
+    const won = i => L && L.win === i ? ' class="won"' : '';
+    $('#rvCard').innerHTML = `<div class="pos">${p.pos}${p.sec ? ' / ' + p.sec : ''} · RATED ${p.ovr}</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div>
+      <div class="rvbids"><div${won(me)}>You bid ${fmt(bids[me])}</div><div${won(op)}>${esc(m.names[op])} ${fmt(bids[op])}</div></div><div class="rvhow">${esc(how)}</div>`;
+    rvLine(`${p.n} (${p.pos} ${p.ovr}): you ${fmt(bids[me])}, ${m.names[op]} ${fmt(bids[op])}. ${how}.`);
+    rvDraw();
+  }
+  function rvEnd() {
+    $('#rvNext').hidden = true; $('#rvAll').hidden = true; $('#rvKick').hidden = false;
+    $('#rvStage').textContent = 'Squads complete'; $('#rvCount').textContent = '';
+    const m = RV.R.match, me = RV.R.side;
+    $('#rvCard').innerHTML = `<div class="pos">TEAMS ARE IN</div><div class="nm">${esc(m.names[m.home])} v ${esc(m.names[1 - m.home])}</div><div class="meta">${m.changed.some(Boolean) ? esc(m.names[m.changed.indexOf(true)]) + ' wear their change strip' : 'No kit clash'}</div>`;
+    rvDraw();
+    $('#rvKick').focus();
+  }
+  $('#rvNext').addEventListener('click', rvStep);
+  $('#rvAll').addEventListener('click', () => { while (RV.i < RV.steps.length) rvStep(); rvEnd(); });
+  $('#rvKick').addEventListener('click', () => {
+    const R = RV.R, m = R.match, hs = m.home, as = 1 - hs;
+    const sq = m.squads.map(ids => ids.map(i => AD.players[i]));
+    AD.seed(m.simSeed);
+    const res = AD.simulate(AD.makeTeam({ name: m.names[hs], squad: sq[hs] }, true, null), AD.makeTeam({ name: m.names[as], squad: sq[as] }, false, null), { league: true });
+    if (res.score[0] !== m.score[0] || res.score[1] !== m.score[1]) console.warn('Five-a-Sold: replay differs from the stored result', res.score, m.score);
+    playMatch({ res, names: [m.names[hs], m.names[as]], kits: [m.kits[hs], m.kits[as]], done: r => chFinish(R, r) });
+  });
+  function chFinish(R, res) {
+    const m = R.match, me = R.side, op = 1 - me, g = m.goals, hs = m.home, as = 1 - hs;
+    $('#chResTag').textContent = g[me] > g[op] ? 'You win' : g[me] === g[op] ? 'Draw' : `${m.names[op]} wins`;
+    $('#chResLine').textContent = `${m.names[hs]} ${m.score[0]} - ${m.score[1]} ${m.names[as]}`;
+    $('#chKitNote').textContent = [0, 1].filter(i => m.changed[i]).map(i => `${m.names[i]} wore ${kitName(m.kits[i]).toLowerCase()} as a change strip.`).join(' ');
+    const paid = id => { const l = m.log.find(x => x.id === id); return l ? l.price : 0; };
+    const all = res.ratings.flat(), best = all.reduce((a, b) => b.rating > a.rating ? b : a);
+    const rows = list => list.map(x => `<tr><td>${esc(x.p.n)}${x === best ? ' <span class="motm">MOTM</span>' : ''}</td><td>${x.line}${oop(x.p, x.line) ? '*' : ''}</td><td class="n">${x.p.ovr}</td><td class="n">${x.stats.g || ''}</td><td class="n">${x.stats.a || ''}</td><td class="n mr">${x.rating.toFixed(1)}</td><td class="n">${fmt(paid(x.p.id))}</td></tr>`).join('');
+    $('#chRatings').innerHTML = `<thead><tr><th>Player</th><th>Slot</th><th class="n">OVR</th><th class="n">G</th><th class="n">A</th><th class="n">Rating</th><th class="n">Paid</th></tr></thead>
+      <tbody><tr><th colspan="7">${esc(m.names[hs])} · ${res.teams[0].shape}</th></tr>${rows(res.ratings[0])}<tr><th colspan="7">${esc(m.names[as])} · ${res.teams[1].shape}</th></tr>${rows(res.ratings[1])}</tbody>`;
+    const h = R.h2h;
+    $('#chH2H').innerHTML = `<b>Head to head v ${esc(m.names[op])}</b><br>Played ${h.p}, won ${h.w}, drawn ${h.d}, lost ${h.l}. Goals ${h.gf}-${h.ga}.`;
+    $('#chRematch').disabled = false;
+    $('#chRematch').onclick = () => { show('ch'); newChallenge(null, R.id); };
+    $('#chResWin').hidden = false;
+    $('#chResWin').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  $('#chToHub').addEventListener('click', () => { playToken++; openHub(); });
+  $('#chToLeague').addEventListener('click', () => { playToken++; openLeague(); });
+
+  // ---------- all time league: points per game, qualify after 4 matches
+  async function openLeague() {
+    stopPoll(); show('chLeague');
+    const tb = $('#lgTable'), note = $('#lgNote'), below = $('#lgBelow');
+    tb.innerHTML = ''; below.innerHTML = ''; note.textContent = 'Loading...';
+    let d; try { d = await chPost('league'); } catch (e) { note.textContent = e.status === 401 ? 'Create a manager in the Challenge hub to see the league.' : e.message; return; }
+    const q = d.rows.filter(r => r.p >= d.min), u = d.rows.filter(r => r.p < d.min);
+    note.textContent = `Every challenge counts. Ranked on points per game, then goal difference, then goals scored. ${d.min} matches to qualify.`;
+    const row = (r, pos) => `<tr class="${r.id === d.me ? 'you' : ''}"><td>${pos}</td><td class="nm"><span class="sw" style="background:${kitBg(r.kit)}"></span>${esc(r.name)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td class="pts">${r.ppg.toFixed(2)}</td></tr>`;
+    const head = '<thead><tr><th>Pos</th><th>Manager</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>PPG</th></tr></thead>';
+    tb.innerHTML = q.length ? head + '<tbody>' + q.map((r, i) => row(r, i + 1)).join('') + '</tbody>' : '';
+    if (!q.length) note.textContent += ' Nobody has qualified yet.';
+    if (u.length) below.innerHTML = `<div class="lbl" style="margin-top:6px">Not yet qualified</div><div style="overflow-x:auto"><table class="lt cl">${head}<tbody>${u.map(r => row(r, '-')).join('')}</tbody></table></div>`;
+  }
+  $('#lgBack').addEventListener('click', () => openHub());
+  $('#chBtn').addEventListener('click', () => openHub());
+  $('#chHome').addEventListener('click', () => { stopPoll(); show('title'); });
+  {
+    const qc = new URLSearchParams(location.search).get('c');
+    if (qc && /^[a-z0-9]{6,16}$/.test(qc)) { history.replaceState(null, '', location.pathname); openChallenge(qc); }
   }
 })();
 </script>

@@ -315,7 +315,7 @@ export async function fas(fn, request, env, b) {
     if (!m) return fail('No result here.', 404);
     const data = JSON.parse(m.data);
     const oppId = c.creator === me.id ? c.opponent : c.creator;
-    return reply({ id: c.id, side: c.creator === me.id ? 0 : 1, match: data, h2h: await h2h(env, me.id, oppId) });
+    return reply({ id: c.id, side: c.creator === me.id ? 0 : 1, deck: AD.challengeDeck(c.seed), match: data, h2h: await h2h(env, me.id, oppId) });
   }
   if (fn === 'h2h') {
     const opp = Number.isInteger(b.opp) ? b.opp : 0;
