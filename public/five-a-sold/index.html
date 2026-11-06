@@ -224,6 +224,20 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .sitefoot a:hover, .sitefoot a:focus-visible { text-decoration: underline; }
 
 /* Challenge mode */
+.potrow { display: flex; justify-content: space-between; align-items: end; gap: 10px; }
+.potrow > div { display: grid; gap: 2px; }
+.potrow .r { text-align: right; color: var(--muted); }
+.counts.mine div { background: var(--well); color: var(--ink); }
+.counts.mine div span { color: var(--muted); }
+.counts div.zero { opacity: .45; }
+.counts div.hot { background: #f3d9a8; color: #6b3d00; }
+.warn { margin: 0; background: #f3d9a8; border: 1px solid #a1670c; padding: 6px 8px; font-size: 12px; font-weight: bold; }
+.bl { display: grid; gap: 2px; font-size: 12px; max-height: 190px; overflow: auto; align-content: start; }
+.bl div { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 6px; background: var(--well); padding: 2px 6px; }
+.bl div b { font-size: 10px; }
+.bl div span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bl div i { font-style: normal; font-variant-numeric: tabular-nums; }
+.bl div.zero { color: var(--muted); }
 .pips { display: flex; gap: 3px; flex-wrap: wrap; }
 .pips i { flex: 1 1 0; min-width: 10px; height: 10px; background: var(--well); border: 1px solid var(--panel-lo); }
 .pips i.done { background: var(--navy); }
@@ -498,14 +512,12 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
   <section class="screen" id="chBid" hidden>
     <div class="win">
       <div class="bar"><span id="bidStage"></span><span id="bidVs"></span></div>
-      <div class="pad">
-        <div class="side-head"><span class="side-name" id="potLbl">Keeper pot</span><span class="money" id="pot"></span></div>
-        <div class="pips" id="pips"></div>
-      </div>
+      <div class="pad"><div class="pips" id="pips"></div></div>
     </div>
     <div class="card" id="bCard" aria-live="polite"></div>
     <div class="win">
       <div class="pad">
+        <div class="potrow"><div><span class="lbl" id="potLbl">Pot left</span><span class="money" id="pot"></span></div><div class="r"><span class="lbl">After this bid</span><span class="money" id="potAfter"></span></div></div>
         <div class="stepper">
           <button class="btn" id="bMinus" type="button" aria-label="Bid £1m less">-</button>
           <div class="bidval" id="bVal" aria-live="polite">£0m</div>
@@ -516,7 +528,17 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
         <p class="note" id="bNote" style="margin:0"></p>
       </div>
     </div>
-    <div class="log" id="bLog" aria-label="Your bids"></div>
+    <div class="win" id="bDeckWin">
+      <div class="bar"><span>The deck</span><span id="bDeckTag"></span></div>
+      <div class="pad">
+        <div class="lbl">Still to come, order hidden</div>
+        <div class="counts" id="bLeft"></div>
+        <div class="lbl" id="bMineLbl">Your bids so far</div>
+        <div class="counts mine" id="bMine"></div>
+        <p class="warn" id="bWarn" hidden></p>
+        <div class="bl" id="bLog"></div>
+      </div>
+    </div>
   </section>
 
   <section class="screen" id="chTriv" hidden>
@@ -1396,6 +1418,19 @@ const AD = (() => {
       return { win: coin(kind + idx), how: 'coin' };
     };
     const log = [], squad = [[], []];
+    // a player who finishes short gets the lowest rated card left, in a position the squad is missing where the deck allows:
+    // never a third of one outfield position (no formation fits three), and an empty position before a repeat
+    const pickFill = (kind, left, mine) => {
+      let pool = left;
+      if (kind === 'out') {
+        const cnt = pos => mine.filter(id => PLAYERS[id].pos === pos).length;
+        const ok = left.filter(x => cnt(PLAYERS[x.id].pos) < 2);
+        if (ok.length) pool = ok;
+        const low = Math.min(...pool.map(x => cnt(PLAYERS[x.id].pos)));
+        pool = pool.filter(x => cnt(PLAYERS[x.id].pos) === low);
+      }
+      const c = pool[0]; left.splice(left.indexOf(c), 1); return c;
+    };
     const phase = (kind, ids, maxHave) => {
       const have = [0, 0], taken = new Set(), items = [], ties = {};
       ids.forEach((id, idx) => [0, 1].forEach(i => { const b = E[i][kind][idx]; if (b > 0) items.push({ idx, i, b }); }));
@@ -1414,7 +1449,7 @@ const AD = (() => {
       const order = (maxHave - have[0]) === (maxHave - have[1]) ? [first, 1 - first] : (maxHave - have[0]) > (maxHave - have[1]) ? [0, 1] : [1, 0];
       let guard = 0;
       while ((have[0] < maxHave || have[1] < maxHave) && left.length && guard++ < 40) {
-        for (const i of order) if (have[i] < maxHave && left.length) { const c = left.shift(); have[i]++; log.push({ kind, idx: c.idx, id: c.id, win: i, price: 1, bids: [E[0][kind][c.idx], E[1][kind][c.idx]], how: 'fill' }); squad[i].push(c.id); }
+        for (const i of order) if (have[i] < maxHave && left.length) { const c = pickFill(kind, left, squad[i]); have[i]++; log.push({ kind, idx: c.idx, id: c.id, win: i, price: 1, bids: [E[0][kind][c.idx], E[1][kind][c.idx]], how: 'fill' }); squad[i].push(c.id); }
       }
     };
     phase('gk', deck.gk, 1);
@@ -2579,9 +2614,10 @@ if (typeof module !== 'undefined') module.exports = AD;
     const kind = B.gk.length < CHK.KEEPERS ? 'gk' : 'out', ids = B.c.deck[kind], bids = B[kind];
     return { kind, ids, bids, i: bids.length, n: ids.length, pot: (kind === 'gk' ? CHK.GK_POT : CHK.OUT_POT) - bids.reduce((a, b) => a + b, 0) };
   }
+  const POSN = ['DEF', 'MID', 'FWD'];
   function nextBid() {
     if (B.out.length >= CHK.OUTFIELD) return trivia();
-    const st = bidState(), p = AD.players[st.ids[st.i]], gk = st.kind === 'gk';
+    const st = bidState(), p = AD.players[st.ids[st.i]], gk = st.kind === 'gk', left = st.n - st.i - 1;
     show('chBid');
     bVal = Math.min(bVal, st.pot);
     $('#bidStage').textContent = `${gk ? 'Keeper' : 'Outfield'} ${st.i + 1} of ${st.n}`;
@@ -2589,23 +2625,35 @@ if (typeof module !== 'undefined') module.exports = AD;
     $('#potLbl').textContent = gk ? 'Keeper pot left' : 'Outfield pot left';
     $('#pot').textContent = fmt(st.pot);
     $('#pips').innerHTML = st.ids.map((_, i) => `<i class="${i < st.i ? 'done' : i === st.i ? 'cur' : ''}"></i>`).join('');
-    $('#bCard').innerHTML = `<div class="pos">${gk ? 'GOALKEEPER' : p.pos + (p.sec ? ' / ' + p.sec : '')}</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div><div class="bid" id="bBid"></div>`;
+    $('#bCard').innerHTML = `<div class="pos">${gk ? 'GOALKEEPER' : p.pos + (p.sec ? ' / ' + p.sec : '')}</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div>`;
     $('#bNote').textContent = gk
-      ? (st.i === 0 ? 'Keepers first, from a separate £5m pot. You sign one. Four keepers are coming up.' : `${st.n - st.i - 1} keeper${st.n - st.i - 1 === 1 ? '' : 's'} still to come after this one.`)
-      : (st.i === 0 ? 'Keepers done. Now the outfield: £20m for four players, 15 cards to come.' : `${st.n - st.i - 1} card${st.n - st.i - 1 === 1 ? '' : 's'} still to come after this one. You need four outfielders.`);
+      ? (st.i === 0 ? 'Keepers first, from a separate £5m pot. You sign one. Four keepers are coming up.' : `${left} keeper${left === 1 ? '' : 's'} still to come after this one.`)
+      : (st.i === 0 ? 'Keepers done. Now the outfield: £20m for four players from 15 cards. A team fits at most two of one position.' : `${left} card${left === 1 ? '' : 's'} still to come after this one. You need four outfielders.`);
     const quick = [...new Set([0, 1, 2, 3, ...(gk ? [] : [5]), st.pot])].filter(v => v <= st.pot);
     $('#bQuick').innerHTML = quick.map(v => `<button class="btn" type="button" data-v="${v}">${v === st.pot && v > 3 ? 'All ' : ''}${fmt(v)}</button>`).join('');
     $('#bQuick').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { bVal = +b.dataset.v; drawBid(); });
-    const kindBids = st.bids.map((b, i) => `<div>${esc(AD.players[st.ids[i]].n)}: ${fmt(b)}</div>`);
-    $('#bLog').innerHTML = kindBids.join('');
-    $('#bLog').scrollTop = 1e6;
+    // the deck: what is still to come by position (this card is not counted), and what you have bid on
+    const cols = gk ? ['GK'] : POSN, posOf = id => AD.players[id].pos;
+    const rest = st.ids.slice(st.i + 1), bidOn = st.ids.slice(0, st.i).filter((_, i) => st.bids[i] > 0);
+    const cell = (n, k, cls) => `<div class="${cls || ''}${n ? '' : ' zero'}">${n}<span>${k}</span></div>`;
+    $('#bDeckTag').textContent = gk ? `${st.n} keepers` : `${st.n} cards`;
+    $('#bLeft').style.gridTemplateColumns = `repeat(${cols.length}, 1fr)`; $('#bMine').style.gridTemplateColumns = `repeat(${cols.length}, 1fr)`;
+    $('#bLeft').innerHTML = cols.map(k => cell(rest.filter(id => gk || posOf(id) === k).length, k)).join('');
+    $('#bMineLbl').textContent = gk ? 'Keepers you have bid on' : 'Cards you have bid on';
+    $('#bMine').innerHTML = cols.map(k => { const n = bidOn.filter(id => gk || posOf(id) === k).length; return cell(n, k, !gk && n >= 3 ? 'hot' : ''); }).join('');
+    const hot = !gk && POSN.find(k => bidOn.filter(id => posOf(id) === k).length >= 3);
+    $('#bWarn').hidden = !hot;
+    if (hot) $('#bWarn').textContent = `You have bid on ${bidOn.filter(id => posOf(id) === hot).length} ${hot}s. A team fits at most two of one position, and a spare one plays out of position.`;
+    $('#bLog').innerHTML = st.bids.map((b, i) => { const q = AD.players[st.ids[i]]; return `<div class="${b ? '' : 'zero'}"><b>${gk ? 'GK' : q.pos}</b><span>${esc(q.n)}</span><i>${b ? fmt(b) : 'no bid'}</i></div>`; }).reverse().join('');
+    $('#bDeckWin').hidden = false;
     drawBid();
   }
   function drawBid() {
     const st = bidState();
     $('#bVal').textContent = fmt(bVal);
+    $('#potAfter').textContent = fmt(st.pot - bVal);
     $('#bMinus').disabled = bVal <= 0; $('#bPlus').disabled = bVal >= st.pot;
-    $('#bLock').textContent = `Lock bid: ${fmt(bVal)}`;
+    $('#bLock').textContent = bVal ? `Lock bid: ${fmt(bVal)}` : 'No bid on this one';
   }
   $('#bMinus').addEventListener('click', () => { if (bVal > 0) { bVal--; drawBid(); } });
   $('#bPlus').addEventListener('click', () => { if (bVal < bidState().pot) { bVal++; drawBid(); } });

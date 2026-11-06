@@ -824,6 +824,19 @@ const AD = (() => {
       return { win: coin(kind + idx), how: 'coin' };
     };
     const log = [], squad = [[], []];
+    // a player who finishes short gets the lowest rated card left, in a position the squad is missing where the deck allows:
+    // never a third of one outfield position (no formation fits three), and an empty position before a repeat
+    const pickFill = (kind, left, mine) => {
+      let pool = left;
+      if (kind === 'out') {
+        const cnt = pos => mine.filter(id => PLAYERS[id].pos === pos).length;
+        const ok = left.filter(x => cnt(PLAYERS[x.id].pos) < 2);
+        if (ok.length) pool = ok;
+        const low = Math.min(...pool.map(x => cnt(PLAYERS[x.id].pos)));
+        pool = pool.filter(x => cnt(PLAYERS[x.id].pos) === low);
+      }
+      const c = pool[0]; left.splice(left.indexOf(c), 1); return c;
+    };
     const phase = (kind, ids, maxHave) => {
       const have = [0, 0], taken = new Set(), items = [], ties = {};
       ids.forEach((id, idx) => [0, 1].forEach(i => { const b = E[i][kind][idx]; if (b > 0) items.push({ idx, i, b }); }));
@@ -842,7 +855,7 @@ const AD = (() => {
       const order = (maxHave - have[0]) === (maxHave - have[1]) ? [first, 1 - first] : (maxHave - have[0]) > (maxHave - have[1]) ? [0, 1] : [1, 0];
       let guard = 0;
       while ((have[0] < maxHave || have[1] < maxHave) && left.length && guard++ < 40) {
-        for (const i of order) if (have[i] < maxHave && left.length) { const c = left.shift(); have[i]++; log.push({ kind, idx: c.idx, id: c.id, win: i, price: 1, bids: [E[0][kind][c.idx], E[1][kind][c.idx]], how: 'fill' }); squad[i].push(c.id); }
+        for (const i of order) if (have[i] < maxHave && left.length) { const c = pickFill(kind, left, squad[i]); have[i]++; log.push({ kind, idx: c.idx, id: c.id, win: i, price: 1, bids: [E[0][kind][c.idx], E[1][kind][c.idx]], how: 'fill' }); squad[i].push(c.id); }
       }
     };
     phase('gk', deck.gk, 1);
