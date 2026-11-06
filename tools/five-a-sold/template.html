@@ -237,6 +237,13 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .bl div span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bl div i { font-style: normal; font-variant-numeric: tabular-nums; }
 .bl div.zero { color: var(--muted); }
+.pgs { display: flex; gap: 14px; }
+.pg { display: grid; gap: 3px; min-width: 0; flex: var(--n, 1) 1 0; }
+.pg .lbl { font-size: 10px; }
+.pg .pp { display: flex; gap: 3px; }
+.pg .pp i { flex: 1 1 0; height: 12px; background: var(--well); border: 1px solid var(--panel-lo); }
+.pg .pp i.on { background: var(--good); border-color: #14532a; }
+.pg.hot .pp i.on { background: #d98e04; border-color: #8a5a00; }
 .pips { display: flex; gap: 3px; flex-wrap: wrap; }
 .pips i { flex: 1 1 0; min-width: 10px; height: 10px; background: var(--well); border: 1px solid var(--panel-lo); }
 .pips i.done { background: var(--navy); }
@@ -511,7 +518,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
   <section class="screen" id="chBid" hidden>
     <div class="win">
       <div class="bar"><span id="bidStage"></span><span id="bidVs"></span></div>
-      <div class="pad"><div class="pips" id="pips"></div></div>
+      <div class="pad"><div class="pgs" id="pips"></div><p class="note" id="pipNote" style="margin:0"></p></div>
     </div>
     <div class="card" id="bCard" aria-live="polite"></div>
     <div class="win">
@@ -532,8 +539,6 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
       <div class="pad">
         <div class="lbl">Still to come, order hidden</div>
         <div class="counts" id="bLeft"></div>
-        <div class="lbl" id="bMineLbl">Your bids so far</div>
-        <div class="counts mine" id="bMine"></div>
         <p class="warn" id="bWarn" hidden></p>
         <div class="bl" id="bLog"></div>
       </div>
@@ -1715,7 +1720,6 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     $('#bidVs').textContent = B.opp ? `v ${B.opp.name}` : 'Opponent to be confirmed';
     $('#potLbl').textContent = gk ? 'Keeper pot left' : 'Outfield pot left';
     $('#pot').textContent = fmt(st.pot);
-    $('#pips').innerHTML = st.ids.map((_, i) => `<i class="${i < st.i ? 'done' : i === st.i ? 'cur' : ''}"></i>`).join('');
     $('#bCard').innerHTML = `<div class="pos">${gk ? 'GOALKEEPER' : p.pos + (p.sec ? ' / ' + p.sec : '')}</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div>`;
     $('#bNote').textContent = gk
       ? (st.i === 0 ? 'Keepers first, from a separate £5m pot. You sign one. Four keepers are coming up.' : `${left} keeper${left === 1 ? '' : 's'} still to come after this one.`)
@@ -1728,10 +1732,12 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     const rest = st.ids.slice(st.i + 1), bidOn = st.ids.slice(0, st.i).filter((_, i) => st.bids[i] > 0);
     const cell = (n, k, cls) => `<div class="${cls || ''}${n ? '' : ' zero'}">${n}<span>${k}</span></div>`;
     $('#bDeckTag').textContent = gk ? `${st.n} keepers` : `${st.n} cards`;
-    $('#bLeft').style.gridTemplateColumns = `repeat(${cols.length}, 1fr)`; $('#bMine').style.gridTemplateColumns = `repeat(${cols.length}, 1fr)`;
+    $('#bLeft').style.gridTemplateColumns = `repeat(${cols.length}, 1fr)`;
     $('#bLeft').innerHTML = cols.map(k => cell(rest.filter(id => gk || posOf(id) === k).length, k)).join('');
-    $('#bMineLbl').textContent = gk ? 'Keepers you have bid on' : 'Cards you have bid on';
-    $('#bMine').innerHTML = cols.map(k => { const n = bidOn.filter(id => gk || posOf(id) === k).length; return cell(n, k, !gk && n >= 3 ? 'hot' : ''); }).join('');
+    const nOn = k => bidOn.filter(id => gk || posOf(id) === k).length;
+    $('#pips').innerHTML = cols.map(k => { const tot = st.ids.filter(id => gk || posOf(id) === k).length, on = nOn(k);
+      return `<div class="pg${!gk && on >= 3 ? ' hot' : ''}" style="--n:${tot}"><span class="lbl">${k}</span><div class="pp">${Array.from({ length: tot }, (_, x) => `<i class="${x < on ? 'on' : ''}"></i>`).join('')}</div></div>`; }).join('');
+    $('#pipNote').textContent = 'Bids on ' + cols.map(k => `${nOn(k)} ${k}`).join(', ') + (st.i ? '' : ' so far');
     const hot = !gk && POSN.find(k => bidOn.filter(id => posOf(id) === k).length >= 3);
     $('#bWarn').hidden = !hot;
     if (hot) $('#bWarn').textContent = `You have bid on ${bidOn.filter(id => posOf(id) === hot).length} ${hot}s. A team fits at most two of one position, and a spare one plays out of position.`;
