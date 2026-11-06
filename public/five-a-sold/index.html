@@ -245,6 +245,19 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .pg .pp i { flex: 1 1 0; height: 12px; background: var(--well); border: 1px solid var(--panel-lo); }
 .pg .pp i.on { background: var(--good); border-color: #14532a; }
 .pg.hot .pp i.on { background: #d98e04; border-color: #8a5a00; }
+.yearbox { font-family: var(--f-crt); font-size: 46px; line-height: 1; text-align: center; background: var(--crt); color: var(--amber); padding: 6px 0 2px; min-height: 54px; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
+.yearbox .ph { color: #5b6b58; letter-spacing: .02em; font-size: 34px; }
+#tvCard { padding: 10px 14px; }
+#tvCard .pos { font-size: 18px; }
+#tvCard .nm { font-size: 34px; }
+#tvCard .meta { font-size: 20px; }
+#chTriv { gap: 8px; }
+#chTriv .pad { gap: 8px; padding: 10px; }
+.pad9 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.pad9 .btn { font-size: 24px; min-height: 50px; -webkit-tap-highlight-color: transparent; }
+.pad9 .btn.down { border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); background: var(--well); }
+.pad9 .btn.go.down { background: #2c3d86; }
+.pad9 .btn.go, .pad9 .btn.del { font-size: 16px; }
 .pips { display: flex; gap: 3px; flex-wrap: wrap; }
 .pips i { flex: 1 1 0; min-width: 10px; height: 10px; background: var(--well); border: 1px solid var(--panel-lo); }
 .pips i.done { background: var(--navy); }
@@ -550,16 +563,14 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     <div class="win">
       <div class="bar"><span>Tiebreak question</span><span id="tvClock"></span></div>
       <div class="pad">
-        <p style="margin:0">If you and your opponent bid the same on a player, the closest answer wins him.</p>
         <div class="timer" id="tvTimer"><i id="tvFill"></i></div>
       </div>
     </div>
     <div class="card" id="tvCard"></div>
     <div class="win">
       <div class="pad">
-        <label class="field" for="tvYear"><span class="lbl">Year of birth</span>
-          <input type="text" id="tvYear" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="e.g. 1985"></label>
-        <button class="btn go" id="tvGo" type="button">Lock in my entry</button>
+        <div class="yearbox" id="tvYear" role="status" aria-live="polite"><span id="tvTxt"></span><span class="ph" id="tvPh">e.g. 1985</span></div>
+        <div class="pad9" id="tvPad" aria-label="Number pad"></div>
         <p class="note" id="tvNote" style="margin:0"></p>
       </div>
     </div>
@@ -2665,13 +2676,13 @@ if (typeof module !== 'undefined') module.exports = AD;
   $('#bPlus').addEventListener('click', () => { if (bVal < bidState().pot) { bVal++; drawBid(); } });
   $('#bLock').addEventListener('click', () => { const st = bidState(); B[st.kind].push(Math.min(bVal, st.pot)); bSave(); bVal = 0; nextBid(); });
 
-  const TV_MS = 15000;
+  const TV_MS = 20000;
   function trivia() {
     const p = AD.players[B.c.deck.trivia];
     show('chTriv');
     if (!B.tv) { B.tv = Date.now(); bSave(); }
     $('#tvCard').innerHTML = `<div class="pos">WHAT YEAR WAS HE BORN?</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div>`;
-    $('#tvYear').value = ''; $('#tvNote').textContent = 'You have 15 seconds. Then your bids are sent.'; $('#tvGo').disabled = false; $('#tvGo').textContent = 'Lock in my entry';
+    tvSet(''); $('#tvNote').textContent = 'Level bids go to the closest year. Your bids are sent when you lock in or the 20 seconds end.'; $('#tvPad').querySelectorAll('button').forEach(b => { b.disabled = false; });
     B.year = null;
     clearInterval(tvT);
     const tickTv = () => {
@@ -2682,28 +2693,52 @@ if (typeof module !== 'undefined') module.exports = AD;
       if (!left) { clearInterval(tvT); submitEntry(true); }
     };
     tickTv(); tvT = setInterval(tickTv, 200);
-    setTimeout(() => $('#tvYear').focus(), 60);
   }
   async function submitEntry(timeUp) {
     if (B.year == null) {
-      const y = parseInt($('#tvYear').value, 10);
-      if (y >= 1900 && y <= 2030) B.year = y;
+      const y = parseInt(tvTyped, 10);
+      if (tvTyped.length === 4 && y >= 1900 && y <= 2030) B.year = y;
       else if (timeUp) B.year = 1900;
-      else { $('#tvNote').textContent = 'Enter a year, like 1985.'; return; }
+      else { $('#tvNote').textContent = 'Enter a year between 1900 and 2030, like 1985.'; return; }
     }
     clearInterval(tvT);
-    $('#tvGo').disabled = true; $('#tvNote').textContent = timeUp && B.year === 1900 ? "Time's up. Sending your bids..." : 'Sending your bids...';
+    $('#tvPad').querySelectorAll('button').forEach(b => { b.disabled = true; });
+    $('#tvNote').textContent = timeUp && B.year === 1900 ? "Time's up. Sending your bids..." : 'Sending your bids...';
     try {
       const d = await chPost('entry', { id: B.c.id, gk: B.gk, out: B.out, year: B.year });
       ls.del(bKey(B.c.id));
       if (d.status === 'done') openResult(B.c.id); else openChallenge(B.c.id);
     } catch (e) {
       if (e.status === 409 || e.status === 410) { ls.del(bKey(B.c.id)); return openChallenge(B.c.id); }
-      $('#tvNote').textContent = e.message; $('#tvGo').disabled = false; $('#tvGo').textContent = 'Try again';
+      $('#tvNote').textContent = e.message + ' Tap Lock to try again.'; B.year = null; $('#tvPad').querySelectorAll('button').forEach(b => { b.disabled = false; });
     }
   }
-  $('#tvGo').addEventListener('click', () => submitEntry(false));
-  $('#tvYear').addEventListener('keydown', e => { if (e.key === 'Enter') submitEntry(false); });
+  // on-screen number pad, like Streaker's keyboard: the phone's own keyboard never opens, so the page never jumps
+  let tvTyped = '';
+  function tvSet(v) { tvTyped = v.replace(/\D/g, '').slice(0, 4); $('#tvTxt').textContent = tvTyped; $('#tvPh').hidden = !!tvTyped; }
+  function tvPress(k) {
+    if ($('#chTriv').hidden || $('#tvPad button').disabled) return;
+    if (k === 'DEL') tvSet(tvTyped.slice(0, -1));
+    else if (k === 'LOCK') submitEntry(false);
+    else tvSet(tvTyped + k);
+  }
+  (function () {
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'DEL', '0', 'LOCK'];
+    $('#tvPad').innerHTML = keys.map(k => `<button type="button" data-k="${k}" class="btn ${k === 'LOCK' ? 'go' : k === 'DEL' ? 'del' : ''}"${k === 'DEL' ? ' aria-label="Delete"' : ''}>${k === 'DEL' ? 'Del' : k === 'LOCK' ? 'Lock in' : k}</button>`).join('');
+    $('#tvPad').addEventListener('pointerdown', e => {
+      const b = e.target.closest('button'); if (!b || b.disabled) return; e.preventDefault();
+      b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 110);
+      try { navigator.vibrate && navigator.vibrate(6); } catch (_) {}
+      tvPress(b.dataset.k);
+    });
+    $('#tvPad').addEventListener('click', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      if ($('#chTriv').hidden || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (/^\d$/.test(e.key)) { tvPress(e.key); e.preventDefault(); }
+      else if (e.key === 'Backspace') { tvPress('DEL'); e.preventDefault(); }
+      else if (e.key === 'Enter') { tvPress('LOCK'); e.preventDefault(); }
+    });
+  })();
 
   // ---------- the reveal, card by card, then the match
   let RV = null;
