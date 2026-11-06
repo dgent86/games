@@ -283,7 +283,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
         <button class="btn" id="contBtn" type="button" hidden></button>
         <button class="btn" id="globalBtn" type="button">Global table</button>
         <button class="btn" id="recBtn" type="button">Record holders</button>
-        <button class="btn go" id="chBtn" type="button">Challenge a friend<small>Head to head against a real manager</small></button>
+        <button class="btn go" id="chBtn" type="button" hidden>Challenge a friend<small>Head to head against a real manager</small></button>
       </div>
     </div>
   </section>
@@ -1865,7 +1865,13 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
   $('#chBtn').addEventListener('click', () => openHub());
   $('#chHome').addEventListener('click', () => { stopPoll(); show('title'); });
   {
-    const qc = new URLSearchParams(location.search).get('c');
+    // Testing: the Challenge button only shows after visiting with ?challenge=1 (remembered on this browser) or after opening a challenge link
+    const qs = new URLSearchParams(location.search), CHON = 'fiveasold.chOn';
+    if (qs.get('challenge') === '1' || qs.get('c') || ls.get(DEVK)) ls.set(CHON, 1);
+    if (qs.get('challenge') === '0') ls.del(CHON);
+    $('#chBtn').hidden = !ls.get(CHON);
+    if (qs.has('challenge')) history.replaceState(null, '', location.pathname);
+    const qc = qs.get('c');
     if (qc && /^[a-z0-9]{6,16}$/.test(qc)) { history.replaceState(null, '', location.pathname); openChallenge(qc); }
   }
 })();
