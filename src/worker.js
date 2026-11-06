@@ -10,7 +10,10 @@
 //   POST /api/wcf_submit    {cid, name, nat, stage, opp, gf, ga, scorer, sg} -> {id}; a finished World Cup Fiver run (stage 0 group, 1 R16 ... 4 lost final, 5 champions)
 //   POST /api/wcf_nations   {}                                       -> per-nation summary for the leaderboard tiles
 //   POST /api/wcf_board     {nat | 'all', p_id?}                     -> top 25 plus two either side of you, with that board's records
+//   POST /api/fas_*        Five-a-Sold Challenge Mode: accounts, challenges, results, league (see src/challenge.js)
 // Scores can only be added or read here. Edit or delete rows in the Cloudflare dashboard (D1 > dangent-scores > Console).
+
+import { fas, FAS_SCHEMA } from './challenge.js';
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS scores (
@@ -66,7 +69,7 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS wcf_world ON wcf_runs (stage DESC, gf DESC, created_at, id)`,
 ];
 let ready = null;
-const init = (db) => (ready ||= db.batch(SCHEMA.map((s) => db.prepare(s))).catch((e) => { ready = null; throw e; }));
+const init = (db) => (ready ||= db.batch([...SCHEMA, ...FAS_SCHEMA].map((s) => db.prepare(s))).catch((e) => { ready = null; throw e; }));
 
 const BLOCK = /\b(fuck\w*|f\*ck|cunts?|nigg\w*|nigga|faggots?|fags?|rape|raped|rapist|wank\w*|paki|spastic|spaz|retard\w*|nonce|kike|shit\w*|twat|bellend|knobhead|dickhead)\b/i;
 const MODES = new Set(['all', 'pl']);
@@ -215,6 +218,7 @@ async function api(fn, request, env) {
   let b;
   try { b = await request.json(); } catch { return json({ message: 'Bad JSON' }, 400); }
   await init(env.DB);
+  if (fn.startsWith('fas_')) return fas(fn.slice(4), request, env, b);
   if (fn === 'event') {
     const g = String(b.g ?? ''), e = String(b.e ?? '');
     if (!GAMES.has(g) || !EVENTS.has(e)) return new Response(null, { status: 204 });
@@ -315,7 +319,7 @@ async function api(fn, request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons|records|wcf_submit|wcf_nations|wcf_board)\/?$/);
+    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons|records|wcf_submit|wcf_nations|wcf_board|fas_(?:signup|recover|logout|me|kit|newcode|new|get|join|entry|result|h2h|league))\/?$/);
     if (m) {
       try { return await api(m[1], request, env); }
       catch (e) { return json({ message: 'Server error' }, 500); }

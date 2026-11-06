@@ -784,7 +784,112 @@ const AD = (() => {
     return { key: top.key, price: Math.max(cur || 1, Math.min(top.max, second + 1)) };
   }
 
+  // ---------------- Challenge mode: two players, one seeded deck, sealed bids resolved against each other
+  const CH = { KEEPERS: 4, OUTFIELD: 15, GK_POT: 5, OUT_POT: 20, OUT_SLOTS: 4 };
+  function hashRand(sd, key) { // deterministic 0..1 from a seed and a short key, without touching the shared RNG
+    let h = (sd ^ 0x9E3779B9) >>> 0;
+    for (let i = 0; i < key.length; i++) { h = Math.imul(h ^ key.charCodeAt(i), 0x85EBCA6B) >>> 0; h ^= h >>> 13; }
+    h = Math.imul(h ^ (h >>> 16), 0x45D9F3B) >>> 0; h = (h ^ (h >>> 16)) >>> 0;
+    return h / 4294967296;
+  }
+  // 15 outfield cards, 4 keepers (3 from the normal deal plus one more) and a trivia player who is not in the deck
+  function challengeDeck(sd) {
+    const keep = seedState; seed(sd);
+    const used = new Set(), d = buildDeck(used);
+    const out = d.filter(p => p.pos !== 'GK'), gks = d.filter(p => p.pos === 'GK');
+    const pool = PLAYERS.filter(p => p.pos === 'GK' && !used.has(p.id));
+    const extra = weighted(pool, pool.map(q => q.ovr >= 84 ? 3 : q.ovr >= 82 ? 2 : 1)); used.add(extra.id);
+    const keepers = shuffle([...gks, extra]);
+    const rest = PLAYERS.filter(p => !used.has(p.id));
+    const trivia = pick(rest);
+    seed(keep);
+    return { out: out.map(p => p.id), gk: keepers.map(p => p.id), trivia: trivia.id };
+  }
+  // entry: { gk: [4 whole numbers], out: [15 whole numbers], year } or an error string
+  function checkEntry(e) {
+    const ints = (a, n, max, pot) => Array.isArray(a) && a.length === n && a.every(x => Number.isInteger(x) && x >= 0 && x <= max) && a.reduce((s, x) => s + x, 0) <= pot;
+    if (!e || !ints(e.gk, CH.KEEPERS, CH.GK_POT, CH.GK_POT)) return 'Keeper bids must be whole numbers adding up to no more than £' + CH.GK_POT + 'm.';
+    if (!ints(e.out, CH.OUTFIELD, CH.OUT_POT, CH.OUT_POT)) return 'Outfield bids must be whole numbers adding up to no more than £' + CH.OUT_POT + 'm.';
+    if (!Number.isInteger(e.year) || e.year < 1900 || e.year > 2030) return 'Enter a birth year.';
+    return null;
+  }
+  function resolveChallenge(deck, E, sd) {
+    const tri = PLAYERS[deck.trivia].born;
+    const dist = i => Math.abs(E[i].year - tri);
+    const rem = i => CH.OUT_POT - E[i].out.reduce((s, x) => s + x, 0);
+    const coin = key => hashRand(sd, key) < 0.5 ? 0 : 1;
+    const tie = (kind, idx) => {
+      if (dist(0) !== dist(1)) return { win: dist(0) < dist(1) ? 0 : 1, how: 'trivia' };
+      if (kind === 'out' && rem(0) !== rem(1)) return { win: rem(0) > rem(1) ? 0 : 1, how: 'budget' };
+      return { win: coin(kind + idx), how: 'coin' };
+    };
+    const log = [], squad = [[], []];
+    const phase = (kind, ids, maxHave) => {
+      const have = [0, 0], taken = new Set(), items = [], ties = {};
+      ids.forEach((id, idx) => [0, 1].forEach(i => { const b = E[i][kind][idx]; if (b > 0) items.push({ idx, i, b }); }));
+      items.forEach(it => { if (!(it.idx in ties) && E[0][kind][it.idx] > 0 && E[0][kind][it.idx] === E[1][kind][it.idx]) ties[it.idx] = tie(kind, it.idx); });
+      items.sort((a, b) => b.b - a.b || a.idx - b.idx || ((ties[a.idx] ? (ties[a.idx].win === a.i ? 0 : 1) : 0) - (ties[b.idx] ? (ties[b.idx].win === b.i ? 0 : 1) : 0)));
+      items.forEach(({ idx, i, b }) => {
+        if (taken.has(idx) || have[i] >= maxHave) return;
+        taken.add(idx); have[i]++;
+        const other = E[1 - i][kind][idx];
+        log.push({ kind, idx, id: ids[idx], win: i, price: Math.min(b, Math.max(1, other + 1)), bids: [E[0][kind][idx], E[1][kind][idx]], how: ties[idx] ? ties[idx].how : other > 0 ? 'bid' : 'only' });
+        squad[i].push(ids[idx]);
+      });
+      // anyone short takes the lowest rated cards left, £1 each; whoever needs more goes first, then a coin
+      const left = ids.map((id, idx) => ({ id, idx })).filter(x => !taken.has(x.idx)).sort((a, b) => PLAYERS[a.id].ovr - PLAYERS[b.id].ovr || a.idx - b.idx);
+      const first = coin('fill' + kind);
+      const order = (maxHave - have[0]) === (maxHave - have[1]) ? [first, 1 - first] : (maxHave - have[0]) > (maxHave - have[1]) ? [0, 1] : [1, 0];
+      let guard = 0;
+      while ((have[0] < maxHave || have[1] < maxHave) && left.length && guard++ < 40) {
+        for (const i of order) if (have[i] < maxHave && left.length) { const c = left.shift(); have[i]++; log.push({ kind, idx: c.idx, id: c.id, win: i, price: 1, bids: [E[0][kind][c.idx], E[1][kind][c.idx]], how: 'fill' }); squad[i].push(c.id); }
+      }
+    };
+    phase('gk', deck.gk, 1);
+    phase('out', deck.out, CH.OUT_SLOTS);
+    return { squad, log, trivia: { id: deck.trivia, born: tri, years: [E[0].year, E[1].year] }, rem: [rem(0), rem(1)] };
+  }
+  // ---------- kits: colour distance, clash and change strip
+  function toLab(h) {
+    h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    const c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    const x = (c[0] * 0.4124 + c[1] * 0.3576 + c[2] * 0.1805) / 0.95047, y = c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722, z = (c[0] * 0.0193 + c[1] * 0.1192 + c[2] * 0.9505) / 1.08883;
+    const f = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+    return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
+  }
+  const deltaE = (a, b) => { const A = toLab(a), B = toLab(b); return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]); };
+  const KIT_STYLES = ['plain', 'stripes', 'hoops', 'halves', 'sleeves'];
+  const patterned = k => k.style === 'stripes' || k.style === 'hoops' || k.style === 'halves';
+  const CLASH = 36;
+  function kitClash(a, b) {
+    if (deltaE(a.p, b.p) < CLASH) return true;
+    if (patterned(a) && deltaE(a.s, b.p) < CLASH) return true;
+    if (patterned(b) && deltaE(a.p, b.s) < CLASH) return true;
+    if (patterned(a) && patterned(b) && deltaE(a.s, b.s) < CLASH && deltaE(a.p, b.p) < CLASH * 1.6) return true;
+    return false;
+  }
+  const FALLBACK_KITS = [
+    { name: 'White', p: '#ffffff', s: '#111111', t: '#111111', style: 'plain' },
+    { name: 'Black', p: '#111111', s: '#ffffff', t: '#ffffff', style: 'plain' },
+    { name: 'Yellow', p: '#f6d40a', s: '#111111', t: '#111111', style: 'plain' },
+    { name: 'Sky blue', p: '#7fc4ea', s: '#ffffff', t: '#111111', style: 'plain' }
+  ];
+  // home: the kit that stays; kit: the side that may need to change. Returns { kit, changed }
+  function changeStrip(kit, home) {
+    if (!kitClash(kit, home)) return { kit, changed: false };
+    const opts = [kit.away, ...FALLBACK_KITS].filter(Boolean);
+    const ok = opts.find(k => !kitClash(k, home)) || FALLBACK_KITS[0];
+    return { kit: ok, changed: true };
+  }
+  // the two sides' kits for a match: homeSide is 0 or 1 (the side that keeps its home kit)
+  function matchKits(k0, k1, homeSide) {
+    const kits = [k0, k1], ch = [false, false], away = 1 - homeSide;
+    const r = changeStrip(kits[away], kits[homeSide]);
+    kits[away] = r.kit; ch[away] = r.changed;
+    return { kits, changed: ch };
+  }
+
   return { init, seed, rand, newGame, draftAI, buildDecks, campaignSchedule, leagueTable, roundRobin, startLot, nextLot, act, aiAct, aiValue, canPass, canSign, maxBid, hasGK, deckCounts, gkLeft,
-    match, simulate, lineup, makeTeam, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, T, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
+    match, simulate, lineup, makeTeam, challengeDeck, checkEntry, resolveChallenge, hashRand, CH, deltaE, kitClash, changeStrip, matchKits, FALLBACK_KITS, KIT_STYLES, SHAPES, shapeLines, buildLineup, autoLineup, bestShape, scout, SCOUT, winPool, winKeep, winLegalDrops, winWants, winOpen, winCounter, winSettle, fiveOK, slotRating, tags, freeAgent, T, BUDGET, TIMER, get players() { return PLAYERS; }, get managers() { return MANAGERS; } };
 })();
 if (typeof module !== 'undefined') module.exports = AD;
