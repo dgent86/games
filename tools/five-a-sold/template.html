@@ -244,7 +244,8 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .pg .pp { display: flex; gap: 3px; }
 .pg .pp i { flex: 1 1 0; height: 12px; background: var(--well); border: 1px solid var(--panel-lo); }
 .pg .pp i.on { background: var(--good); border-color: #14532a; }
-.pg.hot .pp i.on { background: #d98e04; border-color: #8a5a00; }
+.pg .pp i.off { background: #f39c12; border-color: #9a5b00; }
+.pg.hot .pp i.on { outline: 2px solid #b3261e; outline-offset: 1px; }
 .yearbox { font-family: var(--f-crt); font-size: 46px; line-height: 1; text-align: center; background: var(--crt); color: var(--amber); padding: 6px 0 2px; min-height: 54px; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
 .yearbox .ph { color: #5b6b58; letter-spacing: .02em; font-size: 34px; }
 #tvCard { padding: 10px 14px; }
@@ -1881,9 +1882,10 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     $('#bLeft').style.gridTemplateColumns = `repeat(${cols.length}, 1fr)`;
     $('#bLeft').innerHTML = cols.map(k => cell(rest.filter(id => gk || posOf(id) === k).length, k)).join('');
     const nOn = k => bidOn.filter(id => gk || posOf(id) === k).length;
-    $('#pips').innerHTML = cols.map(k => { const tot = st.ids.filter(id => gk || posOf(id) === k).length, on = nOn(k);
-      return `<div class="pg${!gk && on >= 3 ? ' hot' : ''}" style="--n:${tot}"><span class="lbl">${k}</span><div class="pp">${Array.from({ length: tot }, (_, x) => `<i class="${x < on ? 'on' : ''}"></i>`).join('')}</div></div>`; }).join('');
-    $('#pipNote').textContent = 'Bids on ' + cols.map(k => `${nOn(k)} ${k}`).join(', ') + (st.i ? '' : ' so far');
+    // one box per card in that position, in deck order: green = you bid, orange = you passed, empty = still to come
+    $('#pips').innerHTML = cols.map(k => { const idx = st.ids.map((id, i) => i).filter(i => gk || posOf(st.ids[i]) === k), on = nOn(k);
+      return `<div class="pg${!gk && on >= 3 ? ' hot' : ''}" style="--n:${idx.length}"><span class="lbl">${k}</span><div class="pp">${idx.map(i => `<i class="${i < st.i ? (st.bids[i] > 0 ? 'on' : 'off') : ''}"></i>`).join('')}</div></div>`; }).join('');
+    $('#pipNote').textContent = 'Bids on ' + cols.map(k => `${nOn(k)} ${k}`).join(', ') + (st.i ? '. Orange: passed.' : ' so far');
     const hot = !gk && POSN.find(k => bidOn.filter(id => posOf(id) === k).length >= 3);
     $('#bWarn').hidden = !hot;
     if (hot) $('#bWarn').textContent = `You have bid on ${bidOn.filter(id => posOf(id) === hot).length} ${hot}s. A team fits at most two of one position, and a spare one plays out of position.`;
