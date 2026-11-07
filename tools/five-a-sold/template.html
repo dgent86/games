@@ -1885,7 +1885,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     // one box per card in that position, in deck order: green = you bid, orange = you passed, empty = still to come
     $('#pips').innerHTML = cols.map(k => { const idx = st.ids.map((id, i) => i).filter(i => gk || posOf(st.ids[i]) === k), on = nOn(k);
       return `<div class="pg${!gk && on >= 3 ? ' hot' : ''}" style="--n:${idx.length}"><span class="lbl">${k}</span><div class="pp">${idx.map(i => `<i class="${i < st.i ? (st.bids[i] > 0 ? 'on' : 'off') : ''}"></i>`).join('')}</div></div>`; }).join('');
-    $('#pipNote').textContent = 'Bids on ' + cols.map(k => `${nOn(k)} ${k}`).join(', ') + (st.i ? '. Orange: passed.' : ' so far');
+    $('#pipNote').textContent = 'Bids on ' + cols.map(k => `${nOn(k)} ${k}`).join(', ') + (st.i ? '' : ' so far') + '. Orange: no bid.';
     const hot = !gk && POSN.find(k => bidOn.filter(id => posOf(id) === k).length >= 3);
     $('#bWarn').hidden = !hot;
     if (hot) $('#bWarn').textContent = `You have bid on ${bidOn.filter(id => posOf(id) === hot).length} ${hot}s. A team fits at most two of one position, and a spare one plays out of position.`;
