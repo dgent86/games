@@ -1604,7 +1604,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
           <button class="colbtn" type="button" data-c="p" aria-expanded="false"><i></i><span><b>Main</b><small data-k="pn"></small></span></button>
           <button class="colbtn" type="button" data-c="s" aria-expanded="false"><i></i><span><b>Second</b><small data-k="sn"></small></span></button></div>
         <div class="pal" data-k="pal" hidden></div></div>
-      <details style="margin-top:8px"><summary>Change strip</summary><div style="padding-top:6px"><p class="note" style="margin:0 0 6px" data-k="aw"></p>
+      <details style="margin-top:8px"><summary>Away strip</summary><div style="padding-top:6px"><p class="note" style="margin:0 0 6px" data-k="aw"></p>
         <select data-k="away"><option value="">Pick one for me</option>${PRESETS.map((p, i) => `<option value="${i}">${esc(kitName(p))}</option>`).join('')}</select></div></details>`;
     const q = s => host.querySelector(`[data-k=${s}]`), cb = c => host.querySelector(`[data-c=${c}]`);
     const lum = h => lumOf(h);
@@ -1620,7 +1620,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
       q('nm').textContent = KIT_WORDS[k.style] || k.style;
       for (const c of ['p', 's']) { cb(c).querySelector('i').style.background = k[c]; q(c + 'n').textContent = colName(k[c]); cb(c).setAttribute('aria-expanded', String(open === c)); }
       cb('s').disabled = k.style === 'plain'; if (k.style === 'plain' && open === 's') open = null;
-      q('aw').textContent = away ? `Change strip: ${kitName(away)}` : 'Picked for you if your kit clashes. Or choose one:';
+      q('aw').textContent = away ? `Away strip: ${kitName(away)}` : 'Picked for you if your kit clashes. Or choose one:';
       const ai = away ? PRESETS.findIndex(p => sameKit(p, away) && p.style === away.style) : -1;
       q('away').value = ai >= 0 ? String(ai) : '';
       pal();
@@ -2027,7 +2027,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     $('#rvNext').hidden = true; $('#rvAll').hidden = true; $('#rvKick').hidden = false; $('#rvNext').textContent = 'Next';
     $('#rvStage').textContent = 'Teams are in'; $('#rvCount').textContent = `${steps.length} of ${steps.length}`;
     const hs = m.home;
-    $('#rvCard').innerHTML = `<div class="pos">SQUADS COMPLETE</div><div class="nm">${esc(m.names[hs])} v ${esc(m.names[1 - hs])}</div><div class="meta">${m.changed.some(Boolean) ? esc(m.names[m.changed.indexOf(true)]) + ' wear their change strip' : 'No kit clash'}</div>`;
+    $('#rvCard').innerHTML = `<div class="pos">SQUADS COMPLETE</div><div class="nm">${esc(m.names[hs])} v ${esc(m.names[1 - hs])}</div><div class="meta">${m.changed.some(Boolean) ? esc(m.names[m.changed.indexOf(true)]) + ' wear their away strip' : 'No kit clash'}</div>`;
     $('#rvTie').innerHTML = '';
     rvBoard(null);
     $('#rvKick').focus();
@@ -2059,7 +2059,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     const V = $('#chVerdict'); V.className = 'verdict' + (w === 1 ? ' draw' : w === 2 ? ' lose' : '');
     V.textContent = `${['YOU WIN', 'DRAW', 'YOU LOSE'][w]} ${g[me]}-${g[op]}`;
     $('#chResLine').textContent = `You v ${oppName}`;
-    $('#chKitNote').textContent = [me, op].filter(i => m.changed[i]).map(i => `${i === me ? 'You' : m.names[i]} wore ${kitName(m.kits[i]).toLowerCase()} as a change strip.`).join(' ');
+    $('#chKitNote').textContent = [me, op].filter(i => m.changed[i]).map(i => `${i === me ? 'You' : m.names[i]} wore ${kitName(m.kits[i]).toLowerCase()} as an away strip.`).join(' ');
     const h = R.h2h;
     $('#chH2HLbl').textContent = `Head to head v ${oppName}`;
     // a two team league: 3 points for a win, 1 for a draw, then goal difference, then goals scored
