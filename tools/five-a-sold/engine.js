@@ -873,7 +873,7 @@ const AD = (() => {
     return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
   }
   const deltaE = (a, b) => { const A = toLab(a), B = toLab(b); return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]); };
-  const KIT_STYLES = ['plain', 'stripes', 'hoops', 'halves', 'sleeves'];
+  const KIT_STYLES = ['plain', 'stripes', 'hoops', 'halves', 'sleeves', 'pinstripe', 'sash', 'quarters'];
   const patterned = k => k.style === 'stripes' || k.style === 'hoops' || k.style === 'halves';
   const CLASH = 36;
   function kitClash(a, b) {

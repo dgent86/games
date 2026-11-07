@@ -301,6 +301,22 @@ table.tsm td.hi { font-weight: bold; }
 .kitbtn { background: var(--well); border: 2px solid transparent; padding: 4px; min-width: 52px; min-height: 52px; cursor: pointer; display: grid; place-items: center; }
 .kitbtn[aria-pressed=true] { border-color: var(--navy); background: #fff; }
 .kitbtn:focus-visible { outline: 2px dashed var(--navy); outline-offset: 2px; }
+.kp { display: grid; grid-template-columns: auto minmax(0, 1fr); overflow: hidden; gap: 10px 14px; align-items: center; }
+.kpl { display: grid; justify-items: center; gap: 4px; touch-action: pan-y; }
+.kpl .sh { background: var(--well); padding: 6px; border: 2px solid; border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); }
+.kpn { display: grid; grid-template-columns: 34px 1fr 34px; align-items: center; width: 100%; min-width: 128px; text-align: center; font-size: 12px; }
+.kpn .btn { min-height: 40px; min-width: 0; padding: 0; font-size: 20px; }
+.kpr { display: grid; gap: 8px; }
+.colbtn { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 6px; min-width: 0; align-items: center; text-align: left; min-height: 48px; background: var(--well); border: 2px solid; border-color: var(--panel-hi) var(--panel-lo) var(--panel-lo) var(--panel-hi); padding: 4px 8px 4px 4px; font: inherit; color: var(--ink); cursor: pointer; }
+.colbtn[aria-expanded=true] { border-color: var(--navy); }
+.colbtn[disabled] { opacity: .4; cursor: default; }
+.colbtn i { width: 32px; height: 32px; border: 2px solid #222; display: block; }
+.colbtn small { display: block; font-size: 11px; color: var(--muted); }
+.pal { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+.pal button { height: 34px; min-width: 0; border: 2px solid #222; padding: 0; cursor: pointer; }
+.pal button[aria-pressed=true] { outline: 3px solid var(--navy); outline-offset: 1px; }
+.pal label { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+.pal input[type=color] { width: 56px; height: 32px; border: 2px solid var(--panel-lo); padding: 0; background: #fff; }
 .kitcustom { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: end; }
 .kitcustom label { display: grid; gap: 3px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .kitcustom input[type=color] { width: 100%; height: 40px; border: 2px solid var(--panel-lo); padding: 0; background: #fff; }
@@ -495,7 +511,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
         <div class="result-line" id="chResLine"></div>
         <div class="note" id="chKitNote" style="margin:0"></div>
         <div class="lbl" id="chH2HLbl">Head to head</div>
-        <table class="rt h2h" id="chH2H"></table>
+        <div style="overflow-x:auto"><table class="lt cl" id="chH2H"></table></div>
         <div class="row"><button class="btn" id="chStatsBtn" type="button" aria-expanded="false">Match stats</button><button class="btn" id="chToLeague" type="button">League table</button></div>
         <div id="chStats" hidden></div>
         <button class="btn go" id="chRematch" type="button">Rematch</button>
@@ -1512,7 +1528,7 @@ const AD = (() => {
     return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
   }
   const deltaE = (a, b) => { const A = toLab(a), B = toLab(b); return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]); };
-  const KIT_STYLES = ['plain', 'stripes', 'hoops', 'halves', 'sleeves'];
+  const KIT_STYLES = ['plain', 'stripes', 'hoops', 'halves', 'sleeves', 'pinstripe', 'sash', 'quarters'];
   const patterned = k => k.style === 'stripes' || k.style === 'hoops' || k.style === 'halves';
   const CLASH = 36;
   function kitClash(a, b) {
@@ -1565,6 +1581,9 @@ if (typeof module !== 'undefined') module.exports = AD;
     if (k.style === 'sleeves') return `linear-gradient(90deg, ${k.s} 0 14%, ${k.p} 14% 86%, ${k.s} 86%)`;
     if (k.style === 'hoops') return `repeating-linear-gradient(180deg, ${k.p} 0 3px, ${k.s} 3px 6px)`;
     if (k.style === 'halves') return `linear-gradient(90deg, ${k.p} 0 50%, ${k.s} 50%)`;
+    if (k.style === 'pinstripe') return `repeating-linear-gradient(90deg, ${k.p} 0 5px, ${k.s} 5px 6px)`;
+    if (k.style === 'sash') return `linear-gradient(135deg, ${k.p} 0 38%, ${k.s} 38% 62%, ${k.p} 62%)`;
+    if (k.style === 'quarters') return `conic-gradient(${k.s} 0 25%, ${k.p} 0 50%, ${k.s} 0 75%, ${k.p} 0)`;
     return k.p;
   }
   let pid = 0;
@@ -1573,8 +1592,11 @@ if (typeof module !== 'undefined') module.exports = AD;
     if (k.style === 'stripes') { defs = `<defs><pattern id="${id}" width="8" height="40" patternUnits="userSpaceOnUse"><rect width="4" height="40" fill="${k.p}"/><rect x="4" width="4" height="40" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
     if (k.style === 'hoops') { defs = `<defs><pattern id="${id}" width="40" height="8" patternUnits="userSpaceOnUse"><rect width="40" height="4" fill="${k.p}"/><rect y="4" width="40" height="4" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
     if (k.style === 'halves') { defs = `<defs><linearGradient id="${id}" x1="0" x2="1" y1="0" y2="0"><stop offset=".5" stop-color="${k.p}"/><stop offset=".5" stop-color="${k.s}"/></linearGradient></defs>`; fill = `url(#${id})`; }
+    if (k.style === 'pinstripe') { defs = `<defs><pattern id="${id}" width="6" height="40" patternUnits="userSpaceOnUse"><rect width="6" height="40" fill="${k.p}"/><rect x="2.5" width="1.2" height="40" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
+    if (k.style === 'sash') { defs = `<defs><linearGradient id="${id}" x1="0" x2="1" y1="0" y2="1"><stop offset=".36" stop-color="${k.p}"/><stop offset=".36" stop-color="${k.s}"/><stop offset=".64" stop-color="${k.s}"/><stop offset=".64" stop-color="${k.p}"/></linearGradient></defs>`; fill = `url(#${id})`; }
+    if (k.style === 'quarters') { defs = `<defs><pattern id="${id}" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="${k.p}"/><rect width="20" height="20" fill="${k.s}"/><rect x="20" y="20" width="20" height="20" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
     const sl = k.style === 'sleeves' ? `<path d="M12 4 L4 9 L7 16 L11 14 Z M28 4 L36 9 L33 16 L29 14 Z" fill="${k.s}" stroke="#222" stroke-width="1"/>` : '';
-    const st = ['stripes', 'hoops', 'halves'].includes(k.style);
+    const st = ['stripes', 'hoops', 'halves', 'pinstripe', 'sash', 'quarters'].includes(k.style);
     const tx = label ? `<text x="20" y="27" text-anchor="middle" font-family="Verdana,sans-serif" font-size="9" font-weight="bold" fill="${st ? '#111' : k.t}" ${st ? 'stroke="#fff" stroke-width="3" paint-order="stroke"' : ''}>${esc(label)}</text>` : '';
     return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true">${defs}<path d="M12 4 L4 9 L7 16 L11 14 L11 36 L29 36 L29 14 L33 16 L36 9 L28 4 Q20 9 12 4 Z" fill="${fill}" stroke="#222" stroke-width="1"/>${sl}${tx}</svg>`;
   }
@@ -2429,10 +2451,17 @@ if (typeof module !== 'undefined') module.exports = AD;
     { name: 'Yellow and green', p: '#f6d40a', s: '#0b7a3b', t: '#111111', style: 'sleeves' },
     { name: 'All white', p: '#ffffff', s: '#111111', t: '#111111', style: 'plain' }
   ];
-  const KIT_WORDS = { plain: 'Plain', stripes: 'Stripes', hoops: 'Hoops', halves: 'Halves', sleeves: 'Contrast sleeves' };
+  const KIT_WORDS = { plain: 'Plain', stripes: 'Stripes', hoops: 'Hoops', halves: 'Halves', sleeves: 'Contrast sleeves', pinstripe: 'Pinstripes', sash: 'Sash', quarters: 'Quarters' };
+  const PALETTE = [['Red', '#c8102e'], ['Claret', '#7a1e3a'], ['Orange', '#f26a1b'], ['Amber', '#f5a300'], ['Yellow', '#f6d40a'], ['Green', '#0b7a3b'], ['Lime', '#7cc242'], ['Teal', '#0f8b8d'],
+    ['Sky blue', '#7fc4ea'], ['Royal blue', '#1d3fa5'], ['Navy', '#14245e'], ['Purple', '#5b2a86'], ['Pink', '#e87aa6'], ['White', '#ffffff'], ['Grey', '#8a8f98'], ['Black', '#111111']];
+  const colName = h => { const n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; let best = PALETTE[0], bd = 1e9; for (const c of PALETTE) { const m = parseInt(c[1].slice(1), 16), d = (r - (m >> 16)) ** 2 + (g - ((m >> 8) & 255)) ** 2 + (b - (m & 255)) ** 2; if (d < bd) { bd = d; best = c; } } return best[0]; };
   const lumOf = h => { const n = parseInt(h.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
   const sameKit = (a, b) => a && b && a.p === b.p && a.s === b.s && a.style === b.style;
-  const kitName = k => { const m = PRESETS.find(p => sameKit(p, k)); return m ? m.name : (k.name || 'Own design'); };
+  const kitName = k => {
+    const a = colName(k.p), b = colName(k.s);
+    if (k.style === 'plain' || a === b) return a;
+    return k.style === 'sleeves' ? `${a} with ${b.toLowerCase()} sleeves` : `${a} and ${b.toLowerCase()} ${(KIT_WORDS[k.style] || k.style).toLowerCase()}`;
+  };
   let ME = null, PEND = null, pollT = null;
   const stopPoll = () => { clearInterval(pollT); pollT = null; };
   const linkOf = id => `${location.origin}${location.pathname}?c=${id}`;
@@ -2451,37 +2480,50 @@ if (typeof module !== 'undefined') module.exports = AD;
   };
   const RULES = `<ul class="rules">
     <li>You both bid on the same cards: 4 keepers, then 15 outfield players, one at a time. Ratings stay hidden.</li>
-    <li>Sealed bids in whole £m. £5m for keepers (you sign one) and £20m for four outfielders. £0 is fine.</li>
-    <li>Every bid is locked and comes off your pot as you place it, win or lose, so don't blow it all on the first card.</li>
-    <li>Highest bid wins. The winner pays £1m more than the losing bid, never more than his own bid.</li>
-    <li>Short of players at the end? You get the lowest-rated cards left for £1m each.</li>
-    <li>Level bids: closest guess at a player's year of birth wins, then the most outfield money left, then a coin toss.</li>
-    <li>Your formation is picked for you. Nobody sees anything until you have both locked in.</li></ul>`;
+    <li>Sealed bids in whole £m: £5m for keepers (you sign one), £20m for four outfielders. Every bid comes off your pot, win or lose.</li>
+    <li>Highest bid wins and pays £1m more than the loser, never above his own bid. Ties go to a birth-year question. Then one match decides it.</li>
+  </ul>`;
 
   // kit picker: presets, your own colours and pattern, and an optional change strip
   function kitPicker(host, init) {
-    let k = init ? { p: init.p, s: init.s, t: init.t, style: init.style } : { ...PRESETS[0] };
-    let away = init && init.away ? init.away : null;
+    const STY = AD.KIT_STYLES;
+    let k = init ? { p: init.p, s: init.s, t: init.t, style: init.style } : { ...PRESETS[3 + Math.floor(Math.random() * 8)] };
     delete k.name;
-    host.innerHTML = `<div class="mgrline"><span data-k="prev"></span><span><b data-k="nm"></b><br><span class="note" data-k="aw"></span></span></div>
-      <div class="kits">${PRESETS.map((p, i) => `<button class="kitbtn" type="button" data-i="${i}" aria-label="${esc(p.name)}" aria-pressed="false">${shirt(p, '', 40)}</button>`).join('')}</div>
-      <details><summary>Make your own</summary><div class="kitcustom" style="margin-top:8px">
-        <label>Main colour<input type="color" data-k="p"></label><label>Second colour<input type="color" data-k="s"></label>
-        <label>Pattern<select data-k="st">${AD.KIT_STYLES.map(x => `<option value="${x}">${KIT_WORDS[x] || x}</option>`).join('')}</select></label></div></details>
-      <label class="field"><span class="lbl">Change strip, worn when your kit clashes</span><select data-k="away"><option value="">Pick one for me</option>${PRESETS.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('')}</select></label>`;
-    const q = s => host.querySelector(`[data-k=${s}]`);
-    function draw() {
-      q('prev').innerHTML = shirt(k, '', 56);
-      q('nm').textContent = kitName(k);
-      host.querySelectorAll('.kitbtn').forEach(b => b.setAttribute('aria-pressed', String(sameKit(PRESETS[+b.dataset.i], k))));
-      q('p').value = k.p; q('s').value = k.s; q('st').value = k.style;
-      const ai = away ? PRESETS.findIndex(p => sameKit(p, away)) : -1;
-      q('away').value = ai >= 0 ? String(ai) : '';
-      q('aw').textContent = away ? `Change strip: ${kitName(away)}` : 'Change strip picked for you if needed';
+    let away = init && init.away ? init.away : null, open = null;
+    host.innerHTML = `<div class="kp">
+        <div class="kpl"><div class="sh" data-k="prev" aria-live="polite"></div>
+          <div class="kpn"><button class="btn" type="button" data-k="l" aria-label="Previous design">&lsaquo;</button><span data-k="nm"></span><button class="btn" type="button" data-k="r" aria-label="Next design">&rsaquo;</button></div></div>
+        <div class="kpr">
+          <button class="colbtn" type="button" data-c="p" aria-expanded="false"><i></i><span><b>Main</b><small data-k="pn"></small></span></button>
+          <button class="colbtn" type="button" data-c="s" aria-expanded="false"><i></i><span><b>Second</b><small data-k="sn"></small></span></button></div>
+        <div class="pal" data-k="pal" hidden></div></div>
+      <details style="margin-top:8px"><summary>Change strip</summary><div style="padding-top:6px"><p class="note" style="margin:0 0 6px" data-k="aw"></p>
+        <select data-k="away"><option value="">Pick one for me</option>${PRESETS.map((p, i) => `<option value="${i}">${esc(kitName(p))}</option>`).join('')}</select></div></details>`;
+    const q = s => host.querySelector(`[data-k=${s}]`), cb = c => host.querySelector(`[data-c=${c}]`);
+    const lum = h => lumOf(h);
+    function set(f) { Object.assign(k, f); k.t = lum(k.p) > 0.6 ? '#111111' : '#ffffff'; if (away && AD.kitClash(k, away)) away = null; draw(); }
+    function pal() {
+      const box = q('pal'); box.hidden = !open; if (!open) return;
+      box.innerHTML = PALETTE.map(c => `<button type="button" data-h="${c[1]}" style="background:${c[1]}" aria-label="${c[0]}" aria-pressed="${k[open] === c[1]}"></button>`).join('') + `<label>Any colour <input type="color" value="${k[open]}"></label>`;
+      box.querySelectorAll('[data-h]').forEach(b => b.onclick = () => set({ [open]: b.dataset.h }));
+      box.querySelector('input').oninput = e => set({ [open]: e.target.value });
     }
-    host.querySelectorAll('.kitbtn').forEach(b => b.addEventListener('click', () => { const p = PRESETS[+b.dataset.i]; k = { p: p.p, s: p.s, t: p.t, style: p.style }; if (away && AD.kitClash(k, away)) away = null; draw(); }));
-    const custom = () => { k = { p: q('p').value, s: q('s').value, style: q('st').value }; k.t = lumOf(k.p) > 0.6 ? '#111111' : '#ffffff'; if (away && AD.kitClash(k, away)) away = null; draw(); };
-    q('p').addEventListener('input', custom); q('s').addEventListener('input', custom); q('st').addEventListener('change', custom);
+    function draw() {
+      q('prev').innerHTML = shirt(k, '', 104);
+      q('nm').textContent = KIT_WORDS[k.style] || k.style;
+      for (const c of ['p', 's']) { cb(c).querySelector('i').style.background = k[c]; q(c + 'n').textContent = colName(k[c]); cb(c).setAttribute('aria-expanded', String(open === c)); }
+      cb('s').disabled = k.style === 'plain'; if (k.style === 'plain' && open === 's') open = null;
+      q('aw').textContent = away ? `Change strip: ${kitName(away)}` : 'Picked for you if your kit clashes. Or choose one:';
+      const ai = away ? PRESETS.findIndex(p => sameKit(p, away) && p.style === away.style) : -1;
+      q('away').value = ai >= 0 ? String(ai) : '';
+      pal();
+    }
+    const step = d => set({ style: STY[(STY.indexOf(k.style) + d + STY.length) % STY.length] });
+    q('l').onclick = () => step(-1); q('r').onclick = () => step(1);
+    let x0 = null; const area = host.querySelector('.kpl');
+    area.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+    area.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 28) step(dx < 0 ? 1 : -1); });
+    for (const c of ['p', 's']) cb(c).onclick = () => { open = open === c ? null : c; draw(); };
     q('away').addEventListener('change', () => {
       const v = q('away').value; const p = v === '' ? null : PRESETS[+v];
       if (p && AD.kitClash(k, p)) { away = null; draw(); q('aw').textContent = 'Too close to your main kit. One will be picked for you.'; return; }
@@ -2503,19 +2545,23 @@ if (typeof module !== 'undefined') module.exports = AD;
     const waiting = [...d.open.filter(r => r.entered).map(r => ({ ...r, who: r.opp || r.for, mine: true })), ...d.todo.filter(r => r.entered).map(r => ({ ...r, who: r.from, mine: false }))];
     const item = r => {
       const what = r.mine ? (r.who ? `Your challenge to ${esc(r.who)}` : 'Your open challenge') : `${esc(r.who)} challenged you`;
-      const sub = r.mine && !r.opp ? (r.for ? `Rematch, waiting for ${esc(r.for)} to accept` : 'Nobody has accepted yet') : r.entered ? `Waiting for ${esc(r.who || 'them')} to bid` : r.status === 'open' ? 'Not accepted yet' : 'Your bids are needed';
-      return `<div><b>${what}</b><button class="btn ${r.entered ? '' : 'go'}" type="button" data-open="${r.id}">${r.entered ? 'View' : 'Play'}</button><span>${sub} · ${leftTxt(r.expires_at)}</span></div>`;
+      const sub = r.mine && !r.opp ? (r.entered ? (r.for ? `Rematch, waiting for ${esc(r.for)} to accept` : 'Bids in. Nobody has accepted yet') : 'Nobody has accepted yet') : r.entered ? `Waiting for ${esc(r.who || 'them')} to bid` : 'Your bids are needed';
+      const btn = !r.entered ? `<button class="btn go" type="button" data-open="${r.id}">Bid</button>` : r.mine && !r.opp ? `<button class="btn go" type="button" data-share="${r.id}">Share link</button>` : `<button class="btn" type="button" data-open="${r.id}">View</button>`;
+      return `<div><b>${what}</b>${btn}<span>${sub} · ${leftTxt(r.expires_at)}</span></div>`;
     };
     const res = r => { const o = r.gf > r.ga ? ['w', 'W'] : r.gf === r.ga ? ['', 'D'] : ['l', 'L']; return `<div><b><span class="${o[0]}">${o[1]}</span> ${r.gf}-${r.ga} v ${esc(r.opp)}</b><button class="btn" type="button" data-res="${r.id}">View</button><span>${new Date(r.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span></div>`; };
-    body.innerHTML = `<div class="mgrline">${shirt(ME.kit, '', 44)}<b>${esc(ME.name)}</b></div>
+    const rc = d.rec || { p: 0 };
+    const recLine = rc.p ? `Played ${rc.p} · Won ${rc.w} · Drawn ${rc.d} · Lost ${rc.l} · ${(rc.pts / rc.p).toFixed(2)} points a game` : 'No matches played yet';
+    body.innerHTML = `<div class="mgrline">${shirt(ME.kit, '', 44)}<span><b>${esc(ME.name)}</b><br><span class="note">${recLine}</span></span></div>
       ${flash ? `<p class="note" style="margin:0">${esc(flash)}</p>` : ''}
       <button class="btn go" type="button" data-a="new">New challenge<small>Get a link to send to a friend</small></button>
-      <div class="row"><button class="btn" type="button" data-a="league">League table</button><button class="btn" type="button" data-a="acct">Your manager</button></div>
       ${yourMove.length ? `<div class="lbl">Your move</div><div class="chl">${yourMove.map(item).join('')}</div>` : ''}
       ${waiting.length ? `<div class="lbl">Waiting</div><div class="chl">${waiting.map(item).join('')}</div>` : ''}
       ${d.recent.length ? `<div class="lbl">Recent results</div><div class="chl">${d.recent.map(res).join('')}</div>` : ''}
       ${!yourMove.length && !waiting.length && !d.recent.length ? '<p class="note" style="margin:0">No challenges yet. Start one and send the link to a friend. It stays open for 48 hours.</p>' : ''}
+      <div class="row"><button class="btn" type="button" data-a="league">League table</button><button class="btn" type="button" data-a="acct">Your manager</button></div>
       <details><summary>How it works</summary>${RULES}</details>`;
+    body.querySelectorAll('[data-share]').forEach(b => b.onclick = () => shareLink(b.dataset.share, b));
     body.querySelector('[data-a=new]').onclick = newChallenge;
     body.querySelector('[data-a=league]').onclick = openLeague;
     body.querySelector('[data-a=acct]').onclick = () => accountView(body);
@@ -2528,7 +2574,8 @@ if (typeof module !== 'undefined') module.exports = AD;
     show('ch'); $('#chTag').textContent = rematch ? 'Rematch' : 'New challenge';
     body.innerHTML = `<p style="margin:0"><b>${rematch ? 'Rematch set up.' : 'Challenge set up.'}</b> ${rematch ? 'It shows in their Challenge hub, or send them the link.' : 'Send this link to the manager you want to play. The first person to accept it is your opponent.'} It stays open for 48 hours.</p>
       <div class="linkbox">${esc(linkOf(d.id))}</div>
-      <div class="row"><button class="btn" type="button" data-a="share">Share the link</button><button class="btn go" type="button" data-a="bid">Do my bids now</button></div>
+      <button class="btn go" type="button" data-a="share">Share the link</button>
+      <button class="btn" type="button" data-a="bid">Enter Auction</button>
       <button class="btn" type="button" data-a="hub">Challenge hub</button>`;
     body.querySelector('[data-a=share]').onclick = ev => shareLink(d.id, ev.currentTarget);
     body.querySelector('[data-a=bid]').onclick = () => openChallenge(d.id);
@@ -2539,17 +2586,18 @@ if (typeof module !== 'undefined') module.exports = AD;
   function signUpView(body, c) {
     show('ch'); $('#chTag').textContent = 'Your manager';
     body.innerHTML = `${c && c.creator ? `<div class="mgrline">${c.creator.kit ? shirt(c.creator.kit, '', 44) : ''}<b>${esc(c.creator.name)} has challenged you</b></div>` : ''}
-      <p style="margin:0">Pick a manager name and a kit. That is your account: no email, no password. You also get a recovery code to sign in on another phone or browser.</p>
+      <p style="margin:0">Pick a manager name and a kit. No email, no password.</p>
       <label class="field" for="chName"><span class="lbl">Manager name</span><input type="text" id="chName" maxlength="16" autocomplete="off" placeholder="e.g. Skeffling Rovers"></label>
-      <div class="lbl">Your kit</div><div data-k="kp" class="pad" style="padding:0"></div>
+      <div class="lbl">Your kit</div><div data-k="kp" style="padding:0"></div>
       <p class="err" data-k="err" hidden></p>
-      <button class="btn go" type="button" data-a="make">${c ? 'Create my manager and accept' : 'Create my manager'}</button>
-      <details><summary>Already have a manager? Sign in with your recovery code</summary>
-        <div class="pad" style="padding:8px 0 0">
+      <button class="btn go" type="button" data-a="make">${c ? 'Sign up and play' : 'Create my manager'}</button>
+      <button class="btn" type="button" data-a="have" aria-expanded="false">Already have a manager? Sign in</button>
+      <div data-k="rcbox" hidden class="pad" style="padding:0">
           <label class="field" for="rcName"><span class="lbl">Manager name</span><input type="text" id="rcName" maxlength="16" autocomplete="off"></label>
-          <label class="field" for="rcCode"><span class="lbl">Recovery code</span><input type="text" id="rcCode" maxlength="40" autocomplete="off" autocapitalize="none" placeholder="word-word-word-12"></label>
+          <label class="field" for="rcCode"><span class="lbl">Recovery code</span><input type="text" id="rcCode" maxlength="40" autocomplete="off" autocapitalize="none" placeholder="surname-surname-surname"></label>
           <p class="err" data-k="rerr" hidden></p>
-          <button class="btn" type="button" data-a="rec">Sign in</button></div></details>`;
+          <button class="btn go" type="button" data-a="rec">Sign in</button></div>`;
+    body.querySelector('[data-a=have]').onclick = ev => { const bx = body.querySelector('[data-k=rcbox]'); bx.hidden = !bx.hidden; ev.currentTarget.setAttribute('aria-expanded', String(!bx.hidden)); if (!bx.hidden) body.querySelector('#rcName').focus(); };
     const tn = ($('#teamName').value || '').trim(); if (tn) body.querySelector('#chName').value = tn.slice(0, 16);
     const getKit = kitPicker(body.querySelector('[data-k=kp]'));
     const err = (k, m) => { const e = body.querySelector(`[data-k=${k}]`); e.textContent = m; e.hidden = !m; };
@@ -2570,24 +2618,30 @@ if (typeof module !== 'undefined') module.exports = AD;
     show('ch'); $('#chTag').textContent = 'Recovery code';
     body.innerHTML = `${fresh ? `<div class="mgrline">${shirt(ME.kit, '', 44)}<b>${esc(ME.name)}</b></div>` : ''}
       <div class="lbl">Your recovery code</div><div class="code">${esc(code)}</div>
-      <p style="margin:0">Write it down or take a screenshot. It is the only way back into your manager on another phone or browser, or if this browser's data is cleared. It won't be shown again.</p>
-      <button class="btn go" type="button" data-a="ok">I've saved it</button>`;
-    body.querySelector('[data-a=ok]').onclick = () => { if (PEND) { const id = PEND; PEND = null; openChallenge(id, true); } else openHub(); };
+      <button class="btn" type="button" data-a="copy">Copy the code</button>
+      <p style="margin:0">Three footballers' surnames. Write them down or take a screenshot. With your manager name, this is the only way back in on another phone or browser, or if this browser's data is cleared. It won't be shown again.</p>
+      <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" data-k="tick" style="width:22px;height:22px"> I've written it down</label>
+      <button class="btn go" type="button" data-a="ok" disabled>Continue</button>`;
+    const ok = body.querySelector('[data-a=ok]'), cp = body.querySelector('[data-a=copy]');
+    body.querySelector('[data-k=tick]').onchange = e => { ok.disabled = !e.target.checked; };
+    cp.onclick = async () => { try { await navigator.clipboard.writeText(code); cp.textContent = 'Copied'; } catch (_) { cp.textContent = 'Select the code above and copy it'; } };
+    ok.onclick = () => { if (PEND) { const id = PEND; PEND = null; openChallenge(id, true); } else openHub(); };
   }
   function accountView(body) {
     $('#chTag').textContent = 'Your manager';
-    body.innerHTML = `<div class="mgrline">${shirt(ME.kit, '', 44)}<b>${esc(ME.name)}</b></div>
-      <div class="lbl">Kit</div><div data-k="kp" class="pad" style="padding:0"></div>
-      <button class="btn go" type="button" data-a="kit">Save kit</button><p class="note" data-k="kn" style="margin:0"></p>
-      <div class="lbl">Recovery code</div>
-      <p style="margin:0" class="note">Lost your code? Get a new one. The old one stops working straight away.</p>
+    body.innerHTML = `<div class="mgrline">${shirt(ME.kit, '', 44)}<span><b>${esc(ME.name)}</b><br><span class="note" data-k="kname">${esc(kitName(ME.kit))}</span></span></div>
+      <button class="btn" type="button" data-a="kitopen">Change kit</button>
+      <div data-k="kbox" hidden><div data-k="kp"></div><button class="btn go" type="button" data-a="kit" style="margin-top:8px">Save kit</button></div>
+      <p class="note" data-k="kn" style="margin:0"></p>
+      <div class="lbl">Account</div>
       <button class="btn" type="button" data-a="code">Get a new recovery code</button>
-      <div class="lbl">This browser</div>
+      <p style="margin:0" class="note">The old code stops working straight away.</p>
       <button class="btn" type="button" data-a="out">Sign out of this browser</button>
       <button class="btn" type="button" data-a="hub">Back</button>`;
-    const getKit = kitPicker(body.querySelector('[data-k=kp]'), ME.kit);
+    let getKit = null;
+    body.querySelector('[data-a=kitopen]').onclick = ev => { ev.currentTarget.hidden = true; body.querySelector('[data-k=kbox]').hidden = false; getKit = kitPicker(body.querySelector('[data-k=kp]'), ME.kit); };
     body.querySelector('[data-a=kit]').onclick = async () => {
-      try { const d = await chPost('kit', { kit: getKit() }); ME = d.me; body.querySelector('[data-k=kn]').textContent = 'Kit saved. It is used from your next match.'; }
+      try { const d = await chPost('kit', { kit: getKit() }); ME = d.me; body.querySelector('[data-k=kn]').textContent = 'Kit saved. It is used from your next match.'; body.querySelector('[data-k=kname]').textContent = kitName(ME.kit); }
       catch (e) { body.querySelector('[data-k=kn]').textContent = e.message; }
     };
     body.querySelector('[data-a=code]').onclick = async () => { try { const d = await chPost('newcode'); codeView(body, d.code, false); } catch (e) { body.querySelector('[data-k=kn]').textContent = e.message; } };
@@ -2604,6 +2658,7 @@ if (typeof module !== 'undefined') module.exports = AD;
   async function openChallenge(id, autoAccept) {
     stopPoll(); show('ch'); $('#chTag').textContent = 'Challenge';
     const body = $('#chBody'); body.innerHTML = '<p class="note">Loading...</p>';
+    if (!ME) { try { ME = (await chPost('me')).me; } catch (_) {} }
     let c; try { c = await chPost('get', { id }); } catch (e) { return errBox(body, e.message, () => openChallenge(id)); }
     const back = '<button class="btn" type="button" data-a="hub">Challenge hub</button>';
     const msg = t => { body.innerHTML = `<p style="margin:0">${t}</p>${back}`; body.querySelector('[data-a=hub]').onclick = () => openHub(); };
@@ -2634,7 +2689,7 @@ if (typeof module !== 'undefined') module.exports = AD;
   function waitingView(c) {
     show('ch'); $('#chTag').textContent = 'Locked in';
     const body = $('#chBody'), opp = c.role === 'creator' ? c.opponent : c.creator;
-    body.innerHTML = `<p style="margin:0"><b>Your bids are locked in.</b></p>
+    body.innerHTML = `${opp && opp.kit ? `<div class="mgrline">${shirt(opp.kit, '', 44)}<b>v ${esc(opp.name)}</b></div>` : ''}<p style="margin:0"><b>Your bids are locked in.</b></p>
       ${opp ? `<p style="margin:0">Waiting for ${esc(opp.name)} to lock in their bids. The result shows here, and in your Challenge hub, once they do.</p>`
         : `<p style="margin:0">${c.for ? `Waiting for ${esc(c.for)} to accept the rematch.` : 'Nobody has accepted yet. Send the link to the manager you want to play.'}</p><div class="linkbox">${esc(linkOf(c.id))}</div><button class="btn" type="button" data-a="share">Share the link</button>`}
       <p class="note" style="margin:0">${leftTxt(c.expires_at)}. If it runs out, the challenge disappears.</p>
@@ -2869,7 +2924,10 @@ if (typeof module !== 'undefined') module.exports = AD;
     $('#chKitNote').textContent = [me, op].filter(i => m.changed[i]).map(i => `${i === me ? 'You' : m.names[i]} wore ${kitName(m.kits[i]).toLowerCase()} as a change strip.`).join(' ');
     const h = R.h2h;
     $('#chH2HLbl').textContent = `Head to head v ${oppName}`;
-    $('#chH2H').innerHTML = `<thead><tr><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th></tr></thead><tbody><tr><td>${h.p}</td><td>${h.w}</td><td>${h.d}</td><td>${h.l}</td><td>${h.gf}</td><td>${h.ga}</td></tr></tbody>`;
+    // a two team league: 3 points for a win, 1 for a draw, then goal difference, then goals scored
+    const rows2 = [{ n: 'You', k: m.kits[me], p: h.p, w: h.w, d: h.d, l: h.l, gf: h.gf, ga: h.ga, you: 1 }, { n: oppName, k: m.kits[op], p: h.p, w: h.l, d: h.d, l: h.w, gf: h.ga, ga: h.gf }]
+      .map(r => ({ ...r, pts: r.w * 3 + r.d, gd: r.gf - r.ga })).sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || b.you - a.you || 0);
+    $('#chH2H').innerHTML = `<thead><tr><th>Pos</th><th>Manager</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>${rows2.map((r, i) => `<tr class="${r.you ? 'you' : ''}"><td>${i + 1}</td><td class="nm"><span class="sw" style="background:${kitBg(r.k)}"></span>${esc(r.n)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd > 0 ? '+' : ''}${r.gd}</td><td class="pts">${r.pts}</td></tr>`).join('')}</tbody>`;
     // match stats: team totals, then every player's rating
     const sum = (i, k) => res.ratings[i].reduce((a, x) => a + (x.stats[k] || 0), 0);
     const gkS = i => (res.ratings[i].find(x => x.line === 'GK') || { stats: {} }).stats.saves || 0;
@@ -2903,9 +2961,27 @@ if (typeof module !== 'undefined') module.exports = AD;
     note.textContent = `Every challenge counts. Ranked on points per game, then goal difference, then goals scored. ${d.min} matches to qualify.`;
     const row = (r, pos) => `<tr class="${r.id === d.me ? 'you' : ''}"><td>${pos}</td><td class="nm"><span class="sw" style="background:${kitBg(r.kit)}"></span>${esc(r.name)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td class="pts">${r.ppg.toFixed(2)}</td></tr>`;
     const head = '<thead><tr><th>Pos</th><th>Manager</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>PPG</th></tr></thead>';
-    tb.innerHTML = q.length ? head + '<tbody>' + q.map((r, i) => row(r, i + 1)).join('') + '</tbody>' : '';
+    const gap = '<tr><td colspan="8" style="text-align:center;color:var(--muted)">...</td></tr>';
+    const mi = q.findIndex(r => r.id === d.me), mine = d.rows.find(r => r.id === d.me);
+    const ord = n => n + ((n % 100 >= 11 && n % 100 <= 13) || n % 10 > 3 || n % 10 === 0 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10]);
+    if (mi >= 0) note.textContent = `You are ${ord(mi + 1)} of ${q.length}. ` + note.textContent;
+    else if (mine) note.textContent = `You have played ${mine.p}. ${d.min - mine.p} more to qualify. ` + note.textContent;
+    // Top 10, then a gap and the rows around you if you are further down. "Full table" shows everyone.
+    let full = false;
+    const draw = () => {
+      let rows;
+      if (full || q.length <= 12) rows = q.map((r, i) => row(r, i + 1)).join('');
+      else {
+        const lo = Math.max(10, mi - 1), hi = Math.min(q.length, mi + 2);
+        rows = q.slice(0, 10).map((r, i) => row(r, i + 1)).join('') + (mi >= 10 ? (lo > 10 ? gap : '') + q.slice(lo, hi).map((r, i) => row(r, lo + i + 1)).join('') + (hi < q.length ? gap : '') : (q.length > 10 ? gap : ''));
+      }
+      tb.innerHTML = q.length ? head + '<tbody>' + rows + '</tbody>' : '';
+      below.innerHTML = (q.length > 12 ? `<button class="btn" type="button" id="lgFull" style="margin-top:6px">${full ? 'Show less' : 'Show the full table'}</button>` : '') +
+        (u.length ? `<div class="lbl" style="margin-top:6px">Not yet qualified</div><div style="overflow-x:auto"><table class="lt cl">${head}<tbody>${u.map(r => row(r, '-')).join('')}</tbody></table></div>` : '');
+      const f = $('#lgFull'); if (f) f.onclick = () => { full = !full; draw(); };
+    };
+    draw();
     if (!q.length) note.textContent += ' Nobody has qualified yet.';
-    if (u.length) below.innerHTML = `<div class="lbl" style="margin-top:6px">Not yet qualified</div><div style="overflow-x:auto"><table class="lt cl">${head}<tbody>${u.map(r => row(r, '-')).join('')}</tbody></table></div>`;
   }
   $('#lgBack').addEventListener('click', () => openHub());
   $('#chBtn').addEventListener('click', () => openHub());

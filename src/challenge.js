@@ -72,14 +72,25 @@ export const FAS_SCHEMA = [
 
 const HOUR = 3600 * 1000, EXPIRY = 48 * HOUR, MAX_OPEN = 5;
 const BLOCK = /\b(fuck\w*|f\*ck|cunts?|nigg\w*|nigga|faggots?|fags?|rape|raped|rapist|wank\w*|paki|spastic|spaz|retard\w*|nonce|kike|shit\w*|twat|bellend|knobhead|dickhead)\b/i;
-const WORDS = ['tiger', 'pitch', 'seven', 'goal', 'cross', 'header', 'volley', 'corner', 'derby', 'keeper', 'striker', 'winger', 'anchor', 'boot', 'chip', 'curler', 'dugout', 'final', 'flag', 'free', 'glove', 'hatrick', 'kick', 'lob', 'magpie', 'net', 'offside', 'penalty', 'quick', 'rover', 'save', 'tackle', 'under', 'whistle', 'yellow', 'zonal', 'amber', 'badge', 'cup', 'drill', 'eagle', 'fixture', 'giant', 'harbour', 'iron', 'jersey', 'kop', 'league', 'mariner', 'north', 'orange', 'pundit', 'quarter', 'rattle', 'scarf', 'terrace', 'ultra', 'vision', 'wonder', 'xi', 'youth', 'zebra', 'stripe', 'shield'];
+// Recovery codes are three footballers' surnames from the player database: easy to remember and to say out loud.
+const SURNAMES = (() => {
+  const set = new Set();
+  for (const p of DATA.players) {
+    const parts = String(p[0]).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z ]/g, '').split(' ').filter(Boolean);
+    let w = parts[parts.length - 1] || '';
+    if (['jr', 'junior', 'filho', 'neto'].includes(w) && parts.length > 1) w = parts[parts.length - 2];
+    if (w.length >= 4 && w.length <= 9 && !BLOCK.test(w)) set.add(w);
+  }
+  return [...set].sort();
+})();
 
 const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, '0')).join('');
 const rnd = (n) => crypto.getRandomValues(new Uint32Array(n));
 const token = (len = 32) => [...crypto.getRandomValues(new Uint8Array(len))].map((b) => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
 function newCode() {
-  const r = rnd(4);
-  return `${WORDS[r[0] % 64]}-${WORDS[r[1] % 64]}-${WORDS[r[2] % 64]}-${10 + (r[3] % 90)}`;
+  const out = [];
+  while (out.length < 3) { const w = SURNAMES[rnd(1)[0] % SURNAMES.length]; if (!out.includes(w)) out.push(w); }
+  return out.join('-');
 }
 const normCode = (c) => String(c ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 
@@ -216,14 +227,16 @@ export async function fas(fn, request, env, b) {
   }
   if (fn === 'me') {
     if (!me) return reply({ me: null });
-    const [open, todo, recent] = await env.DB.batch([
+    const [open, todo, recent, rec] = await env.DB.batch([
       env.DB.prepare(`SELECT id, status, opponent, for_account, created_at, expires_at, (SELECT count(*) FROM fas_entries e WHERE e.challenge_id = fas_challenges.id AND e.account_id = ?1) AS mine FROM fas_challenges WHERE creator = ?1 AND status != 'done' AND expires_at > ?2 ORDER BY created_at DESC`).bind(me.id, now),
       env.DB.prepare(`SELECT id, creator, status, expires_at, (SELECT count(*) FROM fas_entries e WHERE e.challenge_id = fas_challenges.id AND e.account_id = ?1) AS mine FROM fas_challenges WHERE ((opponent = ?1) OR (status = 'open' AND for_account = ?1)) AND status != 'done' AND expires_at > ?2 ORDER BY created_at DESC`).bind(me.id, now),
       env.DB.prepare('SELECT challenge_id, opp_id, gf, ga, created_at FROM fas_results WHERE account_id = ?1 ORDER BY created_at DESC LIMIT 12').bind(me.id),
+      env.DB.prepare('SELECT count(*) AS p, coalesce(sum(pts = 3), 0) AS w, coalesce(sum(pts = 1), 0) AS d, coalesce(sum(pts = 0), 0) AS l, coalesce(sum(gf), 0) AS gf, coalesce(sum(ga), 0) AS ga, coalesce(sum(pts), 0) AS pts FROM fas_results WHERE account_id = ?1').bind(me.id),
     ]);
     const acc = await accountsByIds(env, [...open.results.flatMap((r) => [r.opponent, r.for_account]), ...todo.results.map((r) => r.creator), ...recent.results.map((r) => r.opp_id)]);
     return reply({
       me: pub(me),
+      rec: rec.results[0],
       open: open.results.map((r) => ({ id: r.id, status: r.status, opp: acc[r.opponent]?.name || null, for: acc[r.for_account]?.name || null, created_at: r.created_at, expires_at: r.expires_at, entered: r.mine > 0 })),
       todo: todo.results.map((r) => ({ id: r.id, from: acc[r.creator]?.name || '?', status: r.status, expires_at: r.expires_at, entered: r.mine > 0 })),
       recent: recent.results.map((r) => ({ id: r.challenge_id, opp: acc[r.opp_id]?.name || '?', gf: r.gf, ga: r.ga, at: r.created_at })),
