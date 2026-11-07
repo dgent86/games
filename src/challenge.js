@@ -45,6 +45,9 @@ export const FAS_SCHEMA = [
      status TEXT NOT NULL DEFAULT 'open',
      created_at INTEGER NOT NULL,
      expires_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS fas_board (
+     challenge_id TEXT PRIMARY KEY,
+     created_at INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS fas_ch_creator ON fas_challenges (creator, status)`,
   `CREATE INDEX IF NOT EXISTS fas_ch_opp ON fas_challenges (opponent, status)`,
   `CREATE TABLE IF NOT EXISTS fas_entries (
@@ -228,7 +231,7 @@ export async function fas(fn, request, env, b) {
   if (fn === 'me') {
     if (!me) return reply({ me: null });
     const [open, todo, recent, rec] = await env.DB.batch([
-      env.DB.prepare(`SELECT id, status, opponent, for_account, created_at, expires_at, (SELECT count(*) FROM fas_entries e WHERE e.challenge_id = fas_challenges.id AND e.account_id = ?1) AS mine FROM fas_challenges WHERE creator = ?1 AND status != 'done' AND expires_at > ?2 ORDER BY created_at DESC`).bind(me.id, now),
+      env.DB.prepare(`SELECT id, status, opponent, for_account, created_at, expires_at, (SELECT count(*) FROM fas_board bd WHERE bd.challenge_id = fas_challenges.id) AS posted, (SELECT count(*) FROM fas_entries e WHERE e.challenge_id = fas_challenges.id AND e.account_id = ?1) AS mine FROM fas_challenges WHERE creator = ?1 AND status != 'done' AND expires_at > ?2 ORDER BY created_at DESC`).bind(me.id, now),
       env.DB.prepare(`SELECT id, creator, status, expires_at, (SELECT count(*) FROM fas_entries e WHERE e.challenge_id = fas_challenges.id AND e.account_id = ?1) AS mine FROM fas_challenges WHERE ((opponent = ?1) OR (status = 'open' AND for_account = ?1)) AND status != 'done' AND expires_at > ?2 ORDER BY created_at DESC`).bind(me.id, now),
       env.DB.prepare('SELECT challenge_id, opp_id, gf, ga, created_at FROM fas_results WHERE account_id = ?1 ORDER BY created_at DESC LIMIT 12').bind(me.id),
       env.DB.prepare('SELECT count(*) AS p, coalesce(sum(pts = 3), 0) AS w, coalesce(sum(pts = 1), 0) AS d, coalesce(sum(pts = 0), 0) AS l, coalesce(sum(gf), 0) AS gf, coalesce(sum(ga), 0) AS ga, coalesce(sum(pts), 0) AS pts FROM fas_results WHERE account_id = ?1').bind(me.id),
@@ -237,7 +240,7 @@ export async function fas(fn, request, env, b) {
     return reply({
       me: pub(me),
       rec: rec.results[0],
-      open: open.results.map((r) => ({ id: r.id, status: r.status, opp: acc[r.opponent]?.name || null, for: acc[r.for_account]?.name || null, created_at: r.created_at, expires_at: r.expires_at, entered: r.mine > 0 })),
+      open: open.results.map((r) => ({ id: r.id, status: r.status, opp: acc[r.opponent]?.name || null, for: acc[r.for_account]?.name || null, created_at: r.created_at, expires_at: r.expires_at, entered: r.mine > 0, posted: r.posted > 0 })),
       todo: todo.results.map((r) => ({ id: r.id, from: acc[r.creator]?.name || '?', status: r.status, expires_at: r.expires_at, entered: r.mine > 0 })),
       recent: recent.results.map((r) => ({ id: r.challenge_id, opp: acc[r.opp_id]?.name || '?', gf: r.gf, ga: r.ga, at: r.created_at })),
     });
@@ -259,6 +262,7 @@ export async function fas(fn, request, env, b) {
       out.deck = AD.challengeDeck(c.seed);
       out.entered = !!(await env.DB.prepare('SELECT 1 AS x FROM fas_entries WHERE challenge_id = ?1 AND account_id = ?2').bind(c.id, me.id).first());
     }
+    if (role === 'creator') out.posted = !!(await env.DB.prepare('SELECT 1 AS x FROM fas_board WHERE challenge_id = ?1').bind(c.id).first());
     if (me && role !== 'creator') out.h2h = await h2h(env, me.id, c.creator);
     return reply(out);
   }
@@ -291,6 +295,28 @@ export async function fas(fn, request, env, b) {
     const id = token(10), seed = rnd(1)[0];
     await env.DB.prepare('INSERT INTO fas_challenges (id, seed, creator, for_account, home, status, created_at, expires_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)').bind(id, seed, me.id, forAcc, home, 'open', now, now + EXPIRY).run();
     return reply({ id, expires_at: now + EXPIRY });
+  }
+  if (fn === 'post') {
+    const c = await loadChallenge(env, b.id);
+    if (!c || expired(c) || c.creator !== me.id) return fail('No such challenge.', 404);
+    if (c.status !== 'open' || c.for_account) return fail('Only an open challenge nobody has accepted can go on the board.', 409);
+    if (b.on === false) { await env.DB.prepare('DELETE FROM fas_board WHERE challenge_id = ?1').bind(c.id).run(); return reply({ ok: true, posted: false }); }
+    const ent = await env.DB.prepare('SELECT count(*) AS n FROM fas_entries WHERE challenge_id = ?1 AND account_id = ?2').bind(c.id, me.id).first();
+    if (!ent.n) return fail('Lock in your bids first, then post it to the board.', 409);
+    await env.DB.prepare('INSERT OR IGNORE INTO fas_board (challenge_id, created_at) VALUES (?1, ?2)').bind(c.id, now).run();
+    return reply({ ok: true, posted: true });
+  }
+  if (fn === 'board') {
+    const { results } = await env.DB.prepare(`SELECT c.id, c.creator, c.expires_at FROM fas_board bd JOIN fas_challenges c ON c.id = bd.challenge_id
+      WHERE c.status = 'open' AND c.for_account IS NULL AND c.expires_at > ?1 AND c.creator != ?2 ORDER BY c.created_at DESC LIMIT 40`).bind(now, me.id).all();
+    const acc = await accountsByIds(env, results.map((r) => r.creator));
+    let st = {};
+    if (results.length) {
+      const ids = [...new Set(results.map((r) => r.creator))];
+      const q = await env.DB.prepare(`SELECT account_id, count(*) AS p, sum(pts) AS pts FROM fas_results WHERE account_id IN (${ids.map((_, i) => '?' + (i + 1)).join(',')}) GROUP BY account_id`).bind(...ids).all();
+      st = Object.fromEntries(q.results.map((r) => [r.account_id, r]));
+    }
+    return reply({ rows: results.filter((r) => acc[r.creator]).map((r) => ({ id: r.id, name: acc[r.creator].name, kit: acc[r.creator].kit, p: st[r.creator]?.p || 0, ppg: st[r.creator] ? st[r.creator].pts / st[r.creator].p : null, expires_at: r.expires_at })) });
   }
   if (fn === 'join') {
     const c = await loadChallenge(env, b.id);

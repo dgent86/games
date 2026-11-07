@@ -2545,7 +2545,7 @@ if (typeof module !== 'undefined') module.exports = AD;
     const waiting = [...d.open.filter(r => r.entered).map(r => ({ ...r, who: r.opp || r.for, mine: true })), ...d.todo.filter(r => r.entered).map(r => ({ ...r, who: r.from, mine: false }))];
     const item = r => {
       const what = r.mine ? (r.who ? `Your challenge to ${esc(r.who)}` : 'Your open challenge') : `${esc(r.who)} challenged you`;
-      const sub = r.mine && !r.opp ? (r.entered ? (r.for ? `Rematch, waiting for ${esc(r.for)} to accept` : 'Bids in. Nobody has accepted yet') : 'Nobody has accepted yet') : r.entered ? `Waiting for ${esc(r.who || 'them')} to bid` : 'Your bids are needed';
+      const sub = r.mine && !r.opp ? (r.entered ? (r.for ? `Rematch, waiting for ${esc(r.for)} to accept` : r.posted ? 'On the open board. Nobody has accepted yet' : 'Bids in. Nobody has accepted yet') : 'Nobody has accepted yet') : r.entered ? `Waiting for ${esc(r.who || 'them')} to bid` : 'Your bids are needed';
       const btn = !r.entered ? `<button class="btn go" type="button" data-open="${r.id}">Bid</button>` : r.mine && !r.opp ? `<button class="btn go" type="button" data-share="${r.id}">Share link</button>` : `<button class="btn" type="button" data-open="${r.id}">View</button>`;
       return `<div><b>${what}</b>${btn}<span>${sub} · ${leftTxt(r.expires_at)}</span></div>`;
     };
@@ -2555,6 +2555,7 @@ if (typeof module !== 'undefined') module.exports = AD;
     body.innerHTML = `<div class="mgrline">${shirt(ME.kit, '', 44)}<span><b>${esc(ME.name)}</b><br><span class="note">${recLine}</span></span></div>
       ${flash ? `<p class="note" style="margin:0">${esc(flash)}</p>` : ''}
       <button class="btn go" type="button" data-a="new">New challenge<small>Get a link to send to a friend</small></button>
+      <button class="btn" type="button" data-a="board">Open challenges<small>Play anyone who has posted a challenge</small></button>
       ${yourMove.length ? `<div class="lbl">Your move</div><div class="chl">${yourMove.map(item).join('')}</div>` : ''}
       ${waiting.length ? `<div class="lbl">Waiting</div><div class="chl">${waiting.map(item).join('')}</div>` : ''}
       ${d.recent.length ? `<div class="lbl">Recent results</div><div class="chl">${d.recent.map(res).join('')}</div>` : ''}
@@ -2563,6 +2564,7 @@ if (typeof module !== 'undefined') module.exports = AD;
       <details><summary>How it works</summary>${RULES}</details>`;
     body.querySelectorAll('[data-share]').forEach(b => b.onclick = () => shareLink(b.dataset.share, b));
     body.querySelector('[data-a=new]').onclick = newChallenge;
+    body.querySelector('[data-a=board]').onclick = openBoard;
     body.querySelector('[data-a=league]').onclick = openLeague;
     body.querySelector('[data-a=acct]').onclick = () => accountView(body);
     body.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openChallenge(b.dataset.open));
@@ -2576,10 +2578,22 @@ if (typeof module !== 'undefined') module.exports = AD;
       <div class="linkbox">${esc(linkOf(d.id))}</div>
       <button class="btn go" type="button" data-a="share">Share the link</button>
       <button class="btn" type="button" data-a="bid">Enter Auction</button>
+      ${rematch ? '' : '<p class="note" style="margin:0">Want any opponent? Enter your bids, then post it to the open board.</p>'}
       <button class="btn" type="button" data-a="hub">Challenge hub</button>`;
     body.querySelector('[data-a=share]').onclick = ev => shareLink(d.id, ev.currentTarget);
     body.querySelector('[data-a=bid]').onclick = () => openChallenge(d.id);
     body.querySelector('[data-a=hub]').onclick = () => openHub();
+  }
+
+  async function openBoard() {
+    stopPoll(); show('ch'); $('#chTag').textContent = 'Open challenges';
+    const body = $('#chBody'); body.innerHTML = '<p class="note">Loading...</p>';
+    let d; try { d = await chPost('board'); } catch (e) { return errBox(body, e.message, openBoard); }
+    const row = r => `<div><b class="mgrline" style="gap:8px">${shirt(r.kit, '', 30)}<span>${esc(r.name)}</span></b><button class="btn go" type="button" data-play="${r.id}">Play</button><span>${r.p ? `Played ${r.p} · ${r.ppg.toFixed(2)} points a game` : 'New manager'} · ${leftTxt(r.expires_at)}</span></div>`;
+    body.innerHTML = `${d.rows.length ? `<p class="note" style="margin:0">Anyone can take these. First to accept gets the match.</p><div class="chl">${d.rows.map(row).join('')}</div>` : '<p style="margin:0">No open challenges right now. Make one, enter your bids, then post it here.</p>'}
+      <button class="btn" type="button" data-a="refresh">Refresh</button><button class="btn" type="button" data-a="hub">Challenge hub</button>`;
+    body.querySelectorAll('[data-play]').forEach(b => b.onclick = () => openChallenge(b.dataset.play));
+    body.querySelector('[data-a=refresh]').onclick = openBoard; body.querySelector('[data-a=hub]').onclick = () => openHub();
   }
 
   // ---------- sign up, recovery code, your manager
@@ -2691,10 +2705,16 @@ if (typeof module !== 'undefined') module.exports = AD;
     const body = $('#chBody'), opp = c.role === 'creator' ? c.opponent : c.creator;
     body.innerHTML = `${opp && opp.kit ? `<div class="mgrline">${shirt(opp.kit, '', 44)}<b>v ${esc(opp.name)}</b></div>` : ''}<p style="margin:0"><b>Your bids are locked in.</b></p>
       ${opp ? `<p style="margin:0">Waiting for ${esc(opp.name)} to lock in their bids. The result shows here, and in your Challenge hub, once they do.</p>`
-        : `<p style="margin:0">${c.for ? `Waiting for ${esc(c.for)} to accept the rematch.` : 'Nobody has accepted yet. Send the link to the manager you want to play.'}</p><div class="linkbox">${esc(linkOf(c.id))}</div><button class="btn" type="button" data-a="share">Share the link</button>`}
+        : `<p style="margin:0">${c.for ? `Waiting for ${esc(c.for)} to accept the rematch.` : 'Nobody has accepted yet. Send the link to the manager you want to play.'}</p><div class="linkbox">${esc(linkOf(c.id))}</div><button class="btn" type="button" data-a="share">Share the link</button>${c.for ? '' : `<button class="btn go" type="button" data-a="post">${c.posted ? 'Take it off the open board' : 'Post to the open board'}</button><p class="note" style="margin:0" data-k="pn">${c.posted ? 'Anyone can see and accept this challenge.' : 'Let any manager accept it, no link needed.'}</p>`}`}
       <p class="note" style="margin:0">${leftTxt(c.expires_at)}. If it runs out, the challenge disappears.</p>
       <div class="row"><button class="btn go" type="button" data-a="chk">Check now</button><button class="btn" type="button" data-a="hub">Challenge hub</button></div>`;
     const sh = body.querySelector('[data-a=share]'); if (sh) sh.onclick = ev => shareLink(c.id, ev.currentTarget);
+    const po = body.querySelector('[data-a=post]');
+    if (po) po.onclick = async () => {
+      po.disabled = true;
+      try { const r = await chPost('post', { id: c.id, on: !c.posted }); c.posted = r.posted; waitingView(c); }
+      catch (e) { po.disabled = false; body.querySelector('[data-k=pn]').textContent = e.message; }
+    };
     body.querySelector('[data-a=chk]').onclick = () => openChallenge(c.id);
     body.querySelector('[data-a=hub]').onclick = () => openHub();
     stopPoll();
