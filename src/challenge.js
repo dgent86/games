@@ -294,6 +294,7 @@ export async function fas(fn, request, env, b) {
     }
     const id = token(10), seed = rnd(1)[0];
     await env.DB.prepare('INSERT INTO fas_challenges (id, seed, creator, for_account, home, status, created_at, expires_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)').bind(id, seed, me.id, forAcc, home, 'open', now, now + EXPIRY).run();
+    if (!forAcc && b.private === false) await env.DB.prepare('INSERT OR IGNORE INTO fas_board (challenge_id, created_at) VALUES (?1, ?2)').bind(id, now).run();
     return reply({ id, expires_at: now + EXPIRY });
   }
   if (fn === 'post') {
@@ -301,10 +302,16 @@ export async function fas(fn, request, env, b) {
     if (!c || expired(c) || c.creator !== me.id) return fail('No such challenge.', 404);
     if (c.status !== 'open' || c.for_account) return fail('Only an open challenge nobody has accepted can go on the board.', 409);
     if (b.on === false) { await env.DB.prepare('DELETE FROM fas_board WHERE challenge_id = ?1').bind(c.id).run(); return reply({ ok: true, posted: false }); }
-    const ent = await env.DB.prepare('SELECT count(*) AS n FROM fas_entries WHERE challenge_id = ?1 AND account_id = ?2').bind(c.id, me.id).first();
-    if (!ent.n) return fail('Lock in your bids first, then post it to the board.', 409);
     await env.DB.prepare('INSERT OR IGNORE INTO fas_board (challenge_id, created_at) VALUES (?1, ?2)').bind(c.id, now).run();
     return reply({ ok: true, posted: true });
+  }
+  if (fn === 'remove') {
+    const c = await loadChallenge(env, b.id);
+    if (!c || c.creator !== me.id) return fail('No such challenge.', 404);
+    const ent = await env.DB.prepare('SELECT count(*) AS n FROM fas_entries WHERE challenge_id = ?1').bind(c.id).first();
+    if (c.status !== 'open' || ent.n) return fail('Your bids are locked in, so this challenge can no longer be deleted.', 409);
+    await env.DB.batch([env.DB.prepare('DELETE FROM fas_board WHERE challenge_id = ?1').bind(c.id), env.DB.prepare("DELETE FROM fas_challenges WHERE id = ?1 AND status = 'open'").bind(c.id)]);
+    return reply({ ok: true });
   }
   if (fn === 'board') {
     const { results } = await env.DB.prepare(`SELECT c.id, c.creator, c.expires_at FROM fas_board bd JOIN fas_challenges c ON c.id = bd.challenge_id
