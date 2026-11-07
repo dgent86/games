@@ -2028,8 +2028,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     $('#rvStage').textContent = 'Teams are in'; $('#rvCount').textContent = `${steps.length} of ${steps.length}`;
     const hs = m.home;
     $('#rvCard').innerHTML = `<div class="pos">SQUADS COMPLETE</div><div class="nm">${esc(m.names[hs])} v ${esc(m.names[1 - hs])}</div><div class="meta">${m.changed.some(Boolean) ? esc(m.names[m.changed.indexOf(true)]) + ' wear their change strip' : 'No kit clash'}</div>`;
-    const ties = steps.filter(isTie);
-    $('#rvTie').innerHTML = ties.map(x => `<p>${esc(tieLine(x))}${ties.length > 1 ? ' (' + esc(x.p.n) + ')' : ''}</p>`).join('');
+    $('#rvTie').innerHTML = '';
     rvBoard(null);
     $('#rvKick').focus();
   }
