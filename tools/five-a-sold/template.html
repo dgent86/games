@@ -106,7 +106,7 @@ input[type=text] { font: 16px var(--f-ui); padding: 8px; border: 2px solid; bord
 .sb-top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; padding: 10px 10px 4px; align-items: start; }
 .sb-team { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; align-content: start; }
 .sb-team.r { text-align: right; }
-.sb-name { font-size: 24px; line-height: 1; padding: 4px 6px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-name { font-size: 24px; line-height: 1; padding: 4px 6px 2px; overflow: hidden; overflow-wrap: anywhere; }
 .sb-kit { height: 5px; }
 .sb-goals { color: var(--amber); font-size: 20px; line-height: 1.05; overflow-wrap: anywhere; display: grid; gap: 1px; }
 .sb-score { text-align: center; font-size: 46px; line-height: .9; color: var(--amber); font-variant-numeric: tabular-nums; padding-top: 2px; }
@@ -277,6 +277,15 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .sl.ph .g { width: 26px; height: 24px; border: 2px dashed rgba(255,255,255,.7); border-radius: 6px; display: grid; place-items: center; font: bold 8px var(--f-ui); color: rgba(255,255,255,.85); }
 .tlines { display: grid; gap: 4px; }
 .tlines p { font: 13px var(--f-ui); color: #e8f2e0; margin: 0; padding: 0 4px; }
+.verdict { font-family: var(--f-crt); font-size: 36px; white-space: nowrap; overflow: hidden; line-height: 1; background: var(--crt); color: var(--amber); padding: 8px 10px 4px; }
+.verdict.lose { color: #ff8a80; } .verdict.draw { color: var(--cyan); }
+table.h2h { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
+table.h2h th, table.h2h td { padding: 4px 2px; border-bottom: 1px solid var(--panel-lo); }
+table.h2h td { font-size: 18px; font-variant-numeric: tabular-nums; }
+table.tsm { display: table; width: 100%; border-collapse: collapse; font-size: 14px; }
+table.tsm th, table.tsm td { padding: 4px 4px; border-bottom: 1px solid var(--panel-lo); text-align: center; }
+table.tsm td:first-child, table.tsm th:first-child { text-align: left; }
+table.tsm td.hi { font-weight: bold; }
 .pips { display: flex; gap: 3px; flex-wrap: wrap; }
 .pips i { flex: 1 1 0; min-width: 10px; height: 10px; background: var(--well); border: 1px solid var(--panel-lo); }
 .pips i.done { background: var(--navy); }
@@ -481,13 +490,15 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     <div class="win" id="chResWin" hidden>
       <div class="bar"><span>Full time</span><span id="chResTag"></span></div>
       <div class="pad">
+        <div class="verdict" id="chVerdict"></div>
         <div class="result-line" id="chResLine"></div>
-        <div class="note" id="chKitNote"></div>
-        <div class="lbl">Ratings revealed · match rating out of 10 · * out of position</div>
-        <div style="overflow-x:auto"><table class="rt" id="chRatings"></table></div>
-        <div class="well" id="chH2H"></div>
+        <div class="note" id="chKitNote" style="margin:0"></div>
+        <div class="lbl" id="chH2HLbl">Head to head</div>
+        <table class="rt h2h" id="chH2H"></table>
+        <div class="row"><button class="btn" id="chStatsBtn" type="button" aria-expanded="false">Match stats</button><button class="btn" id="chToLeague" type="button">League table</button></div>
+        <div id="chStats" hidden></div>
         <button class="btn go" id="chRematch" type="button">Rematch</button>
-        <div class="row"><button class="btn" id="chToHub" type="button">Challenge hub</button><button class="btn" id="chToLeague" type="button">League table</button></div>
+        <button class="btn" id="chToHub" type="button">Challenge hub</button>
       </div>
     </div>
     <div class="win" id="campWin" hidden>
@@ -915,6 +926,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     $('#resultWin').hidden = true; $('#campWin').hidden = true; $('#chResWin').hidden = true;
     const cH = sideColours(0), cA = sideColours(1);
     const nm = X ? X.names : [G.H.name, G.A.mgr.name], kt = X ? X.kits : [HUMAN_KIT, G.A.mgr.kit];
+    const fs = n => n.length > 10 ? '15px' : n.length > 6 ? '18px' : ''; $('#nameH').style.fontSize = fs(nm[0]); $('#nameA').style.fontSize = fs(nm[1]);
     $('#nameH').textContent = nm[0]; $('#nameH').style.background = cH.bg; $('#nameH').style.color = cH.fg;
     $('#nameA').textContent = nm[1]; $('#nameA').style.background = cA.bg; $('#nameA').style.color = cA.fg;
     $('#kitH').style.background = kitBg(kt[0]); $('#kitA').style.background = kitBg(kt[1]);
@@ -1918,31 +1930,55 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
   }
   $('#rvNext').addEventListener('click', rvStep);
   $('#rvAll').addEventListener('click', () => rvEnd());
+  // you are always the home side on your own screen. The stored match keeps its real order (it decides the random sequence),
+  // so a phone that is playing the away side flips the finished match before showing it.
+  const escRe = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  function flipRes(res, hn, an) {
+    const sw = a => (a ? [a[1], a[0]] : a), re = new RegExp(escRe(hn) + ' (\\d+), ' + escRe(an) + ' (\\d+)', 'g');
+    const fl = ls => ls.map(l => typeof l === 'string' ? l.replace(re, (_, x, y) => `${an} ${y}, ${hn} ${x}`) : l);
+    return { ...res, score: sw(res.score), winner: res.winner == null ? null : 1 - res.winner, teams: [res.teams[1], res.teams[0]], ratings: [res.ratings[1], res.ratings[0]], tstats: res.tstats && sw(res.tstats),
+      events: res.events.map(ev => ({ ...ev, team: ev.team == null ? ev.team : 1 - ev.team, score: sw(ev.score), goal: ev.goal ? { ...ev.goal, ti: 1 - ev.goal.ti } : ev.goal, pscore: ev.pscore ? sw(ev.pscore) : ev.pscore, lines: fl(ev.lines) })) };
+  }
   $('#rvKick').addEventListener('click', () => {
-    const R = RV.R, m = R.match, hs = m.home, as = 1 - hs;
+    const R = RV.R, m = R.match, hs = m.home, as = 1 - hs, me = R.side, op = 1 - me;
     const sq = m.squads.map(ids => ids.map(i => AD.players[i]));
     AD.seed(m.simSeed);
-    const res = AD.simulate(AD.makeTeam({ name: m.names[hs], squad: sq[hs] }, true, null), AD.makeTeam({ name: m.names[as], squad: sq[as] }, false, null), { league: true });
+    let res = AD.simulate(AD.makeTeam({ name: m.names[hs], squad: sq[hs] }, true, null), AD.makeTeam({ name: m.names[as], squad: sq[as] }, false, null), { league: true });
     if (res.score[0] !== m.score[0] || res.score[1] !== m.score[1]) console.warn('Five-a-Sold: replay differs from the stored result', res.score, m.score);
-    playMatch({ res, names: [m.names[hs], m.names[as]], kits: [m.kits[hs], m.kits[as]], done: r => chFinish(R, r) });
+    if (hs !== me) res = flipRes(res, m.names[hs], m.names[as]);
+    playMatch({ res, names: ['You', m.names[op]], kits: [m.kits[me], m.kits[op]], done: r => chFinish(R, r) });
   });
   function chFinish(R, res) {
-    const m = R.match, me = R.side, op = 1 - me, g = m.goals, hs = m.home, as = 1 - hs;
-    $('#chResTag').textContent = g[me] > g[op] ? 'You win' : g[me] === g[op] ? 'Draw' : `${m.names[op]} wins`;
-    $('#chResLine').textContent = `${m.names[hs]} ${m.score[0]} - ${m.score[1]} ${m.names[as]}`;
-    $('#chKitNote').textContent = [0, 1].filter(i => m.changed[i]).map(i => `${m.names[i]} wore ${kitName(m.kits[i]).toLowerCase()} as a change strip.`).join(' ');
+    const m = R.match, me = R.side, op = 1 - me, g = m.goals, oppName = m.names[op];
+    const w = g[me] > g[op] ? 0 : g[me] === g[op] ? 1 : 2;
+    $('#chResTag').textContent = ['You win', 'Draw', `${oppName} wins`][w];
+    const V = $('#chVerdict'); V.className = 'verdict' + (w === 1 ? ' draw' : w === 2 ? ' lose' : '');
+    V.textContent = `${['YOU WIN', 'DRAW', 'YOU LOSE'][w]} ${g[me]}-${g[op]}`;
+    $('#chResLine').textContent = `You v ${oppName}`;
+    $('#chKitNote').textContent = [me, op].filter(i => m.changed[i]).map(i => `${i === me ? 'You' : m.names[i]} wore ${kitName(m.kits[i]).toLowerCase()} as a change strip.`).join(' ');
+    const h = R.h2h;
+    $('#chH2HLbl').textContent = `Head to head v ${oppName}`;
+    $('#chH2H').innerHTML = `<thead><tr><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th></tr></thead><tbody><tr><td>${h.p}</td><td>${h.w}</td><td>${h.d}</td><td>${h.l}</td><td>${h.gf}</td><td>${h.ga}</td></tr></tbody>`;
+    // match stats: team totals, then every player's rating
+    const sum = (i, k) => res.ratings[i].reduce((a, x) => a + (x.stats[k] || 0), 0);
+    const gkS = i => (res.ratings[i].find(x => x.line === 'GK') || { stats: {} }).stats.saves || 0;
+    const T = res.tstats || [{ shots: 0 }, { shots: 0 }];
+    const rowsT = [['Goals', g[me], g[op]], ['Shots', T[0].shots, T[1].shots], ['On target', sum(0, 'sot'), sum(1, 'sot')], ['Chances created', sum(0, 'kp'), sum(1, 'kp')], ['Dribbles', sum(0, 'drb'), sum(1, 'drb')], ['Saves', gkS(0), gkS(1)]]
+      .map(([k, a, b]) => `<tr><td>${k}</td><td class="${a > b ? 'hi' : ''}">${a}</td><td class="${b > a ? 'hi' : ''}">${b}</td></tr>`).join('');
     const paid = id => { const l = m.log.find(x => x.id === id); return l ? l.price : 0; };
     const all = res.ratings.flat(), best = all.reduce((a, b) => b.rating > a.rating ? b : a);
     const rows = list => list.map(x => `<tr><td>${esc(x.p.n)}${x === best ? ' <span class="motm">MOTM</span>' : ''}</td><td>${x.line}${oop(x.p, x.line) ? '*' : ''}</td><td class="n">${x.p.ovr}</td><td class="n">${x.stats.g || ''}</td><td class="n">${x.stats.a || ''}</td><td class="n mr">${x.rating.toFixed(1)}</td><td class="n">${fmt(paid(x.p.id))}</td></tr>`).join('');
-    $('#chRatings').innerHTML = `<thead><tr><th>Player</th><th>Slot</th><th class="n">OVR</th><th class="n">G</th><th class="n">A</th><th class="n">Rating</th><th class="n">Paid</th></tr></thead>
-      <tbody><tr><th colspan="7">${esc(m.names[hs])} · ${res.teams[0].shape}</th></tr>${rows(res.ratings[0])}<tr><th colspan="7">${esc(m.names[as])} · ${res.teams[1].shape}</th></tr>${rows(res.ratings[1])}</tbody>`;
-    const h = R.h2h;
-    $('#chH2H').innerHTML = `<b>Head to head v ${esc(m.names[op])}</b><br>Played ${h.p}, won ${h.w}, drawn ${h.d}, lost ${h.l}. Goals ${h.gf}-${h.ga}.`;
+    $('#chStats').innerHTML = `<table class="tsm"><thead><tr><th></th><th>You</th><th>${esc(oppName)}</th></tr></thead><tbody>${rowsT}</tbody></table>
+      <div class="lbl">Match rating out of 10 · * out of position</div>
+      <div style="overflow-x:auto"><table class="rt"><thead><tr><th>Player</th><th>Slot</th><th class="n">OVR</th><th class="n">G</th><th class="n">A</th><th class="n">Rating</th><th class="n">Paid</th></tr></thead>
+      <tbody><tr><th colspan="7">You · ${res.teams[0].shape}</th></tr>${rows(res.ratings[0])}<tr><th colspan="7">${esc(oppName)} · ${res.teams[1].shape}</th></tr>${rows(res.ratings[1])}</tbody></table></div>`;
+    $('#chStats').hidden = true; $('#chStatsBtn').textContent = 'Match stats'; $('#chStatsBtn').setAttribute('aria-expanded', 'false');
     $('#chRematch').disabled = false;
     $('#chRematch').onclick = () => { show('ch'); newChallenge(null, R.id); };
     $('#chResWin').hidden = false;
     $('#chResWin').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+  $('#chStatsBtn').addEventListener('click', () => { const open = $('#chStats').hidden; $('#chStats').hidden = !open; $('#chStatsBtn').textContent = open ? 'Hide match stats' : 'Match stats'; $('#chStatsBtn').setAttribute('aria-expanded', String(open)); if (open) $('#chStats').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
   $('#chToHub').addEventListener('click', () => { playToken++; openHub(); });
   $('#chToLeague').addEventListener('click', () => { playToken++; openLeague(); });
 

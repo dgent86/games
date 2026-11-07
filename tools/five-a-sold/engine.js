@@ -410,6 +410,7 @@ const AD = (() => {
     function pickDefender(t) { const d = inLine(t, 'DEF'); return d.length ? pick(d) : pick(outfield(t)); }
     const N = p => p.n;
     const ST = new Map();
+    const TS = [{ shots: 0 }, { shots: 0 }]; // team totals for the stats panel; counting changes nothing in the match
     const st = p => { if (!ST.has(p)) ST.set(p, { g: 0, a: 0, sot: 0, miss: 0, def: 0, saves: 0, conc: 0, err: 0, og: 0, kp: 0, drb: 0, claim: 0 }); return ST.get(p); };
     const D = x => x ? '#D' + x : x;
     let pendingGoal = null;
@@ -443,6 +444,7 @@ const AD = (() => {
 
     function shot(ti, shooter, kind, lines, assister, round) {
       const t = teams[ti], o = teams[1 - ti], k = o.gk;
+      TS[ti].shots++;
       const ctx = { shooter: N(shooter), keeper: N(k), team: t.name, opp: o.name };
       const leadCat = { std: 'shot', long: 'shot_long', oneonone: 'shot_one_on_one', lowcross: 'shot_low_cross', header: 'shot_header', rebound: 'shot_rebound', error: 'shot' }[kind];
       lines.push(line(leadCat, ctx));
@@ -670,7 +672,7 @@ const AD = (() => {
       return { p: x.p, line: x.line, rating: Math.round(clamp(r, 3, 10) * 10) / 10, stats: s };
     });
     const ratings = [rate(H, 0), rate(A, 1)];
-    return { events: ev, score, winner, pens, teams: [H, A], ratings };
+    return { events: ev, score, winner, pens, teams: [H, A], ratings, tstats: TS };
   }
 
 
