@@ -225,7 +225,8 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 
 /* Challenge mode */
 .potrow { display: flex; justify-content: space-between; align-items: end; gap: 10px; }
-.potrow > div { display: grid; gap: 2px; }
+.potrow > div { display: grid; gap: 1px; }
+.potrow .money { font-size: 22px; }
 .potrow .r { text-align: right; color: var(--muted); }
 .counts.mine div { background: var(--well); color: var(--ink); }
 .counts.mine div span { color: var(--muted); }
@@ -291,9 +292,12 @@ table.tsm td.hi { font-weight: bold; }
 .pips i { flex: 1 1 0; min-width: 10px; height: 10px; background: var(--well); border: 1px solid var(--panel-lo); }
 .pips i.done { background: var(--navy); }
 .pips i.cur { background: var(--amber); }
-.stepper { display: grid; grid-template-columns: 64px 1fr 64px; gap: 8px; align-items: center; }
-.stepper .btn { font-size: 26px; min-height: 56px; }
-.bidval { font-family: var(--f-crt); font-size: 52px; line-height: 1; text-align: center; background: var(--crt); color: var(--amber); padding: 6px 0 2px; font-variant-numeric: tabular-nums; }
+.stepper { display: grid; grid-template-columns: 56px 1fr 56px; gap: 8px; align-items: center; }
+.stepper .btn { font-size: 22px; min-height: 44px; }
+.cmp { gap: 4px; }
+.cmp .counts div { font-size: 20px; padding: 4px 0 3px; }
+.cmp .counts div span { font-size: 13px; }
+.bidval { font-family: var(--f-crt); font-size: 40px; line-height: 1; text-align: center; background: var(--crt); color: var(--amber); padding: 4px 0 2px; font-variant-numeric: tabular-nums; }
 #bQuick .btn { min-height: 40px; font-size: 13px; padding-inline: 4px; }
 .mgrline { display: flex; align-items: center; gap: 10px; }
 .mgrline b { font-size: 16px; overflow-wrap: anywhere; }
@@ -589,6 +593,11 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
       <div class="pad"><div class="pgs" id="pips"></div><p class="note" id="pipNote" style="margin:0"></p></div>
     </div>
     <div class="card" id="bCard" aria-live="polite"></div>
+    <div class="win" id="bComing"><div class="pad cmp">
+      <div class="lbl">Still to come, order hidden</div>
+      <div class="counts" id="bLeft"></div>
+      <p class="warn" id="bWarn" hidden></p>
+    </div></div>
     <div class="win">
       <div class="pad">
         <div class="potrow"><div><span class="lbl" id="potLbl">Pot left</span><span class="money" id="pot"></span></div><div class="r"><span class="lbl">After this bid</span><span class="money" id="potAfter"></span></div></div>
@@ -599,15 +608,12 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
         </div>
         <div class="row" id="bQuick"></div>
         <button class="btn go" id="bLock" type="button">Lock bid</button>
-        <p class="note" id="bNote" style="margin:0"></p>
       </div>
     </div>
     <div class="win" id="bDeckWin">
       <div class="bar"><span>The deck</span><span id="bDeckTag"></span></div>
       <div class="pad">
-        <div class="lbl">Still to come, order hidden</div>
-        <div class="counts" id="bLeft"></div>
-        <p class="warn" id="bWarn" hidden></p>
+        <div class="lbl">Your bids so far</div>
         <div class="bl" id="bLog"></div>
       </div>
     </div>
@@ -2591,19 +2597,17 @@ if (typeof module !== 'undefined') module.exports = AD;
     show('ch'); $('#chTag').textContent = rematch ? 'Rematch' : 'Post a challenge';
     let priv = false;
     body.innerHTML = `<p style="margin:0"><b>${rematch ? 'Rematch set up.' : 'Challenge posted.'}</b> ${rematch ? 'It shows in their Challenge hub, or send them the link.' : ''} It stays open for 48 hours.</p>
-      ${rematch ? '' : `<label class="tgl"><input type="checkbox" data-k="priv"><span><b>Private challenge</b><small data-k="pt"></small></span></label>`}
+      ${rematch ? '' : `<label class="tgl"><input type="checkbox" data-k="priv"><span><b>Private challenge</b><small>Ticked: only people with your link can accept it. Unticked: it is listed in Open challenges and anyone can accept it.</small></span></label>`}
       <div class="linkbox">${esc(linkOf(d.id))}</div>
       <button class="btn go" type="button" data-a="share">Share the link</button>
       <button class="btn" type="button" data-a="bid">Enter Auction</button>
       <div class="row"><button class="btn" type="button" data-a="hub">Challenge hub</button><button class="btn bin" type="button" data-a="del" aria-label="Delete this challenge" title="Delete">${BIN}</button></div>
       <p class="note" style="margin:0" data-k="en"></p>`;
-    const pt = body.querySelector('[data-k=pt]'), say = () => { if (pt) pt.textContent = priv ? 'Only people with your link can accept it.' : 'Listed in Open challenges. Anyone can accept it, and the link works too.'; };
-    say();
     const tg = body.querySelector('[data-k=priv]');
     if (tg) tg.onchange = async () => {
       tg.disabled = true;
       try { await chPost('post', { id: d.id, on: !tg.checked }); priv = tg.checked; } catch (er) { tg.checked = priv; body.querySelector('[data-k=en]').textContent = er.message; }
-      tg.disabled = false; say();
+      tg.disabled = false;
     };
     body.querySelector('[data-a=share]').onclick = ev => shareLink(d.id, ev.currentTarget);
     body.querySelector('[data-a=bid]').onclick = () => openChallenge(d.id);
@@ -2777,9 +2781,6 @@ if (typeof module !== 'undefined') module.exports = AD;
     $('#potLbl').textContent = gk ? 'Keeper pot left' : 'Outfield pot left';
     $('#pot').textContent = fmt(st.pot);
     $('#bCard').innerHTML = `<div class="pos">${gk ? 'GOALKEEPER' : p.pos + (p.sec ? ' / ' + p.sec : '')}</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div>`;
-    $('#bNote').textContent = gk
-      ? (st.i === 0 ? 'Keepers first, from a separate £5m pot. You sign one. Four keepers are coming up.' : `${left} keeper${left === 1 ? '' : 's'} still to come after this one.`)
-      : (st.i === 0 ? 'Keepers done. Now the outfield: £20m for four players from 15 cards. A team fits at most two of one position.' : `${left} card${left === 1 ? '' : 's'} still to come after this one. You need four outfielders.`);
     const quick = [...new Set([0, 1, 2, 3, ...(gk ? [] : [5]), st.pot])].filter(v => v <= st.pot);
     $('#bQuick').innerHTML = quick.map(v => `<button class="btn" type="button" data-v="${v}">${v === st.pot && v > 3 ? 'All ' : ''}${fmt(v)}</button>`).join('');
     $('#bQuick').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { bVal = +b.dataset.v; drawBid(); });
