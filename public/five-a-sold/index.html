@@ -258,6 +258,26 @@ table.wt th:nth-child(3), table.wt td:nth-child(3) { text-align: right; white-sp
 .pad9 .btn.down { border-color: var(--panel-lo) var(--panel-hi) var(--panel-hi) var(--panel-lo); background: var(--well); }
 .pad9 .btn.go.down { background: #2c3d86; }
 .pad9 .btn.go, .pad9 .btn.del { font-size: 16px; }
+.mk-card { padding: 8px 12px 10px; }
+.mk-card .pos { font-size: 17px; } .mk-card .nm { font-size: 30px; line-height: 1.05; overflow-wrap: anywhere; } .mk-card .meta { font-size: 18px; }
+.mk-card .pr { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; font-family: var(--f-crt); }
+.mk-card .pr b { font-weight: normal; color: var(--amber); font-size: 40px; line-height: 1; }
+.mk-card .pr span { color: var(--cyan); font-size: 20px; }
+.mk-card .lose { font-family: var(--f-crt); font-size: 18px; color: var(--crt-dim); min-height: 18px; }
+.pitches { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pt { border: 2px solid #fff; background: repeating-linear-gradient(0deg, #2f7d3c 0 30px, #2a7236 30px 60px); display: grid; grid-template-rows: auto repeat(4, 54px); position: relative; min-width: 0; }
+.pt::after { content: ''; position: absolute; left: 0; right: 0; top: 24px; border-top: 2px solid rgba(255,255,255,.45); }
+.pt .tm { font: bold 11px var(--f-ui); color: #fff; text-transform: uppercase; letter-spacing: .05em; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,.4); padding: 3px 6px; min-width: 0; }
+.pt .tm span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pt .tm .f { color: var(--amber); margin-left: 6px; }
+.pt .ln { display: flex; justify-content: space-evenly; align-items: center; z-index: 1; }
+.sl { display: grid; justify-items: center; width: 58px; line-height: 1.05; }
+.sl .n { font: bold 10.5px var(--f-ui); color: #fff; text-shadow: 0 1px 2px #000; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sl .m { font: bold 10px var(--f-ui); color: #ffe27a; text-shadow: 0 1px 2px #000; }
+.sl.new svg { filter: drop-shadow(0 0 5px #ffe27a); }
+.sl.ph .g { width: 26px; height: 24px; border: 2px dashed rgba(255,255,255,.7); border-radius: 6px; display: grid; place-items: center; font: bold 8px var(--f-ui); color: rgba(255,255,255,.85); }
+.tlines { display: grid; gap: 4px; }
+.tlines p { font: 13px var(--f-ui); color: #e8f2e0; margin: 0; padding: 0 4px; }
 .pips { display: flex; gap: 3px; flex-wrap: wrap; }
 .pips i { flex: 1 1 0; min-width: 10px; height: 10px; background: var(--well); border: 1px solid var(--panel-lo); }
 .pips i.done { background: var(--navy); }
@@ -577,20 +597,18 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
   </section>
 
   <section class="screen" id="chShow" hidden>
+    <div class="card mk-card" id="rvCard" aria-live="polite"></div>
     <div class="win">
       <div class="bar"><span id="rvStage">The reveal</span><span id="rvCount"></span></div>
-      <div class="pad">
-        <div class="sides" id="rvSides"></div>
-      </div>
+      <div class="pad"><div class="pitches" id="rvBoard"></div></div>
     </div>
-    <div class="card" id="rvCard" aria-live="polite"></div>
     <div class="win">
       <div class="pad">
-        <div class="row"><button class="btn go" id="rvNext" type="button">Next card</button><button class="btn" id="rvAll" type="button">Reveal all</button></div>
+        <div class="row"><button class="btn go" id="rvNext" type="button">Next</button><button class="btn" id="rvAll" type="button">All</button></div>
         <button class="btn go" id="rvKick" type="button" hidden>Kick off</button>
       </div>
     </div>
-    <div class="log" id="rvLog" aria-label="Reveal log"></div>
+    <div class="tlines" id="rvTie" aria-live="polite"></div>
   </section>
 
   <section class="screen" id="chLeague" hidden>
@@ -1456,7 +1474,7 @@ const AD = (() => {
         if (taken.has(idx) || have[i] >= maxHave) return;
         taken.add(idx); have[i]++;
         const other = E[1 - i][kind][idx];
-        log.push({ kind, idx, id: ids[idx], win: i, price: Math.min(b, Math.max(1, other + 1)), bids: [E[0][kind][idx], E[1][kind][idx]], how: ties[idx] ? ties[idx].how : other > 0 ? 'bid' : 'only' });
+        log.push({ kind, idx, id: ids[idx], win: i, price: other > 0 ? Math.min(b, other + 1) : b, bids: [E[0][kind][idx], E[1][kind][idx]], how: ties[idx] ? ties[idx].how : other > 0 ? 'bid' : 'only' });
         squad[i].push(ids[idx]);
       });
       // anyone short takes the lowest rated cards left, £1 each; whoever needs more goes first, then a coin
@@ -2740,70 +2758,75 @@ if (typeof module !== 'undefined') module.exports = AD;
     });
   })();
 
-  // ---------- the reveal, card by card, then the match
+  // ---------- the reveal: signings in position order (each side's in turn), filling a pitch per team in the formation they will play
   let RV = null;
+  const POS_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 }, STAGE = { GK: 'Keepers', DEF: 'Defenders', MID: 'Midfielders', FWD: 'Forwards' };
+  const PARTS = new Set(['de', 'di', 'da', 'dos', 'del', 'van', 'von', 'le', 'la', 'el', 'al', 'der', 'den', 'ter', 'ten', 'mc', 'mac']);
+  function shortName(n) { const w = n.trim().split(/\s+/); let k = w.length - 1; while (k > 0 && PARTS.has(w[k - 1].toLowerCase())) k--; return w.slice(k).join(' '); }
   async function openResult(id) {
     stopPoll(); show('ch'); $('#chTag').textContent = 'Result';
     const body = $('#chBody'); body.innerHTML = '<p class="note">Loading the result...</p>';
     let R; try { R = await chPost('result', { id }); } catch (e) { return errBox(body, e.message, () => openResult(id)); }
-    const m = R.match, me = R.side, nm = i => i === me ? 'You' : m.names[i];
-    const steps = [{ trivia: true }];
-    ['gk', 'out'].forEach(kind => R.deck[kind].forEach((pid, idx) => steps.push({ kind, idx, id: pid, L: m.log.find(l => l.kind === kind && l.idx === idx) })));
-    RV = { R, steps, i: 0, nm, got: [[], []] };
+    const m = R.match, me = R.side, op = 1 - me;
+    const sq = m.squads.map(ids => ids.map(i => AD.players[i]));
+    const lus = sq.map(s => AD.lineup(s));
+    const steps = m.log.map(L => ({ L, p: AD.players[L.id] }))
+      .sort((a, b) => POS_ORDER[a.p.pos] - POS_ORDER[b.p.pos] || (a.L.win === me ? 0 : 1) - (b.L.win === me ? 0 : 1) || a.L.idx - b.L.idx);
+    RV = { R, steps, i: 0, lus, seen: [new Set(), new Set()], paid: {}, me, op, ties: [] };
+    steps.forEach(x => { RV.paid[x.p.id] = x.L.price; });
     show('chShow');
-    $('#rvLog').innerHTML = ''; $('#rvKick').hidden = true; $('#rvNext').hidden = false; $('#rvAll').hidden = false;
-    rvDraw(); rvStep();
+    $('#rvNext').hidden = false; $('#rvAll').hidden = false; $('#rvKick').hidden = true; $('#rvTie').innerHTML = '';
+    const nm = i => i === me ? 'You' : m.names[i];
+    $('#rvStage').textContent = 'The reveal'; $('#rvCount').textContent = `${steps.length} signings`;
+    $('#rvCard').innerHTML = `<div class="pos">THE REVEAL</div><div class="nm">${esc(nm(me))} v ${esc(nm(op))}</div><div class="meta">Tap Next to reveal the signings</div>`;
+    rvBoard(null);
   }
-  function rvDraw() {
-    const { R, got } = RV, m = R.match, me = R.side;
-    $('#rvSides').innerHTML = [me, 1 - me].map(i => {
-      const sp = got[i].reduce((a, x) => a + x.price, 0);
-      return `<div class="side"><div class="side-head"><span class="side-name">${shirt(m.homeKits[i], '', 18)} ${esc(i === me ? 'You' : m.names[i])}</span><span class="note">${fmt(sp)}</span></div>
-      <div class="slots">${got[i].map(x => `<div class="slot"><span class="pos">${x.p.pos}</span><span class="nm">${esc(x.p.n)}</span><span>${fmt(x.price)}</span></div>`).join('') || '<div class="slot empty"><span></span><span>No signings yet</span><span></span></div>'}</div></div>`;
+  function rvBoard(newId) {
+    const { R, lus, seen, paid, me, op } = RV, m = R.match;
+    $('#rvBoard').innerHTML = [me, op].map(i => {
+      const lu = lus[i], row = (line) => lu.slots.filter(x => x.line === line).map(x => x.p);
+      const tok = (p, pos) => seen[i].has(p.id)
+        ? `<div class="sl${p.id === newId ? ' new' : ''}">${shirt(m.kits[i], '', 28)}<span class="n">${esc(shortName(p.n))}</span><span class="m">${fmt(paid[p.id])}</span></div>`
+        : `<div class="sl ph"><div class="g">${pos}</div></div>`;
+      const rows = [['FWD', row('FWD')], ['MID', row('MID')], ['DEF', row('DEF')], ['GK', [lu.gk]]].map(([pos, ps]) => `<div class="ln">${ps.map(p => tok(p, pos)).join('')}</div>`).join('');
+      return `<div class="pt"><div class="tm"><span>${esc(i === me ? 'You' : m.names[i])}</span><span class="f">${lu.shape}</span></div>${rows}</div>`;
     }).join('');
   }
-  function rvLine(t) { const d = document.createElement('div'); d.textContent = t; $('#rvLog').appendChild(d); $('#rvLog').scrollTop = 1e6; }
+  function tieLine(x) {
+    const { R, me, op } = RV, m = R.match, t = m.trivia, L = x.L, w = L.win, nm = i => i === me ? 'You' : m.names[i];
+    const who = nm(w), born = `${AD.players[t.id].n} was born in ${t.born}.`, said = `You said ${t.years[me]}, ${m.names[op]} said ${t.years[op]}.`;
+    if (L.how === 'trivia') return `${who} ${w === me ? 'win' : 'wins'} the tiebreak. ${born} ${said}`;
+    if (L.how === 'budget') return `${who} ${w === me ? 'win' : 'wins'} the tiebreak on money left. ${born} ${said}`;
+    return `${who} ${w === me ? 'win' : 'wins'} the tiebreak on a coin toss. ${born} ${said}`;
+  }
+  const isTie = x => ['trivia', 'budget', 'coin'].includes(x.L.how);
   function rvStep() {
-    const { R, steps, nm, got } = RV, m = R.match, me = R.side, op = 1 - me;
+    const { R, steps, me, op } = RV, m = R.match;
     if (RV.i >= steps.length) return rvEnd();
-    const s = steps[RV.i++];
-    $('#rvCount').textContent = `${RV.i} of ${steps.length}`;
-    if (s.trivia) {
-      const t = m.trivia, p = AD.players[t.id];
-      $('#rvStage').textContent = 'Tiebreak question';
-      $('#rvCard').innerHTML = `<div class="pos">BORN IN ${t.born}</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div>
-        <div class="rvbids"><div>You: ${t.years[me]}</div><div>${esc(m.names[op])}: ${t.years[op]}</div></div><div class="rvhow">Only used if bids are level</div>`;
-      rvLine(`Tiebreak: ${p.n} was born in ${t.born}. You said ${t.years[me]}, ${m.names[op]} said ${t.years[op]}.`);
-      return;
-    }
-    const p = AD.players[s.id], L = s.L, bids = [m.entries[0][s.kind][s.idx], m.entries[1][s.kind][s.idx]];
-    $('#rvStage').textContent = s.kind === 'gk' ? `Keeper ${s.idx + 1} of ${R.deck.gk.length}` : `Outfield ${s.idx + 1} of ${R.deck.out.length}`;
-    let how = 'Unsold';
-    if (L) {
-      const who = L.win === me ? 'You sign' : `${m.names[L.win]} signs`;
-      how = L.how === 'fill' ? `${who} him to fill a gap: ${fmt(L.price)}`
-        : L.how === 'trivia' ? `Level bids. ${nm(L.win)} ${L.win === me ? 'win' : 'wins'} on the tiebreak: ${fmt(L.price)}`
-        : L.how === 'budget' ? `Level bids, level tiebreak. ${nm(L.win)} ${L.win === me ? 'have' : 'has'} more money left: ${fmt(L.price)}`
-        : L.how === 'coin' ? `Level all round. ${nm(L.win)} ${L.win === me ? 'win' : 'wins'} the coin toss: ${fmt(L.price)}`
-        : `${who} him for ${fmt(L.price)}`;
-      got[L.win].push({ p, price: L.price });
-    }
-    const won = i => L && L.win === i ? ' class="won"' : '';
+    const x = steps[RV.i++], p = x.p, L = x.L, w = L.win, l = 1 - w, nm = i => i === me ? 'You' : m.names[i];
+    RV.seen[w].add(p.id);
+    $('#rvStage').textContent = STAGE[p.pos]; $('#rvCount').textContent = `${RV.i} of ${steps.length}`;
+    const lb = L.bids[l];
+    const lose = L.how === 'fill' && !L.bids[0] && !L.bids[1] ? 'Nobody bid on him' : lb > 0 ? `${nm(l)} bid ${fmt(lb)}` : `${nm(l)} did not bid`;
     $('#rvCard').innerHTML = `<div class="pos">${p.pos}${p.sec ? ' / ' + p.sec : ''} · RATED ${p.ovr}</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div>
-      <div class="rvbids"><div${won(me)}>You bid ${fmt(bids[me])}</div><div${won(op)}>${esc(m.names[op])} ${fmt(bids[op])}</div></div><div class="rvhow">${esc(how)}</div>`;
-    rvLine(`${p.n} (${p.pos} ${p.ovr}): you ${fmt(bids[me])}, ${m.names[op]} ${fmt(bids[op])}. ${how}.`);
-    rvDraw();
+      <div class="pr"><span>${esc(nm(w))}</span><b>${fmt(L.price)}</b></div><div class="lose">${esc(lose)}</div>`;
+    $('#rvTie').innerHTML = isTie(x) ? `<p>${esc(tieLine(x))}</p>` : '';
+    rvBoard(p.id);
   }
   function rvEnd() {
-    $('#rvNext').hidden = true; $('#rvAll').hidden = true; $('#rvKick').hidden = false;
-    $('#rvStage').textContent = 'Squads complete'; $('#rvCount').textContent = '';
-    const m = RV.R.match, me = RV.R.side;
-    $('#rvCard').innerHTML = `<div class="pos">TEAMS ARE IN</div><div class="nm">${esc(m.names[m.home])} v ${esc(m.names[1 - m.home])}</div><div class="meta">${m.changed.some(Boolean) ? esc(m.names[m.changed.indexOf(true)]) + ' wear their change strip' : 'No kit clash'}</div>`;
-    rvDraw();
+    const { R, steps, me, op } = RV, m = R.match;
+    steps.forEach(x => RV.seen[x.L.win].add(x.p.id));
+    $('#rvNext').hidden = true; $('#rvAll').hidden = true; $('#rvKick').hidden = false; $('#rvNext').textContent = 'Next';
+    $('#rvStage').textContent = 'Teams are in'; $('#rvCount').textContent = `${steps.length} of ${steps.length}`;
+    const hs = m.home;
+    $('#rvCard').innerHTML = `<div class="pos">SQUADS COMPLETE</div><div class="nm">${esc(m.names[hs])} v ${esc(m.names[1 - hs])}</div><div class="meta">${m.changed.some(Boolean) ? esc(m.names[m.changed.indexOf(true)]) + ' wear their change strip' : 'No kit clash'}</div>`;
+    const ties = steps.filter(isTie);
+    $('#rvTie').innerHTML = ties.map(x => `<p>${esc(tieLine(x))}${ties.length > 1 ? ' (' + esc(x.p.n) + ')' : ''}</p>`).join('');
+    rvBoard(null);
     $('#rvKick').focus();
   }
   $('#rvNext').addEventListener('click', rvStep);
-  $('#rvAll').addEventListener('click', () => { while (RV.i < RV.steps.length) rvStep(); rvEnd(); });
+  $('#rvAll').addEventListener('click', () => rvEnd());
   $('#rvKick').addEventListener('click', () => {
     const R = RV.R, m = R.match, hs = m.home, as = 1 - hs;
     const sq = m.squads.map(ids => ids.map(i => AD.players[i]));
