@@ -624,9 +624,9 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
 
   <section class="screen" id="chTriv" hidden>
     <div class="win">
-      <div class="bar"><span>Tiebreak question</span><span id="tvClock"></span></div>
+      <div class="bar"><span>Tiebreak question</span><span>No time limit</span></div>
       <div class="pad">
-        <div class="timer" id="tvTimer"><i id="tvFill"></i></div>
+        <p style="margin:0"><b>In case bids are equal, the tiebreak winner will win the auction.</b> The closest birth year wins the tiebreak.</p>
       </div>
     </div>
     <div class="card" id="tvCard"></div>
@@ -2757,12 +2757,12 @@ if (typeof module !== 'undefined') module.exports = AD;
   }
 
   // ---------- sealed bidding
-  let B = null, bVal = 0, tvT = null;
+  let B = null, bVal = 0;
   const bKey = id => 'fiveasold.ch.' + id;
-  const bSave = () => ls.set(bKey(B.c.id), { gk: B.gk, out: B.out, tv: B.tv });
+  const bSave = () => ls.set(bKey(B.c.id), { gk: B.gk, out: B.out });
   function startBidding(c) {
     const s = ls.get(bKey(c.id)) || {};
-    B = { c, gk: s.gk || [], out: s.out || [], tv: s.tv || null, opp: c.role === 'creator' ? c.opponent : c.creator };
+    B = { c, gk: s.gk || [], out: s.out || [], opp: c.role === 'creator' ? c.opponent : c.creator };
     bVal = 0; nextBid();
   }
   function bidState() {
@@ -2813,34 +2813,21 @@ if (typeof module !== 'undefined') module.exports = AD;
   $('#bPlus').addEventListener('click', () => { if (bVal < bidState().pot) { bVal++; drawBid(); } });
   $('#bLock').addEventListener('click', () => { const st = bidState(); B[st.kind].push(Math.min(bVal, st.pot)); bSave(); bVal = 0; nextBid(); });
 
-  const TV_MS = 20000;
   function trivia() {
     const p = AD.players[B.c.deck.trivia];
     show('chTriv');
-    if (!B.tv) { B.tv = Date.now(); bSave(); }
     $('#tvCard').innerHTML = `<div class="pos">WHAT YEAR WAS HE BORN?</div><div class="nm">${esc(p.n)}</div><div class="meta">${esc(p.club)} · ${esc(p.season)}</div>`;
-    tvSet(''); $('#tvNote').textContent = 'Level bids go to the closest year. Your bids are sent when you lock in or the 20 seconds end.'; $('#tvPad').querySelectorAll('button').forEach(b => { b.disabled = false; });
+    tvSet(''); $('#tvNote').textContent = 'Your bids are sent when you lock in your answer.'; $('#tvPad').querySelectorAll('button').forEach(b => { b.disabled = false; });
     B.year = null;
-    clearInterval(tvT);
-    const tickTv = () => {
-      const left = Math.max(0, TV_MS - (Date.now() - B.tv));
-      $('#tvClock').textContent = Math.ceil(left / 1000) + 's';
-      $('#tvFill').style.transform = `scaleX(${left / TV_MS})`;
-      $('#tvTimer').classList.toggle('low', left < 5000);
-      if (!left) { clearInterval(tvT); submitEntry(true); }
-    };
-    tickTv(); tvT = setInterval(tickTv, 200);
   }
-  async function submitEntry(timeUp) {
+  async function submitEntry() {
     if (B.year == null) {
       const y = parseInt(tvTyped, 10);
       if (tvTyped.length === 4 && y >= 1900 && y <= 2030) B.year = y;
-      else if (timeUp) B.year = 1900;
       else { $('#tvNote').textContent = 'Enter a year between 1900 and 2030, like 1985.'; return; }
     }
-    clearInterval(tvT);
     $('#tvPad').querySelectorAll('button').forEach(b => { b.disabled = true; });
-    $('#tvNote').textContent = timeUp && B.year === 1900 ? "Time's up. Sending your bids..." : 'Sending your bids...';
+    $('#tvNote').textContent = 'Sending your bids...';
     try {
       const d = await chPost('entry', { id: B.c.id, gk: B.gk, out: B.out, year: B.year });
       ls.del(bKey(B.c.id));
