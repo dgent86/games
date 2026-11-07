@@ -1547,7 +1547,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     { name: 'Yellow and green', p: '#f6d40a', s: '#0b7a3b', t: '#111111', style: 'sleeves' },
     { name: 'All white', p: '#ffffff', s: '#111111', t: '#111111', style: 'plain' }
   ];
-  const KIT_WORDS = { plain: 'Plain', stripes: 'Stripes', hoops: 'Hoops', halves: 'Halves', sleeves: 'Contrast sleeves', pinstripe: 'Pinstripes', sash: 'Sash', quarters: 'Quarters' };
+  const KIT_WORDS = { plain: 'Plain', stripes: 'Stripes', hoops: 'Hoops', halves: 'Halves', sleeves: 'Sleeves', pinstripe: 'Pinstripes', sash: 'Sash', quarters: 'Quarters' };
   const PALETTE = [['Red', '#c8102e'], ['Claret', '#7a1e3a'], ['Orange', '#f26a1b'], ['Amber', '#f5a300'], ['Yellow', '#f6d40a'], ['Green', '#0b7a3b'], ['Lime', '#7cc242'], ['Teal', '#0f8b8d'],
     ['Sky blue', '#7fc4ea'], ['Royal blue', '#1d3fa5'], ['Navy', '#14245e'], ['Purple', '#5b2a86'], ['Pink', '#e87aa6'], ['White', '#ffffff'], ['Grey', '#8a8f98'], ['Black', '#111111']];
   const colName = h => { const n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; let best = PALETTE[0], bd = 1e9; for (const c of PALETTE) { const m = parseInt(c[1].slice(1), 16), d = (r - (m >> 16)) ** 2 + (g - ((m >> 8) & 255)) ** 2 + (b - (m & 255)) ** 2; if (d < bd) { bd = d; best = c; } } return best[0]; };
