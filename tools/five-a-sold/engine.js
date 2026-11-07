@@ -848,7 +848,7 @@ const AD = (() => {
         if (taken.has(idx) || have[i] >= maxHave) return;
         taken.add(idx); have[i]++;
         const other = E[1 - i][kind][idx];
-        log.push({ kind, idx, id: ids[idx], win: i, price: other > 0 ? Math.min(b, other + 1) : b, bids: [E[0][kind][idx], E[1][kind][idx]], how: ties[idx] ? ties[idx].how : other > 0 ? 'bid' : 'only' });
+        log.push({ kind, idx, id: ids[idx], win: i, price: b, bids: [E[0][kind][idx], E[1][kind][idx]], how: ties[idx] ? ties[idx].how : other > 0 ? 'bid' : 'only' });
         squad[i].push(ids[idx]);
       });
       // anyone short takes the lowest rated cards left, £1 each; whoever needs more goes first, then a coin

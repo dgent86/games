@@ -1519,7 +1519,7 @@ const AD = (() => {
         if (taken.has(idx) || have[i] >= maxHave) return;
         taken.add(idx); have[i]++;
         const other = E[1 - i][kind][idx];
-        log.push({ kind, idx, id: ids[idx], win: i, price: other > 0 ? Math.min(b, other + 1) : b, bids: [E[0][kind][idx], E[1][kind][idx]], how: ties[idx] ? ties[idx].how : other > 0 ? 'bid' : 'only' });
+        log.push({ kind, idx, id: ids[idx], win: i, price: b, bids: [E[0][kind][idx], E[1][kind][idx]], how: ties[idx] ? ties[idx].how : other > 0 ? 'bid' : 'only' });
         squad[i].push(ids[idx]);
       });
       // anyone short takes the lowest rated cards left, £1 each; whoever needs more goes first, then a coin
@@ -2499,7 +2499,7 @@ if (typeof module !== 'undefined') module.exports = AD;
   const RULES = `<ul class="rules">
     <li>You both bid on the same cards: 4 keepers, then 15 outfield players, one at a time. Ratings stay hidden.</li>
     <li>Sealed bids in whole £m: £5m for keepers (you sign one), £20m for four outfielders. Every bid comes off your pot, win or lose.</li>
-    <li>Highest bid wins and pays £1m more than the loser, never above his own bid. Ties go to a birth-year question. Then one match decides it.</li>
+    <li>Highest bid wins and pays exactly what he bid. Ties go to a birth-year question. Then one match decides it.</li>
   </ul>`;
 
   // kit picker: presets, your own colours and pattern, and an optional change strip
