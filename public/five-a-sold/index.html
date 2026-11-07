@@ -2600,7 +2600,7 @@ if (typeof module !== 'undefined') module.exports = AD;
     show('ch'); $('#chTag').textContent = rematch ? 'Rematch' : 'Post a challenge';
     let priv = false;
     body.innerHTML = `<p style="margin:0"><b>${rematch ? 'Rematch set up.' : 'Challenge posted.'}</b> ${rematch ? 'It shows in their Challenge hub, or send them the link.' : ''} It stays open for 48 hours.</p>
-      ${rematch ? '' : `<label class="tgl"><input type="checkbox" data-k="priv"><span><b>Private challenge</b><small>Ticked: only people with your link can accept it. Unticked: it is listed in Open challenges and anyone can accept it.</small></span></label>`}
+      ${rematch ? '' : `<label class="tgl"><input type="checkbox" data-k="priv"><span><b>Private challenge</b><small>Only people with your link can accept it</small></span></label>`}
       <div class="linkbox">${esc(linkOf(d.id))}</div>
       <button class="btn go" type="button" data-a="share">Share the link</button>
       <button class="btn" type="button" data-a="bid">Enter Auction</button>
