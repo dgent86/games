@@ -319,7 +319,7 @@ async function api(fn, request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons|records|wcf_submit|wcf_nations|wcf_board|fas_(?:signup|recover|logout|me|kit|newcode|new|get|join|entry|result|h2h|league|post|board|remove))\/?$/);
+    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons|records|wcf_submit|wcf_nations|wcf_board|fas_(?:signup|recover|logout|me|kit|newcode|new|get|join|entry|result|h2h|league|post|board|remove|seen))\/?$/);
     if (m) {
       try { return await api(m[1], request, env); }
       catch (e) { return json({ message: 'Server error' }, 500); }

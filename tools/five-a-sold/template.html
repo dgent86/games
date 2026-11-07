@@ -1658,16 +1658,16 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
       const bin = r.mine && !r.opp && !r.entered ? `<button class="btn bin" type="button" data-del="${r.id}" aria-label="Delete this challenge" title="Delete">${BIN}</button>` : '';
       return `<div><b>${what}</b><em class="acts">${btn}${bin}</em><span>${sub} · ${leftTxt(r.expires_at)}</span></div>`;
     };
-    const res = r => { const o = r.gf > r.ga ? ['w', 'W'] : r.gf === r.ga ? ['', 'D'] : ['l', 'L']; return `<div><b><span class="${o[0]}">${o[1]}</span> ${r.gf}-${r.ga} v ${esc(r.opp)}</b><button class="btn" type="button" data-res="${r.id}">View</button><span>${new Date(r.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span></div>`; };
+    const res = r => { if (!r.seen) return `<div><b>Result ready</b><button class="btn go" type="button" data-res="${r.id}">Watch</button><span>v ${esc(r.opp)} · Watch the draw and the match to see the score</span></div>`; const o = r.gf > r.ga ? ['w', 'W'] : r.gf === r.ga ? ['', 'D'] : ['l', 'L']; return `<div><b><span class="${o[0]}">${o[1]}</span> ${r.gf}-${r.ga} v ${esc(r.opp)}</b><button class="btn" type="button" data-res="${r.id}">View</button><span>${new Date(r.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span></div>`; };
     const rc = d.rec || { p: 0 };
     const recLine = rc.p ? `Played ${rc.p} · Won ${rc.w} · Drawn ${rc.d} · Lost ${rc.l} · ${(rc.pts / rc.p).toFixed(2)} points a game` : 'No matches played yet';
     body.innerHTML = `<div class="mgrline">${shirt(ME.kit, '', 44)}<span><b>${esc(ME.name)}</b><br><span class="note">${recLine}</span></span></div>
       ${flash ? `<p class="note" style="margin:0">${esc(flash)}</p>` : ''}
       <button class="btn go" type="button" data-a="new">Post a challenge<small>Open to anyone, or private to a friend</small></button>
       <button class="btn" type="button" data-a="board">Open challenges<small>Accept a challenge someone has posted</small></button>
-      ${yourMove.length ? `<div class="lbl">Your move</div><div class="chl">${yourMove.map(item).join('')}</div>` : ''}
+      ${yourMove.length || d.recent.some(r => !r.seen) ? `<div class="lbl">Your move</div><div class="chl">${d.recent.filter(r => !r.seen).map(res).join('')}${yourMove.map(item).join('')}</div>` : ''}
       ${waiting.length ? `<div class="lbl">Waiting</div><div class="chl">${waiting.map(item).join('')}</div>` : ''}
-      ${d.recent.length ? `<div class="lbl">Recent results</div><div class="chl">${d.recent.map(res).join('')}</div>` : ''}
+      ${d.recent.some(r => r.seen) ? `<div class="lbl">Recent results</div><div class="chl">${d.recent.filter(r => r.seen).map(res).join('')}</div>` : ''}
       ${!yourMove.length && !waiting.length && !d.recent.length ? '<p class="note" style="margin:0">No challenges yet. Start one and send the link to a friend. It stays open for 48 hours.</p>' : ''}
       <div class="row"><button class="btn" type="button" data-a="league">League table</button><button class="btn" type="button" data-a="acct">Your manager</button></div>
       <details><summary>How it works</summary>${RULES}</details>`;
@@ -2040,6 +2040,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     playMatch({ res, names: ['You', m.names[op]], kits: [m.kits[me], m.kits[op]], done: r => chFinish(R, r) });
   });
   function chFinish(R, res) {
+    chPost('seen', { id: R.id }).catch(() => {});
     const m = R.match, me = R.side, op = 1 - me, g = m.goals, oppName = m.names[op];
     const w = g[me] > g[op] ? 0 : g[me] === g[op] ? 1 : 2;
     $('#chResTag').textContent = ['You win', 'Draw', `${oppName} wins`][w];

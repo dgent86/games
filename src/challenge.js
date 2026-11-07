@@ -48,6 +48,10 @@ export const FAS_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS fas_board (
      challenge_id TEXT PRIMARY KEY,
      created_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS fas_seen (
+     challenge_id TEXT NOT NULL,
+     account_id INTEGER NOT NULL,
+     PRIMARY KEY (challenge_id, account_id))`,
   `CREATE INDEX IF NOT EXISTS fas_ch_creator ON fas_challenges (creator, status)`,
   `CREATE INDEX IF NOT EXISTS fas_ch_opp ON fas_challenges (opponent, status)`,
   `CREATE TABLE IF NOT EXISTS fas_entries (
@@ -144,8 +148,11 @@ async function loadChallenge(env, id) {
 const expired = (c) => c.status !== 'done' && c.expires_at <= Date.now();
 const roleOf = (c, me) => (!me ? 'viewer' : c.creator === me.id ? 'creator' : c.opponent === me.id ? 'invitee' : 'viewer');
 
-async function h2h(env, a, b) {
-  const { results } = await env.DB.prepare(`SELECT challenge_id, gf, ga, pts, created_at FROM fas_results WHERE account_id = ?1 AND opp_id = ?2 ORDER BY created_at DESC`).bind(a, b).all();
+// A result stays hidden from a manager (in records, tables and head to head) until he has watched that match.
+const hiddenFor = (n, col = 'challenge_id') => `${col} NOT IN (SELECT r2.challenge_id FROM fas_results r2 WHERE r2.account_id = ?${n} AND NOT EXISTS (SELECT 1 FROM fas_seen s WHERE s.challenge_id = r2.challenge_id AND s.account_id = ?${n}))`;
+
+async function h2h(env, a, b, except = '') {
+  const { results } = await env.DB.prepare(`SELECT challenge_id, gf, ga, pts, created_at FROM fas_results WHERE account_id = ?1 AND opp_id = ?2 AND (challenge_id = ?3 OR ${hiddenFor(1)}) ORDER BY created_at DESC`).bind(a, b, except).all();
   const t = { p: results.length, w: 0, d: 0, l: 0, gf: 0, ga: 0 };
   for (const r of results) { t.gf += r.gf; t.ga += r.ga; if (r.gf > r.ga) t.w++; else if (r.gf === r.ga) t.d++; else t.l++; }
   return { ...t, last: results.slice(0, 8).map((r) => ({ id: r.challenge_id, gf: r.gf, ga: r.ga, at: r.created_at })) };
@@ -233,8 +240,8 @@ export async function fas(fn, request, env, b) {
     const [open, todo, recent, rec] = await env.DB.batch([
       env.DB.prepare(`SELECT id, status, opponent, for_account, created_at, expires_at, (SELECT count(*) FROM fas_board bd WHERE bd.challenge_id = fas_challenges.id) AS posted, (SELECT count(*) FROM fas_entries e WHERE e.challenge_id = fas_challenges.id AND e.account_id = ?1) AS mine FROM fas_challenges WHERE creator = ?1 AND status != 'done' AND expires_at > ?2 ORDER BY created_at DESC`).bind(me.id, now),
       env.DB.prepare(`SELECT id, creator, status, expires_at, (SELECT count(*) FROM fas_entries e WHERE e.challenge_id = fas_challenges.id AND e.account_id = ?1) AS mine FROM fas_challenges WHERE ((opponent = ?1) OR (status = 'open' AND for_account = ?1)) AND status != 'done' AND expires_at > ?2 ORDER BY created_at DESC`).bind(me.id, now),
-      env.DB.prepare('SELECT challenge_id, opp_id, gf, ga, created_at FROM fas_results WHERE account_id = ?1 ORDER BY created_at DESC LIMIT 12').bind(me.id),
-      env.DB.prepare('SELECT count(*) AS p, coalesce(sum(pts = 3), 0) AS w, coalesce(sum(pts = 1), 0) AS d, coalesce(sum(pts = 0), 0) AS l, coalesce(sum(gf), 0) AS gf, coalesce(sum(ga), 0) AS ga, coalesce(sum(pts), 0) AS pts FROM fas_results WHERE account_id = ?1').bind(me.id),
+      env.DB.prepare('SELECT challenge_id, opp_id, gf, ga, created_at, EXISTS (SELECT 1 FROM fas_seen s WHERE s.challenge_id = fas_results.challenge_id AND s.account_id = ?1) AS seen FROM fas_results WHERE account_id = ?1 ORDER BY created_at DESC LIMIT 12').bind(me.id),
+      env.DB.prepare('SELECT count(*) AS p, coalesce(sum(pts = 3), 0) AS w, coalesce(sum(pts = 1), 0) AS d, coalesce(sum(pts = 0), 0) AS l, coalesce(sum(gf), 0) AS gf, coalesce(sum(ga), 0) AS ga, coalesce(sum(pts), 0) AS pts FROM fas_results WHERE account_id = ?1 AND ' + hiddenFor(1) + '').bind(me.id),
     ]);
     const acc = await accountsByIds(env, [...open.results.flatMap((r) => [r.opponent, r.for_account]), ...todo.results.map((r) => r.creator), ...recent.results.map((r) => r.opp_id)]);
     return reply({
@@ -242,7 +249,7 @@ export async function fas(fn, request, env, b) {
       rec: rec.results[0],
       open: open.results.map((r) => ({ id: r.id, status: r.status, opp: acc[r.opponent]?.name || null, for: acc[r.for_account]?.name || null, created_at: r.created_at, expires_at: r.expires_at, entered: r.mine > 0, posted: r.posted > 0 })),
       todo: todo.results.map((r) => ({ id: r.id, from: acc[r.creator]?.name || '?', status: r.status, expires_at: r.expires_at, entered: r.mine > 0 })),
-      recent: recent.results.map((r) => ({ id: r.challenge_id, opp: acc[r.opp_id]?.name || '?', gf: r.gf, ga: r.ga, at: r.created_at })),
+      recent: recent.results.map((r) => ({ id: r.challenge_id, opp: acc[r.opp_id]?.name || '?', seen: !!r.seen, gf: r.seen ? r.gf : null, ga: r.seen ? r.ga : null, at: r.created_at })),
     });
   }
   if (fn === 'get') {
@@ -320,7 +327,7 @@ export async function fas(fn, request, env, b) {
     let st = {};
     if (results.length) {
       const ids = [...new Set(results.map((r) => r.creator))];
-      const q = await env.DB.prepare(`SELECT account_id, count(*) AS p, sum(pts) AS pts FROM fas_results WHERE account_id IN (${ids.map((_, i) => '?' + (i + 1)).join(',')}) GROUP BY account_id`).bind(...ids).all();
+      const q = await env.DB.prepare(`SELECT account_id, count(*) AS p, sum(pts) AS pts FROM fas_results WHERE account_id IN (${ids.map((_, i) => '?' + (i + 1)).join(',')}) AND ${hiddenFor(ids.length + 1)} GROUP BY account_id`).bind(...ids, me.id).all();
       st = Object.fromEntries(q.results.map((r) => [r.account_id, r]));
     }
     return reply({ rows: results.filter((r) => acc[r.creator]).map((r) => ({ id: r.id, name: acc[r.creator].name, kit: acc[r.creator].kit, p: st[r.creator]?.p || 0, ppg: st[r.creator] ? st[r.creator].pts / st[r.creator].p : null, expires_at: r.expires_at })) });
@@ -354,6 +361,12 @@ export async function fas(fn, request, env, b) {
     }
     return reply({ status: 'waiting' });
   }
+  if (fn === 'seen') {
+    const c = await loadChallenge(env, b.id);
+    if (!c || c.status !== 'done' || ![c.creator, c.opponent].includes(me.id)) return fail('No result here.', 404);
+    await env.DB.prepare('INSERT OR IGNORE INTO fas_seen (challenge_id, account_id) VALUES (?1, ?2)').bind(c.id, me.id).run();
+    return reply({ ok: true });
+  }
   if (fn === 'result') {
     const c = await loadChallenge(env, b.id);
     if (!c || c.status !== 'done' || ![c.creator, c.opponent].includes(me.id)) return fail('No result here.', 404);
@@ -361,7 +374,7 @@ export async function fas(fn, request, env, b) {
     if (!m) return fail('No result here.', 404);
     const data = JSON.parse(m.data);
     const oppId = c.creator === me.id ? c.opponent : c.creator;
-    return reply({ id: c.id, side: c.creator === me.id ? 0 : 1, deck: AD.challengeDeck(c.seed), match: data, h2h: await h2h(env, me.id, oppId) });
+    return reply({ id: c.id, side: c.creator === me.id ? 0 : 1, deck: AD.challengeDeck(c.seed), match: data, h2h: await h2h(env, me.id, oppId, c.id) });
   }
   if (fn === 'h2h') {
     const opp = Number.isInteger(b.opp) ? b.opp : 0;
@@ -372,8 +385,8 @@ export async function fas(fn, request, env, b) {
   if (fn === 'league') {
     const { results } = await env.DB.prepare(`
       SELECT a.id, a.name, a.kit, count(*) AS p, sum(r.pts = 3) AS w, sum(r.pts = 1) AS d, sum(r.pts = 0) AS l, sum(r.gf) AS gf, sum(r.ga) AS ga, sum(r.pts) AS pts
-      FROM fas_results r JOIN fas_accounts a ON a.id = r.account_id GROUP BY a.id
-      ORDER BY (1.0 * sum(r.pts) / count(*)) DESC, (sum(r.gf) - sum(r.ga)) DESC, sum(r.gf) DESC, a.name LIMIT 300`).all();
+      FROM fas_results r JOIN fas_accounts a ON a.id = r.account_id WHERE ${hiddenFor(1, 'r.challenge_id')} GROUP BY a.id
+      ORDER BY (1.0 * sum(r.pts) / count(*)) DESC, (sum(r.gf) - sum(r.ga)) DESC, sum(r.gf) DESC, a.name LIMIT 300`).bind(me.id).all();
     return reply({ me: me.id, min: 4, rows: results.map((r) => ({ ...r, kit: JSON.parse(r.kit), ppg: r.pts / r.p })) });
   }
   return fail('Not found', 404);
