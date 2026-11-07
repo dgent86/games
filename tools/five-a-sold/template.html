@@ -678,23 +678,25 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
     if (k.style === 'hoops') return `repeating-linear-gradient(180deg, ${k.p} 0 3px, ${k.s} 3px 6px)`;
     if (k.style === 'halves') return `linear-gradient(90deg, ${k.p} 0 50%, ${k.s} 50%)`;
     if (k.style === 'pinstripe') return `repeating-linear-gradient(90deg, ${k.p} 0 5px, ${k.s} 5px 6px)`;
-    if (k.style === 'sash') return `linear-gradient(135deg, ${k.p} 0 38%, ${k.s} 38% 62%, ${k.p} 62%)`;
+    if (k.style === 'sash') return `linear-gradient(115deg, ${k.p} 0 43%, ${k.s} 43% 57%, ${k.p} 57%)`;
     if (k.style === 'quarters') return `conic-gradient(${k.s} 0 25%, ${k.p} 0 50%, ${k.s} 0 75%, ${k.p} 0)`;
     return k.p;
   }
   let pid = 0;
   function shirt(k, label, size) {
-    size = size || 30; const id = 'pt' + (pid++); let fill = k.p, defs = '';
-    if (k.style === 'stripes') { defs = `<defs><pattern id="${id}" width="8" height="40" patternUnits="userSpaceOnUse"><rect width="4" height="40" fill="${k.p}"/><rect x="4" width="4" height="40" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
-    if (k.style === 'hoops') { defs = `<defs><pattern id="${id}" width="40" height="8" patternUnits="userSpaceOnUse"><rect width="40" height="4" fill="${k.p}"/><rect y="4" width="40" height="4" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
+    size = size || 30; const id = 'pt' + (pid++); let fill = k.p, defs = '', ov = '';
+    const D = 'M12 4 L4 9 L7 16 L11 14 L11 36 L29 36 L29 14 L33 16 L36 9 L28 4 Q20 9 12 4 Z';
+    // The body runs x 11 to 29, so patterns are anchored there and divide it evenly: 5 stripes, 6 pinstripes, 6 hoops.
+    if (k.style === 'stripes') { defs = `<defs><pattern id="${id}" x="11" y="0" width="7.2" height="40" patternUnits="userSpaceOnUse"><rect width="3.6" height="40" fill="${k.p}"/><rect x="3.6" width="3.6" height="40" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
+    if (k.style === 'pinstripe') { defs = `<defs><pattern id="${id}" x="11" y="0" width="3" height="40" patternUnits="userSpaceOnUse"><rect width="3" height="40" fill="${k.p}"/><rect x="1.1" width="0.8" height="40" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
+    if (k.style === 'hoops') { defs = `<defs><pattern id="${id}" x="0" y="14" width="40" height="7.333" patternUnits="userSpaceOnUse"><rect width="40" height="3.667" fill="${k.p}"/><rect y="3.667" width="40" height="3.667" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
     if (k.style === 'halves') { defs = `<defs><linearGradient id="${id}" x1="0" x2="1" y1="0" y2="0"><stop offset=".5" stop-color="${k.p}"/><stop offset=".5" stop-color="${k.s}"/></linearGradient></defs>`; fill = `url(#${id})`; }
-    if (k.style === 'pinstripe') { defs = `<defs><pattern id="${id}" width="6" height="40" patternUnits="userSpaceOnUse"><rect width="6" height="40" fill="${k.p}"/><rect x="2.5" width="1.2" height="40" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
-    if (k.style === 'sash') { defs = `<defs><linearGradient id="${id}" x1="0" x2="1" y1="0" y2="1"><stop offset=".36" stop-color="${k.p}"/><stop offset=".36" stop-color="${k.s}"/><stop offset=".64" stop-color="${k.s}"/><stop offset=".64" stop-color="${k.p}"/></linearGradient></defs>`; fill = `url(#${id})`; }
     if (k.style === 'quarters') { defs = `<defs><pattern id="${id}" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="${k.p}"/><rect width="20" height="20" fill="${k.s}"/><rect x="20" y="20" width="20" height="20" fill="${k.s}"/></pattern></defs>`; fill = `url(#${id})`; }
+    if (k.style === 'sash') { defs = `<defs><clipPath id="${id}"><path d="${D}"/></clipPath></defs>`; ov = `<g clip-path="url(#${id})"><polygon points="10,2 15.5,2 33,38 27.5,38" fill="${k.s}"/></g><path d="${D}" fill="none" stroke="#222" stroke-width="1"/>`; }
     const sl = k.style === 'sleeves' ? `<path d="M12 4 L4 9 L7 16 L11 14 Z M28 4 L36 9 L33 16 L29 14 Z" fill="${k.s}" stroke="#222" stroke-width="1"/>` : '';
     const st = ['stripes', 'hoops', 'halves', 'pinstripe', 'sash', 'quarters'].includes(k.style);
     const tx = label ? `<text x="20" y="27" text-anchor="middle" font-family="Verdana,sans-serif" font-size="9" font-weight="bold" fill="${st ? '#111' : k.t}" ${st ? 'stroke="#fff" stroke-width="3" paint-order="stroke"' : ''}>${esc(label)}</text>` : '';
-    return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true">${defs}<path d="M12 4 L4 9 L7 16 L11 14 L11 36 L29 36 L29 14 L33 16 L36 9 L28 4 Q20 9 12 4 Z" fill="${fill}" stroke="#222" stroke-width="1"/>${sl}${tx}</svg>`;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" aria-hidden="true">${defs}<path d="${D}" fill="${fill}" stroke="#222" stroke-width="1"/>${ov}${sl}${tx}</svg>`;
   }
   const initials = n => n === 'Free agent' ? 'FA' : n.split(/[\s-]+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
   function managerPic(m) {
