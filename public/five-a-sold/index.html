@@ -322,6 +322,8 @@ table.tsm td.hi { font-weight: bold; }
 .pal button[aria-pressed=true] { outline: 3px solid var(--navy); outline-offset: 1px; }
 .pal label { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
 .pal input[type=color] { width: 56px; height: 32px; border: 2px solid var(--panel-lo); padding: 0; background: #fff; }
+.onhub #chHub { display: none; }
+.foot2 > .btn { flex: 1 1 0; min-width: 0; font-size: 14px; }
 .tgl { display: flex; gap: 10px; align-items: center; background: var(--well); padding: 8px 10px; }
 .tgl input { width: 26px; height: 26px; flex: none; }
 .tgl small { display: block; font-size: 12px; color: var(--muted); }
@@ -527,7 +529,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
         <div class="row"><button class="btn" id="chStatsBtn" type="button" aria-expanded="false">Match stats</button><button class="btn" id="chToLeague" type="button">League table</button></div>
         <div id="chStats" hidden></div>
         <button class="btn go" id="chRematch" type="button">Rematch</button>
-        <button class="btn" id="chToHub" type="button">Challenge hub</button>
+        <button class="btn" id="chToHub" type="button">Back to Challenge Hub</button>
       </div>
     </div>
     <div class="win" id="campWin" hidden>
@@ -585,7 +587,7 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
       <div class="bar"><span>Challenge a friend</span><span id="chTag">Head to head</span></div>
       <div class="pad" id="chBody"><p class="note">Loading...</p></div>
     </div>
-    <button class="btn" id="chHome" type="button">Back to the title screen</button>
+    <div class="row foot2"><button class="btn" id="chHub" type="button">Back to Challenge Hub</button><button class="btn" id="chHome" type="button">Back to the title screen</button></div>
   </section>
 
   <section class="screen" id="chBid" hidden>
@@ -659,9 +661,9 @@ table.cl td.nm { max-width: 140px; overflow: hidden; text-overflow: ellipsis; wh
         <p class="note" id="lgNote" style="margin:0"></p>
         <div style="overflow-x:auto"><table class="lt cl" id="lgTable"></table></div>
         <div id="lgBelow"></div>
-        <button class="btn" id="lgBack" type="button">Back</button>
       </div>
     </div>
+    <div class="row foot2"><button class="btn" id="lgBack" type="button">Back to Challenge Hub</button><button class="btn" id="lgHome" type="button">Back to the title screen</button></div>
   </section>
   <footer class="sitefoot"><a href="https://dangent.uk/">More games at dangent.uk</a></footer>
 </div>
@@ -1589,7 +1591,7 @@ if (typeof module !== 'undefined') module.exports = AD;
   const HUMAN_KIT = { p: '#111111', s: '#ffffff', t: '#ffffff', style: 'stripes' };
   let G = null, C = null, tmr = null, tick = null, speed = 'normal', playToken = 0;
 
-  function show(id) { document.querySelectorAll('.screen').forEach(s => { s.hidden = s.id !== id; }); window.scrollTo(0, 0); }
+  function show(id) { document.querySelectorAll('.screen').forEach(s => { s.hidden = s.id !== id; }); const c = document.getElementById('ch'); if (c) c.classList.remove('onhub'); window.scrollTo(0, 0); }
   function kitBg(k) {
     if (k.style === 'stripes') return `repeating-linear-gradient(90deg, ${k.p} 0 12px, ${k.s} 12px 24px)`;
     if (k.style === 'sleeves') return `linear-gradient(90deg, ${k.s} 0 14%, ${k.p} 14% 86%, ${k.s} 86%)`;
@@ -2491,8 +2493,8 @@ if (typeof module !== 'undefined') module.exports = AD;
     try { await navigator.clipboard.writeText(url); btn.textContent = 'Link copied'; } catch (_) { btn.textContent = 'Copy the link above'; }
   }
   const errBox = (body, msg, retry) => {
-    body.innerHTML = `<p class="err">${esc(msg)}</p><div class="row"><button class="btn" type="button" data-a="retry">Try again</button><button class="btn" type="button" data-a="hub">Challenge hub</button></div>`;
-    body.querySelector('[data-a=retry]').onclick = retry; body.querySelector('[data-a=hub]').onclick = () => openHub();
+    body.innerHTML = `<p class="err">${esc(msg)}</p><div class="row"><button class="btn" type="button" data-a="retry">Try again</button></div>`;
+    body.querySelector('[data-a=retry]').onclick = retry;
   };
   const RULES = `<ul class="rules">
     <li>You both bid on the same cards: 4 keepers, then 15 outfield players, one at a time. Ratings stay hidden.</li>
@@ -2552,7 +2554,7 @@ if (typeof module !== 'undefined') module.exports = AD;
   // ---------- hub
   const BIN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>';
   async function openHub(flash) {
-    stopPoll(); show('ch'); $('#chTag').textContent = 'Head to head';
+    stopPoll(); show('ch'); $('#ch').classList.add('onhub'); $('#chTag').textContent = 'Head to head';
     const body = $('#chBody'); body.innerHTML = '<p class="note">Loading...</p>';
     let d; try { d = await chPost('me'); } catch (e) { return errBox(body, e.message, () => openHub(flash)); }
     ME = d.me;
@@ -2602,7 +2604,7 @@ if (typeof module !== 'undefined') module.exports = AD;
       <div class="linkbox">${esc(linkOf(d.id))}</div>
       <button class="btn go" type="button" data-a="share">Share the link</button>
       <button class="btn" type="button" data-a="bid">Enter Auction</button>
-      <div class="row"><button class="btn" type="button" data-a="hub">Challenge hub</button><button class="btn bin" type="button" data-a="del" aria-label="Delete this challenge" title="Delete">${BIN}</button></div>
+      <button class="btn" type="button" data-a="del" aria-label="Delete this challenge">${BIN} Delete this challenge</button>
       <p class="note" style="margin:0" data-k="en"></p>`;
     const tg = body.querySelector('[data-k=priv]');
     if (tg) tg.onchange = async () => {
@@ -2612,7 +2614,6 @@ if (typeof module !== 'undefined') module.exports = AD;
     };
     body.querySelector('[data-a=share]').onclick = ev => shareLink(d.id, ev.currentTarget);
     body.querySelector('[data-a=bid]').onclick = () => openChallenge(d.id);
-    body.querySelector('[data-a=hub]').onclick = () => openHub();
     const del = body.querySelector('[data-a=del]');
     del.onclick = async () => {
       if (!del.dataset.sure) { del.dataset.sure = '1'; del.classList.add('go'); del.textContent = 'Delete?'; return; }
@@ -2625,9 +2626,9 @@ if (typeof module !== 'undefined') module.exports = AD;
     let d; try { d = await chPost('board'); } catch (e) { return errBox(body, e.message, openBoard); }
     const row = r => `<div><b class="mgrline" style="gap:8px">${shirt(r.kit, '', 30)}<span>${esc(r.name)}</span></b><button class="btn go" type="button" data-play="${r.id}">Play</button><span>${r.p ? `Played ${r.p} · ${r.ppg.toFixed(2)} points a game` : 'New manager'} · ${leftTxt(r.expires_at)}</span></div>`;
     body.innerHTML = `${d.rows.length ? `<p class="note" style="margin:0">Anyone can take these. First to accept gets the match.</p><div class="chl">${d.rows.map(row).join('')}</div>` : '<p style="margin:0">No open challenges right now. Make one, enter your bids, then post it here.</p>'}
-      <button class="btn" type="button" data-a="refresh">Refresh</button><button class="btn" type="button" data-a="hub">Challenge hub</button>`;
+      <button class="btn" type="button" data-a="refresh">Refresh</button>`;
     body.querySelectorAll('[data-play]').forEach(b => b.onclick = () => openChallenge(b.dataset.play));
-    body.querySelector('[data-a=refresh]').onclick = openBoard; body.querySelector('[data-a=hub]').onclick = () => openHub();
+    body.querySelector('[data-a=refresh]').onclick = openBoard;
   }
 
   // ---------- sign up, recovery code, your manager
@@ -2676,6 +2677,7 @@ if (typeof module !== 'undefined') module.exports = AD;
     ok.onclick = () => { if (PEND) { const id = PEND; PEND = null; openChallenge(id, true); } else openHub(); };
   }
   function accountView(body) {
+    $('#ch').classList.remove('onhub');
     $('#chTag').textContent = 'Your manager';
     body.innerHTML = `<div class="mgrline">${shirt(ME.kit, '', 44)}<span><b>${esc(ME.name)}</b><br><span class="note" data-k="kname">${esc(kitName(ME.kit))}</span></span></div>
       <button class="btn" type="button" data-a="kitopen">Change kit</button>
@@ -2685,7 +2687,7 @@ if (typeof module !== 'undefined') module.exports = AD;
       <button class="btn" type="button" data-a="code">Get a new recovery code</button>
       <p style="margin:0" class="note">The old code stops working straight away.</p>
       <button class="btn" type="button" data-a="out">Sign out of this browser</button>
-      <button class="btn" type="button" data-a="hub">Back</button>`;
+      `;
     let getKit = null;
     body.querySelector('[data-a=kitopen]').onclick = ev => { ev.currentTarget.hidden = true; body.querySelector('[data-k=kbox]').hidden = false; getKit = kitPicker(body.querySelector('[data-k=kp]'), ME.kit); };
     body.querySelector('[data-a=kit]').onclick = async () => {
@@ -2699,7 +2701,6 @@ if (typeof module !== 'undefined') module.exports = AD;
       try { await chPost('logout'); } catch (_) {}
       ls.del(DEVK); ME = null; openHub();
     };
-    body.querySelector('[data-a=hub]').onclick = () => openHub();
   }
 
   // ---------- a single challenge: accept, bid, wait, or see the result
@@ -2708,8 +2709,7 @@ if (typeof module !== 'undefined') module.exports = AD;
     const body = $('#chBody'); body.innerHTML = '<p class="note">Loading...</p>';
     if (!ME) { try { ME = (await chPost('me')).me; } catch (_) {} }
     let c; try { c = await chPost('get', { id }); } catch (e) { return errBox(body, e.message, () => openChallenge(id)); }
-    const back = '<button class="btn" type="button" data-a="hub">Challenge hub</button>';
-    const msg = t => { body.innerHTML = `<p style="margin:0">${t}</p>${back}`; body.querySelector('[data-a=hub]').onclick = () => openHub(); };
+    const msg = t => { body.innerHTML = `<p style="margin:0">${t}</p>`; };
     if (c.status === 'expired') return msg('This challenge has run out. Challenges stay open for 48 hours.');
     if (c.status === 'closed' || c.status === 'taken') return msg(`Someone else has already taken ${esc(c.creator.name)}'s challenge.`);
     if (c.status === 'private') return msg(`This rematch is for ${esc(c.forName)}.`);
@@ -2721,9 +2721,8 @@ if (typeof module !== 'undefined') module.exports = AD;
       body.innerHTML = `<div class="mgrline">${shirt(c.creator.kit, '', 44)}<b>${esc(c.creator.name)} has challenged you</b></div>
         ${h && h.p ? `<div class="well">Head to head: played ${h.p}, won ${h.w}, drawn ${h.d}, lost ${h.l}. Goals ${h.gf}-${h.ga}.</div>` : ''}
         ${RULES}<p class="note" style="margin:0">${leftTxt(c.expires_at)} to play.</p>
-        <button class="btn go" type="button" data-a="acc">Accept the challenge</button>${back}`;
+        <button class="btn go" type="button" data-a="acc">Accept the challenge</button>`;
       body.querySelector('[data-a=acc]').onclick = () => accept(c);
-      body.querySelector('[data-a=hub]').onclick = () => openHub();
       return;
     }
     if (c.entered) return waitingView(c);
@@ -2741,7 +2740,7 @@ if (typeof module !== 'undefined') module.exports = AD;
       ${opp ? `<p style="margin:0">Waiting for ${esc(opp.name)} to lock in their bids. The result shows here, and in your Challenge hub, once they do.</p>`
         : `<p style="margin:0">${c.for ? `Waiting for ${esc(c.for)} to accept the rematch.` : 'Nobody has accepted yet. Send the link to the manager you want to play.'}</p><div class="linkbox">${esc(linkOf(c.id))}</div><button class="btn" type="button" data-a="share">Share the link</button>${c.for ? '' : `<button class="btn go" type="button" data-a="post">${c.posted ? 'Take it off the open board' : 'Post to the open board'}</button><p class="note" style="margin:0" data-k="pn">${c.posted ? 'Anyone can see and accept this challenge.' : 'Let any manager accept it, no link needed.'}</p>`}`}
       <p class="note" style="margin:0">${leftTxt(c.expires_at)}. If it runs out, the challenge disappears.</p>
-      <div class="row"><button class="btn go" type="button" data-a="chk">Check now</button><button class="btn" type="button" data-a="hub">Challenge hub</button></div>`;
+      <div class="row"><button class="btn go" type="button" data-a="chk">Check now</button></div>`;
     const sh = body.querySelector('[data-a=share]'); if (sh) sh.onclick = ev => shareLink(c.id, ev.currentTarget);
     const po = body.querySelector('[data-a=post]');
     if (po) po.onclick = async () => {
@@ -2750,7 +2749,6 @@ if (typeof module !== 'undefined') module.exports = AD;
       catch (e) { po.disabled = false; body.querySelector('[data-k=pn]').textContent = e.message; }
     };
     body.querySelector('[data-a=chk]').onclick = () => openChallenge(c.id);
-    body.querySelector('[data-a=hub]').onclick = () => openHub();
     stopPoll();
     pollT = setInterval(async () => {
       if ($('#ch').hidden) return stopPoll();
@@ -3038,6 +3036,8 @@ if (typeof module !== 'undefined') module.exports = AD;
   $('#lgBack').addEventListener('click', () => openHub());
   $('#chBtn').addEventListener('click', () => openHub());
   $('#chHome').addEventListener('click', () => { stopPoll(); show('title'); });
+  $('#lgHome').addEventListener('click', () => { stopPoll(); show('title'); });
+  $('#chHub').addEventListener('click', () => openHub());
   {
     // Testing: the Challenge button only shows after visiting with ?challenge=1 (remembered on this browser) or after opening a challenge link
     const qs = new URLSearchParams(location.search), CHON = 'fiveasold.chOn';
