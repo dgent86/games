@@ -1466,7 +1466,9 @@ const AD = (() => {
     return h / 4294967296;
   }
   // 15 outfield cards, 4 keepers (3 from the normal deal plus one more) and a trivia player who is not in the deck
-  function challengeDeck(sd) {
+  // `n` limits the pool to the first n cards, so a challenge made before cards were added still deals the same deck
+  function challengeDeck(sd, n) {
+    if (n && n < PLAYERS.length) { const all = PLAYERS; PLAYERS = all.slice(0, n); try { return challengeDeck(sd); } finally { PLAYERS = all; } }
     const keep = seedState; seed(sd);
     const used = new Set(), d = buildDeck(used);
     const out = d.filter(p => p.pos !== 'GK'), gks = d.filter(p => p.pos === 'GK');

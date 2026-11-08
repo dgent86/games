@@ -17,6 +17,11 @@
 import AD from '../tools/five-a-sold/engine.js';
 import DATA from '../tools/five-a-sold/data.json';
 
+// 200 cards were added on 8 Nov 2026 (ids 750 and up). A challenge made before then keeps the original 750-card pool,
+// otherwise its stored bids would point at different players.
+const POOL_CUTOFF = 1794181142017;
+const deckFor = (c) => AD.challengeDeck(c.seed, c.created_at < POOL_CUTOFF ? 750 : 0);
+
 let inited = false;
 const ensure = () => { if (!inited) { AD.init(DATA); inited = true; } };
 
@@ -166,7 +171,7 @@ async function finalize(env, c) {
   const E = results.map((r) => JSON.parse(r.data));
   const acc = await accountsByIds(env, [c.creator, c.opponent]);
   const sides = [acc[c.creator], acc[c.opponent]];
-  const deck = AD.challengeDeck(c.seed);
+  const deck = deckFor(c);
   const R = AD.resolveChallenge(deck, E, c.seed);
   const homeSide = c.home ? 1 : 0, awaySide = 1 - homeSide;
   const mk = AD.matchKits(sides[0].kit, sides[1].kit, homeSide);
@@ -266,7 +271,7 @@ export async function fas(fn, request, env, b) {
     if (status === 'private') return reply({ ...base, creator: { name: base.creator?.name, kit: base.creator?.kit }, forName: base.for });
     const out = { ...base, opponent: acc[c.opponent] ? { id: c.opponent, name: acc[c.opponent].name, kit: acc[c.opponent].kit } : null };
     if (role !== 'viewer') {
-      out.deck = AD.challengeDeck(c.seed);
+      out.deck = deckFor(c);
       out.entered = !!(await env.DB.prepare('SELECT 1 AS x FROM fas_entries WHERE challenge_id = ?1 AND account_id = ?2').bind(c.id, me.id).first());
     }
     if (role === 'creator') out.posted = !!(await env.DB.prepare('SELECT 1 AS x FROM fas_board WHERE challenge_id = ?1').bind(c.id).first());
@@ -374,7 +379,7 @@ export async function fas(fn, request, env, b) {
     if (!m) return fail('No result here.', 404);
     const data = JSON.parse(m.data);
     const oppId = c.creator === me.id ? c.opponent : c.creator;
-    return reply({ id: c.id, side: c.creator === me.id ? 0 : 1, deck: AD.challengeDeck(c.seed), match: data, h2h: await h2h(env, me.id, oppId, c.id) });
+    return reply({ id: c.id, side: c.creator === me.id ? 0 : 1, deck: deckFor(c), match: data, h2h: await h2h(env, me.id, oppId, c.id) });
   }
   if (fn === 'h2h') {
     const opp = Number.isInteger(b.opp) ? b.opp : 0;
