@@ -324,7 +324,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
           <button type="button" data-p="30" aria-pressed="false">30%</button>
           <button type="button" data-p="50" aria-pressed="false">50%</button>
         </div>
-        <label class="bf chk" id="b-zre-wrap" title="Checked: the bio part's ZRE value has not been realised by anyone else, so it's credited here, same as &quot;B100 inc ZRE&quot;. Unchecked: assume that value has already been realised elsewhere (typically kept or sold on by the supplier), so no credit, though the ZRE obligation cost still applies either way."><input type="checkbox" id="b-zre">ZRE tickets on bio part</label>
+        <label class="bf chk" id="b-zre-wrap" title="Checked: the bio part's ZRE value has not been realised by anyone else, so it's credited here. This applies to the B100 row and to the bio part of any blend. Unchecked: assume that value has already been realised elsewhere (typically kept or sold on by the supplier), so no credit, though the ZRE obligation cost still applies either way."><input type="checkbox" id="b-zre">ZRE value included</label>
         <label class="bf chk" id="b-feusold-wrap" title="Checked: you've actually sold or pooled this fuel's FuelEU surplus, so its credit is shown and deducted from the cost. Unchecked: not sold, so no credit is shown. The underlying tCO2e balance is unchanged either way."><input type="checkbox" id="b-feusold">FuelEU surplus sold</label>
       </div>
       <div class="legend">
@@ -433,7 +433,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
       <li><b>Bio blends.</b> Blend % is by mass. The bio part is B100 (FAME) for HSFO, VLSFO and MGO, and mass-balanced bioLNG for LNG. Price, LCV, ETS tonnes, FuelEU balance and ZRE are all linear per tonne, so each is the mass-weighted mix of the two parts. The resulting CI is energy-weighted. Methane slip (LNG) and the scrubber penalty (HSFO) apply to the whole blend. In Rotterdam, the ZRE obligation covers the whole tonne, and the bio part of a B blend earns tickets unless you untick the box to say that value has already been realised elsewhere (typically by the supplier); bioLNG earns none. Market blends are usually quoted as a premium over VLSFO, so check the mixed price against a real quote. At ship level, FuelEU allocation can put the bio energy wholly into the in-scope share; to approximate that on a 50% voyage, set FuelEU scope to 100%.</li>
       <li><b>Separate ETS and FuelEU scope.</b> ETS follows the voyage scope of the emissions. FuelEU can be optimised: bio energy can be allocated wholly to the in-scope share of a ship's energy (BetterSea ruling), so a 50% ETS voyage can carry 100% FuelEU credit on the bio tonnes, up to the in-scope energy available. At 0% on either toggle, that cost or credit drops out. Bio fuel at 0% FuelEU and 0% ETS recovers none of its premium, other than ZRE in Rotterdam.</li>
       <li><b>Antwerp.</b> An EU port, so EU ETS and FuelEU work exactly as in Rotterdam. Dutch ZRE does not apply to fuel supplied in Belgium, so there is no ZRE obligation and no tickets, and B100 shows once, without ZRE. Default prices start equal to Rotterdam, since ARA fuel oil and gasoil prices usually trade close together; set them from a real Antwerp quote. LNG bunkering at Antwerp is more limited than at Rotterdam, so treat TTF plus logistics as an approximation and check it against a real quote.</li>
-      <li><b>Dutch ZRE, Rotterdam only.</b> Every tonne supplied carries the supplier's surrender obligation, LCV × 94 g/MJ × obligation %, passed to the shipowner as a cost (VLSFO: 41.0 × 94 × 2.6% = 0.100 tCO2e × €240 = €24/t). Quoted Rotterdam prices are treated as excluding it. Only B100 generates tickets: LCV × (94 − PoS CI), so B100 inc ZRE nets 2.939 − 0.091 = 2.848 tCO2e × €240 = €683.5/t off its price. B100 exc ZRE generates no tickets but still carries the obligation. bioLNG carries the obligation, since it is physically LNG, and generates no tickets. ZRE does not change with the ETS or FuelEU toggles, because it attaches at Dutch supply, not at the voyage. Full pass-through assumed, with no supplier margin.</li>
+      <li><b>Dutch ZRE, Rotterdam only.</b> Every tonne supplied carries the supplier's surrender obligation, LCV × 94 g/MJ × obligation %, passed to the shipowner as a cost (VLSFO: 41.0 × 94 × 2.6% = 0.100 tCO2e × €240 = €24/t). Quoted Rotterdam prices are treated as excluding it. Only B100 generates tickets: LCV × (94 − PoS CI), so B100 with ZRE value included nets 2.939 − 0.091 = 2.848 tCO2e × €240 = €683.5/t off its price. With it unticked, B100 generates no tickets but still carries the obligation. bioLNG carries the obligation, since it is physically LNG, and generates no tickets. ZRE does not change with the ETS or FuelEU toggles, because it attaches at Dutch supply, not at the voyage. Full pass-through assumed, with no supplier margin.</li>
     </ul>
   </details>
 
@@ -500,9 +500,8 @@ const DATEDLAB={hsfo:"HSFO",vlsfo:"VLSFO",mgo:"MGO",b100:"B100"};
 let priceAt = {};
 function syncMarket(){ for(const k of MKEYS) S[k] = (OV[k]!=null) ? OV[k] : M[k]; }
 syncMarket();
-let view = {port:"rtm",ets:1,feu:1,unit:"vlsfoe",blend:{base:"vlsfo",pct:24,zre:true},feuSold:false,excluded:new Set()};
+let view = {port:"rtm",ets:1,feu:1,unit:"vlsfoe",blend:{base:"vlsfo",pct:24,zre:true},feuSold:true,excluded:new Set()};
 try{ const sb=JSON.parse(localStorage.getItem("bunker.blend")||"null"); if(sb&&["hsfo","vlsfo","mgo","lng"].includes(sb.base)&&sb.pct>=0&&sb.pct<=100) view.blend={base:sb.base,pct:Math.round(sb.pct),zre:sb.zre!==false}; }catch(_){}
-try{ view.feuSold = localStorage.getItem("bunker.feusold")==="1"; }catch(_){}
 const BASENAME={hsfo:"HSFO",vlsfo:"VLSFO",mgo:"MGO",lng:"LNG"};
 const RED_FOSSIL=94;
 
@@ -516,7 +515,6 @@ const FUELS=[
   {id:"lng",name:"LNG (LPDF)",lcv:49.1,wtt:18.5,co2:2.750,ch4:0,n2o:0.00011,bio:false,slip:true},
   {id:"biolng",name:"bioLNG (LPDF)",lcv:49.1,wtt:null,co2:2.750,ch4:0,n2o:0.00011,bio:true,slip:true},
   {id:"b100",name:"B100 (FAME)",lcv:37.2,wtt:null,co2:2.834,ch4:0.00005,n2o:0.00018,bio:true,slip:false},
-  {id:"b100x",base:"b100",name:"B100 exc ZRE",rtmOnly:true,lcv:37.2,wtt:null,co2:2.834,ch4:0.00005,n2o:0.00018,bio:true,slip:false}
 ];
 
 function compute(portKey,etsSc,feuSc){
@@ -525,7 +523,7 @@ function compute(portKey,etsSc,feuSc){
   const out=[];
   for(const f0 of FUELS){
     if(f0.rtmOnly && portKey!=="rtm") continue;
-    const f = (portKey==="rtm" && f0.id==="b100") ? {...f0,name:"B100 inc ZRE"} : f0;
+    const f = (portKey==="rtm" && f0.id==="b100") ? {...f0,name:view.blend.zre?"B100 inc ZRE":"B100 exc ZRE"} : f0;
     let price;
     if(f.id==="lng") price=(S.ttf+P.logistics)*mwhPerT*fx;
     else if(f.id==="biolng") price=(S.ttf+P.logistics+P.bioprem+(P.liq||0))*mwhPerT*fx;
@@ -536,18 +534,18 @@ function compute(portKey,etsSc,feuSc){
     const lcvMJg=f.lcv/1000;
     const ttw = ((1-sl)*(co2+f.ch4*GWP_FEU.ch4+f.n2o*GWP_FEU.n2o)+sl*GWP_FEU.ch4)/lcvMJg;
     const ttwAdder = ttw; // for bio, ttw is entirely non-CO2
-    const wtt = f.id==="biolng"?S.biowtt : (f.id==="b100"||f.id==="b100x")?S.b100wtt : f.wtt;
+    const wtt = f.id==="biolng"?S.biowtt : f.id==="b100"?S.b100wtt : f.wtt;
     const wtw = wtt+ttw;
     const bal = (S.target-wtw)*f.lcv/1000*feuSc;        // tCO2e per t, + surplus
     let feu = -bal*S.pool*fx;                              // $/t, + cost
     if(!view.feuSold && bal>0) feu = 0;                    // surplus not yet sold/pooled: don't show a gain that hasn't been realised
     const etsT = ((1-sl)*(co2+f.ch4*GWP_ETS.ch4+f.n2o*GWP_ETS.n2o)+sl*GWP_ETS.ch4)*etsSc;
     const ets = etsT*S.eua*fx;
-    // Dutch ZRE, Rotterdam: obligation on every tonne supplied; only B100 (inc ZRE) generates tickets.
+    // Dutch ZRE, Rotterdam: obligation on every tonne supplied; only B100 generates tickets, and only with "ZRE value included" ticked.
     let zreGen=0, zreObl=0, zre=0;
     if(portKey==="rtm"){
       zreObl = f.lcv*RED_FOSSIL*(S.zreobl/100)/1000;
-      zreGen = f.id==="b100" ? f.lcv*(RED_FOSSIL-wtt)/1000 : 0;
+      zreGen = (f.id==="b100" && view.blend.zre) ? f.lcv*(RED_FOSSIL-wtt)/1000 : 0;
       zre = -(zreGen-zreObl)*S.zre*fx;               // $/t, negative = benefit
     }
     const total=price+ets+feu+zre;
@@ -557,7 +555,7 @@ function compute(portKey,etsSc,feuSc){
   // Bio blend: every per-tonne quantity is linear in mass, so mix the two component rows by mass.
   const B=view.blend, byId={}; out.forEach(r=>byId[r.f.id]=r);
   const fr=byId[B.base];
-  const br = B.base==="lng" ? byId.biolng : (portKey==="rtm" && !B.zre ? byId.b100x : byId.b100);
+  const br = B.base==="lng" ? byId.biolng : byId.b100;
   if(fr && br){
     const x=Math.min(1,Math.max(0,B.pct/100)), mix=(a,b)=>(1-x)*a+x*b;
     const lcv=mix(fr.f.lcv,br.f.lcv);
@@ -1011,7 +1009,7 @@ function fillBlend(){
   bZre.checked=view.blend.zre;
   document.querySelectorAll("#b-chips button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.p===view.blend.pct)));
   const isLng=view.blend.base==="lng";
-  document.getElementById("b-zre-wrap").hidden = isLng || view.port!=="rtm";
+  document.getElementById("b-zre-wrap").hidden = view.port!=="rtm";
 }
 bBase.addEventListener("change",()=>{ view.blend.base=bBase.value; saveBlend(); fillBlend(); render(); });
 bPct.addEventListener("input",()=>{ const v=parseFloat(bPct.value); if(isNaN(v)) return; view.blend.pct=Math.round(Math.min(100,Math.max(0,v))); saveBlend(); fillBlend(); render(); });
