@@ -171,6 +171,12 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
 .bf.chk input{min-height:0;width:18px;height:18px;accent-color:var(--brand)}
 .chkrow{display:flex;flex-wrap:nowrap;align-items:center;gap:4px 16px}
 .chkrow .bf.chk{white-space:nowrap}
+.cmpbox{padding:12px 14px;background:var(--chip);border:1px solid var(--rule);border-radius:8px;margin:0 0 14px}
+.cmpbox table{border-collapse:collapse;font-size:13px;min-width:0;width:auto;margin-top:6px}
+.cmpbox th,.cmpbox td{padding:4px 16px 4px 0;border:0;text-align:center;white-space:nowrap}
+.cmpbox th:first-child,.cmpbox td:first-child{text-align:left}
+.cmpbox td input{width:18px;height:18px;accent-color:var(--brand);vertical-align:middle}
+.cmpbox .cmpnote{font-size:12px;color:var(--muted);margin:8px 0 0}
 .bnote{font-size:12px;color:var(--muted);align-self:center}
 .linkbtn{font:inherit;font-size:11.5px;font-weight:600;color:var(--c-fuel);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .status{display:inline-block;font-size:12.5px;color:var(--muted)}
@@ -281,6 +287,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
         <button type="button" data-v="rtm" aria-pressed="true"><span class="lg">Rotterdam</span><span class="sm">RTM</span></button>
         <button type="button" data-v="ant" aria-pressed="false" title="Antwerp"><span class="lg">Antwerp</span><span class="sm">ANR</span></button>
         <button type="button" data-v="sin" aria-pressed="false"><span class="lg">Singapore</span><span class="sm">SGP</span></button>
+        <button type="button" data-v="cmp" aria-pressed="false"><span class="lg">Compare</span><span class="sm">CMP</span></button>
       </div></div>
     <div class="ctl"><span class="lab">FuelEU target</span>
       <div class="seg" id="seg-target">
@@ -331,6 +338,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
         <label class="bf chk" id="b-feusold-wrap" title="You have sold the FuelEU surplus generated at the market rate"><input type="checkbox" id="b-feusold">FuelEU surplus sold</label>
         </div>
       </div>
+      <div class="cmpbox" id="cmp" hidden></div>
       <div class="legend">
         <span><i style="background:var(--c-fuel)"></i>Fuel price</span>
         <span><i style="background:var(--c-ets)"></i>EU ETS</span>
@@ -346,7 +354,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
       <div class="phead">
         <div>
           <h2 id="h-rank">Ranking</h2>
-          <p class="note">Cheapest first, energy-adjusted, against VLSFO.</p>
+          <p class="note" id="rank-note">Cheapest first, energy-adjusted, against VLSFO.</p>
         </div>
         <div class="actions">
           <button class="btn" type="button" id="rank-all" title="Restore every fuel type for this port">All fuels</button>
@@ -381,6 +389,8 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
         <button class="btn" type="button" id="reset">Latest market data</button>
       </div>
     </div>
+    <div class="ctl" id="in-port-wrap" hidden style="margin-bottom:14px"><span class="lab">Prices for</span>
+      <div class="seg" id="in-port"><button type="button" data-v="rtm" aria-pressed="true">Rotterdam</button><button type="button" data-v="ant" aria-pressed="false">Antwerp</button><button type="button" data-v="sin" aria-pressed="false">Singapore</button></div></div>
     <div class="inputs">
       <fieldset><legend>Market data<span class="autopill">Auto</span></legend>
         <div class="f"><label for="a-eua"><span>EUA, €/tCO2e<small id="src-eua"></small></span></label><input id="a-eua" type="number" inputmode="decimal" step="1"></div>
@@ -526,7 +536,16 @@ const FUELS=[
   {id:"b100",name:"B100 (FAME)",lcv:37.2,wtt:null,co2:2.834,ch4:0.00005,n2o:0.00018,bio:true,slip:false},
 ];
 
+const PABBR={rtm:"RTM",ant:"ANR",sin:"SGP"};
+const REFID=()=>view.cmp?"rtm:vlsfo":"vlsfo";
+const isRefId=id=>/(^|:)(vlsfo|blend)$/.test(id);
 function compute(portKey,etsSc,feuSc){
+  if(!view.cmp) return computePort(portKey,etsSc,feuSc);
+  const out=[];
+  for(const pk of PORTKEYS) for(const r of computePort(pk,etsSc,feuSc)) out.push({...r,port:pk,f:{...r.f,id:pk+":"+r.f.id,name:PABBR[pk]+" "+r.f.name}});
+  return out;
+}
+function computePort(portKey,etsSc,feuSc){
   const P=S.ports[portKey], fx=S.fx, s=S.slip/100;
   const mwhPerT = HHV/3.6;
   const out=[];
@@ -607,7 +626,7 @@ function drawChart(rows){
   const el=document.getElementById("chart");
   if(!rows.length){ el.innerHTML='<p class="note" style="margin:0">No fuels selected. Click a port above to restore the comparison.</p>'; return; }
   const W=el.clientWidth||720, narrow=W<520;
-  const rowH=narrow?58:46, padL=narrow?2:Math.min(132,W*0.3), padR=narrow?52:64, padT=8, padB=30;
+  const rowH=narrow?58:46, padL=narrow?2:Math.min(view.cmp?158:132,W*0.3), padR=narrow?52:64, padT=8, padB=30;
   const H=padT+rows.length*rowH+padB;
   const segs=rows.map(r=>{
     const p=conv(r,r.price), e=conv(r,r.ets), fe=conv(r,r.feu), z=conv(r,r.zre);
@@ -627,7 +646,7 @@ function drawChart(rows){
   const bh=22;
   segs.forEach((s,i)=>{
     const y=padT+i*rowH+(narrow?24:(rowH-bh)/2), cy=y+bh/2;
-    const isRef=s.r.f.id==="vlsfo"||s.r.f.id==="blend";
+    const isRef=isRefId(s.r.f.id);
     if(narrow) svg+=`<text x="${padL}" y="${y-7}" font-size="13" font-weight="${isRef?700:600}" fill="var(--ink)">${s.r.f.name}</text>`;
     else svg+=`<text x="${padL-10}" y="${cy+4}" text-anchor="end" font-size="13" font-weight="${isRef?700:600}" fill="var(--ink)">${s.r.f.name}</text>`;
     let x0=x(0);
@@ -807,14 +826,14 @@ function render(){
   const allRows=compute(view.port,view.ets,view.feu);
   const rows=allRows.filter(r=>!view.excluded.has(r.f.id));
   const P=S.ports[view.port];
-  document.getElementById("title").textContent=`${P.name}: fully loaded bunker cost`;
+  document.getElementById("title").textContent=view.cmp?"Port comparison: fully loaded bunker cost":`${P.name}: fully loaded bunker cost`;
   const pc=v=>Math.round(v*100)+"%";
   const tlab={"89.34":"2025-29","85.69":"2030-34","77.94":"2035-39"}[String(S.target)]||"";
   const arows=[["EU ETS scope",pc(view.ets)],["FuelEU scope",pc(view.feu)],["FuelEU target",`${tlab}, ${S.target} g/MJ`],["TTF",`€${S.ttf}/MWh`],["EUA",`€${S.eua}/tCO2e`],["FuelEU pool",`€${S.pool}/tCO2e`]];
-  if(view.port==="rtm") arows.push(["ZRE",`€${S.zre}/tCO2e`]);
+  if(view.cmp||view.port==="rtm") arows.push(["ZRE",`€${S.zre}/tCO2e`]);
   arows.push(["EUR/USD",String(S.fx)]);
   document.getElementById("subtitle").innerHTML=arows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
-  const isR=view.port==="rtm";
+  const isR=view.cmp?rows.some(r=>r.port==="rtm"):view.port==="rtm";
   document.querySelectorAll(".lgz").forEach(e=>{ e.style.visibility=isR?"":"hidden"; });
   document.getElementById("fs-zre").hidden=!isR;
   document.getElementById("tbl").classList.toggle("no-zre",!isR);
@@ -822,29 +841,31 @@ function render(){
   drawChart(rows);
   renderSens();
   // ranking
-  const ref=allRows.find(r=>r.f.id==="vlsfo");
+  const ref=allRows.find(r=>r.f.id===REFID());
+  renderCmp(allRows);
+  document.getElementById("rank-note").textContent=view.cmp?"Cheapest first, energy-adjusted, against Rotterdam VLSFO.":"Cheapest first, energy-adjusted, against VLSFO.";
   renderKpis(allRows,ref);
   const sorted=[...rows].sort((a,b)=>a.gj-b.gj);
   document.getElementById("rank").innerHTML=sorted.length?sorted.map((r,i)=>{
     const d=(r.gj-ref.gj)*VLSFO_LCV;
-    const dtxt=r.f.id==="vlsfo"?"Reference":`<span class="${d>0?"pos":"neg"}">${sgn(d,0)}</span> $/t VLSFO-eq vs VLSFO`;
+    const dtxt=r.f.id===REFID()?"Reference":`<span class="${d>0?"pos":"neg"}">${sgn(d,0)}</span> $/t VLSFO-eq vs ${view.cmp?"RTM ":""}VLSFO`;
     return `<li><span class="n">${i+1}</span><span class="nm">${r.f.name}</span><span class="v">${fmt(conv(r,r.total))}</span><button type="button" class="linkbtn" data-id="${r.f.id}" title="Remove ${r.f.name} from the comparison">Remove</button><span class="d">${dtxt}</span></li>`;
   }).join("") : `<li class="empty"><span class="d" style="grid-column:1/5">No fuels selected. Click a port above to restore the comparison.</span></li>`;
   // table
   document.querySelector("#tbl tbody").innerHTML=rows.length?rows.map(r=>{
     const d=(r.gj-ref.gj)*VLSFO_LCV;
-    return `<tr class="${r.f.id==="vlsfo"?"ref":""}"><td>${r.f.name}</td><td>${fmt(r.f.lcv,1)}${r.eff!==r.f.lcv?` <span style="color:var(--muted)">(${fmt(r.eff,1)} eff.)</span>`:""}</td>
+    return `<tr class="${r.f.id===REFID()?"ref":""}"><td>${r.f.name}</td><td>${fmt(r.f.lcv,1)}${r.eff!==r.f.lcv?` <span style="color:var(--muted)">(${fmt(r.eff,1)} eff.)</span>`:""}</td>
       <td>${fmt(r.wtw,1)}${r.f.bio?` <span style="color:var(--muted)">(TtW +${fmt(r.ttw,1)})</span>`:""}</td>
       <td>${fmt(r.price,0)}</td><td>${fmt(r.etsT,3)}</td><td>${fmt(r.ets,0)}</td>
       <td class="${r.bal>0?"neg":r.bal<0?"pos":""}">${sgn(r.bal,3)}</td><td class="${r.feu>0.5?"pos":r.feu<-0.5?"neg":""}">${sgn(r.feu,0)}</td>
       <td class="zc">${r.zre?sgn(r.zreGen-r.zreObl,3):"–"}</td><td class="zc ${r.zre<0?"neg":r.zre>0?"pos":""}">${r.zre?sgn(r.zre,0):"–"}</td>
       <td class="tot">${fmt(r.total,0)}</td><td>${fmt(r.gj,2)}</td><td class="tot">${fmt(r.ve,0)}</td>
-      <td class="${r.f.id==="vlsfo"?"":d>0?"pos":"neg"}">${r.f.id==="vlsfo"?"ref":sgn(d,0)}</td></tr>`;
+      <td class="${r.f.id===REFID()?"":d>0?"pos":"neg"}">${r.f.id===REFID()?"ref":sgn(d,0)}</td></tr>`;
   }).join("") : `<tr><td colspan="13">No fuels selected. Click a port above to restore the comparison.</td></tr>`;
   const openIds=[...document.querySelectorAll("#cards details[open]")].map(e=>e.dataset.id);
   document.getElementById("cards").innerHTML=rows.length?rows.map(r=>{
     const d=(r.gj-ref.gj)*VLSFO_LCV;
-    const dtxt=r.f.id==="vlsfo"?"Reference fuel":`<span class="${d>0?"pos":"neg"}">${sgn(d,0)}</span> $/t VLSFO-eq vs VLSFO`;
+    const dtxt=r.f.id===REFID()?"Reference fuel":`<span class="${d>0?"pos":"neg"}">${sgn(d,0)}</span> $/t VLSFO-eq vs ${view.cmp?"RTM ":""}VLSFO`;
     return `<details class="card" data-id="${r.f.id}" ${openIds.includes(r.f.id)?"open":""}><summary>
       <span class="nm">${r.f.name}</span><span class="v">${fmt(r.ve,0)}</span><span class="d">${dtxt}</span></summary>
       <dl>
@@ -863,7 +884,7 @@ function render(){
 
 function renderKpis(rows,ref){
   const dv=r=>(r.gj-ref.gj)*VLSFO_LCV;
-  const bl=rows.find(r=>r.f.id==="blend");
+  const bl=rows.find(r=>r.f.id===(view.cmp?view.port+":":"")+"blend");
   const hv=document.getElementById("hl-v");
   if(bl){ const d=dv(bl); document.getElementById("hl-lab").textContent=`${bl.f.name} vs VLSFO, $/t VLSFO-eq`; hv.textContent=sgn(d,0); hv.className="big "+(d>0.5?"bad":d<-0.5?"good":""); }
 }
@@ -1007,19 +1028,38 @@ function bindSeg(id,key,parse){
   seg.addEventListener("click",e=>{
     const b=e.target.closest("button"); if(!b)return;
     seg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
-    if(key==="target") S.target=parse(b.dataset.v); else view[key]=parse(b.dataset.v);
-    if(key==="port"){ view.excluded=new Set(); fillInputs(); fillBlend(); }
+    if(key==="target") S.target=parse(b.dataset.v);
+    else if(key==="port" && b.dataset.v==="cmp"){ view.cmp=true; view.excluded=cmpDefaultExcl(); }
+    else { view[key]=parse(b.dataset.v); if(key==="port"){ view.cmp=false; view.excluded=new Set(); } }
+    if(key==="port"){ fillInputs(); fillBlend(); }
     render();
   });
 }
 bindSeg("seg-port","port",v=>v);
+// ---- Cross-port comparison: tick any fuel at any port. ETS and FuelEU scope stay shared.
+const CMPF=["hsfo","vlsfo","mgo","lng","biolng","b100","blend"], CMPMAX=8;
+const CMPLAB={hsfo:"HSFO 380cSt",vlsfo:"VLSFO",mgo:"MGO LS",lng:"LNG (LPDF)",biolng:"bioLNG (LPDF)",b100:"B100"};
+const CMPDEF=["rtm:vlsfo","ant:vlsfo","sin:vlsfo","rtm:lng","rtm:biolng","rtm:b100"];
+function cmpDefaultExcl(){ const ex=new Set(); for(const pk of PORTKEYS) for(const id of CMPF){ const k=pk+":"+id; if(!CMPDEF.includes(k)) ex.add(k); } return ex; }
+function renderCmp(allRows){
+  const box=document.getElementById("cmp"); box.hidden=!view.cmp; document.getElementById("in-port-wrap").hidden=!view.cmp;
+  if(!view.cmp) return;
+  document.querySelectorAll("#in-port button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===view.port)));
+  const bl=allRows.find(r=>r.f.id==="rtm:blend"), blab=bl?bl.f.name.replace(/^RTM /,""):"Blend";
+  const n=allRows.filter(r=>!view.excluded.has(r.f.id)).length, lab=id=>id==="blend"?blab:CMPLAB[id];
+  box.innerHTML=`<span class="lab">Compare fuels across ports</span><table><thead><tr><th></th>${PORTKEYS.map(pk=>`<th>${PABBR[pk]}</th>`).join("")}</tr></thead><tbody>`+
+    CMPF.map(id=>`<tr><td>${lab(id)}</td>`+PORTKEYS.map(pk=>{ const k=pk+":"+id, on=!view.excluded.has(k); return `<td><input type="checkbox" data-k="${k}" ${on?"checked":""} ${!on&&n>=CMPMAX?"disabled":""} aria-label="${PABBR[pk]} ${lab(id)}"></td>`; }).join("")+`</tr>`).join("")+
+    `</tbody></table><p class="cmpnote">${n} of ${CMPMAX} selected. EU ETS and FuelEU scope are shared by every row. Singapore LNG uses TTF plus logistics as a proxy, so it matches Rotterdam until a Singapore LNG price is added.</p>`;
+}
+document.getElementById("cmp").addEventListener("change",e=>{ const c=e.target.closest("input[data-k]"); if(!c) return; if(c.checked) view.excluded.delete(c.dataset.k); else view.excluded.add(c.dataset.k); render(); });
+document.getElementById("in-port").addEventListener("click",e=>{ const b=e.target.closest("button[data-v]"); if(!b) return; view.port=b.dataset.v; fillInputs(); fillBlend(); render(); });
 document.getElementById("rank").addEventListener("click",e=>{
   const b=e.target.closest("button[data-id]"); if(!b) return;
   view.excluded.add(b.dataset.id);
   render();
 });
 document.getElementById("rank-all").addEventListener("click",()=>{
-  view.excluded=new Set();
+  view.excluded=view.cmp?cmpDefaultExcl():new Set();
   render();
 });
 bindSeg("seg-ets","ets",v=>parseFloat(v));
@@ -1034,7 +1074,7 @@ function fillBlend(){
   if(bPct!==document.activeElement) bPct.value=String(view.blend.pct);
   bZre.checked=view.blend.zre;
   const isLng=view.blend.base==="lng";
-  document.getElementById("b-zre-wrap").hidden = view.port!=="rtm";
+  document.getElementById("b-zre-wrap").hidden = view.port!=="rtm" && !view.cmp;
 }
 bBase.addEventListener("change",()=>{ view.blend.base=bBase.value; saveBlend(); fillBlend(); render(); });
 bPct.addEventListener("input",()=>{ const v=parseFloat(bPct.value); if(isNaN(v)) return; view.blend.pct=Math.round(Math.min(100,Math.max(0,v))); saveBlend(); fillBlend(); render(); });
@@ -1061,7 +1101,8 @@ const nf0=v=>Number(v).toLocaleString("en-GB",{maximumFractionDigits:2});
 const esc0=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 let prSel=null, prSeenIds=new Set();
-function prRows(){ return compute(view.port,view.ets,view.feu); }
+function prAll(){ return compute(view.port,view.ets,view.feu); }
+function prRows(){ const a=prAll(); return view.cmp?a.filter(r=>!view.excluded.has(r.f.id)):a; }
 function prBuildFuelToggle(){
   const rows=prRows(), host=document.getElementById("pr-fuels");
   if(!prSel) prSel=new Set();
@@ -1078,13 +1119,13 @@ document.getElementById("pr-fuels").addEventListener("click",e=>{
 
 function printSummaryText(){
   const rows=prRows().filter(r=>prSel.has(r.f.id));
-  const ref=prRows().find(r=>r.f.id==="vlsfo");
-  const P=S.ports[view.port], u=unitLabel(), isR=view.port==="rtm";
-  const lines=[`${P.name}: fully loaded bunker cost`,
+  const ref=prAll().find(r=>r.f.id===REFID());
+  const P=S.ports[view.port], u=unitLabel(), isR=view.cmp?rows.some(r=>r.port==="rtm"):view.port==="rtm";
+  const lines=[view.cmp?"Port comparison: fully loaded bunker cost":`${P.name}: fully loaded bunker cost`,
     `EU ETS ${Math.round(view.ets*100)}% · FuelEU ${Math.round(view.feu*100)}% · TTF €${nf0(S.ttf)} · EUA €${nf0(S.eua)} · FuelEU pool €${nf0(S.pool)}/tCO2e${isR?` · ZRE €${nf0(S.zre)}/tCO2e`:""} · EUR/USD ${S.fx}`,""];
   rows.forEach(r=>{
     const d=ref?(r.gj-ref.gj)*VLSFO_LCV:0;
-    lines.push(`${r.f.name}: ${fmt(conv(r,r.total))} ${u}${r.f.id!=="vlsfo"&&ref?` (${sgn(d,0)} vs VLSFO)`:""}`);
+    lines.push(`${r.f.name}: ${fmt(conv(r,r.total))} ${u}${r.f.id!==REFID()&&ref?` (${sgn(d,0)} vs ${view.cmp?"RTM ":""}VLSFO)`:""}`);
   });
   lines.push("","Indicative, before supplier margin and credit terms.");
   return lines.join("\n");
@@ -1108,7 +1149,7 @@ function drawPrintChart(rows,bx,by,bw,bh){
   }
   segs.forEach((s,i)=>{
     const y=by+i*rowH+(rowH-barH)/2, cy=y+barH/2;
-    const isRef=s.r.f.id==="vlsfo"||s.r.f.id==="blend";
+    const isRef=isRefId(s.r.f.id);
     PT(s.r.f.name,bx+padL-12,cy+5,{s:15,w:isRef?700:600,a:"right"});
     let x0=X(0);
     const xv=px=>(px-bx-padL)/(bw-padL-padR)*maxV;
@@ -1190,8 +1231,8 @@ function drawPrintTable(rows,ref,x,y,w,h,isR,cmap){
     const ry=y+(ri+1)*rh;
     const d=ref?(r.gj-ref.gj)*VLSFO_LCV:0;
     const vals=isR
-      ? [r.f.name, fmt(r.price,0), sgn(r.ets,0), sgn(r.feu,0), r.zre?sgn(r.zre,0):"–", fmt(r.total,0), r.f.id==="vlsfo"?"ref":sgn(d,0)]
-      : [r.f.name, fmt(r.price,0), sgn(r.ets,0), sgn(r.feu,0), fmt(r.total,0), r.f.id==="vlsfo"?"ref":sgn(d,0)];
+      ? [r.f.name, fmt(r.price,0), sgn(r.ets,0), sgn(r.feu,0), r.zre?sgn(r.zre,0):"–", fmt(r.total,0), r.f.id===REFID()?"ref":sgn(d,0)]
+      : [r.f.name, fmt(r.price,0), sgn(r.ets,0), sgn(r.feu,0), fmt(r.total,0), r.f.id===REFID()?"ref":sgn(d,0)];
     vals.forEach((v,i)=>{
       const cx0=i===0?x:x+nmW+(i-1)*cw;
       if(i===0 && cmap && cmap[r.f.id]){ PLn(cx0,ry+rh*0.65-5,cx0+16,ry+rh*0.65-5,cmap[r.f.id],4); }
@@ -1208,8 +1249,8 @@ async function buildPrintImage(theme,fmt0,outW){
   const flowImg=await flowLogoImg();
   const slide=fmt0!=="tall";
   theme=theme==="dark"?"dark":"light"; PEX=PEXT[theme]; PSG=PSEG[theme];
-  const allRows=prRows(), rows=allRows.filter(r=>prSel.has(r.f.id)), ref=allRows.find(r=>r.f.id==="vlsfo");
-  const P=S.ports[view.port], isR=view.port==="rtm", u=unitLabel();
+  const allRows=prAll(), rows=prRows().filter(r=>prSel.has(r.f.id)), ref=allRows.find(r=>r.f.id===REFID());
+  const P=S.ports[view.port], isR=view.cmp?rows.some(r=>r.port==="rtm"):view.port==="rtm", u=unitLabel();
   const W=1600,H=slide?900:1150,cv=document.createElement("canvas");outW=outW||1600;cv.width=outW;cv.height=Math.round(outW*H/W);pcx=cv.getContext("2d");pcx.scale(outW/W,outW/W);
   try{await Promise.all([document.fonts.load('600 40px "Barlow Condensed"'),document.fonts.load('italic 700 28px "Barlow Condensed"'),document.fonts.load('400 16px Barlow'),document.fonts.load('600 16px Barlow')]);}catch(_){}
   pcx.fillStyle=PEX.bg;pcx.fillRect(0,0,W,H);
@@ -1225,12 +1266,12 @@ async function buildPrintImage(theme,fmt0,outW){
     if(flowImg){ const lh=fs*0.95, lw=lh*1147.59/183.54; pcx.drawImage(flowImg,lx,by-lh*0.86,lw,lh); }
     else PT("FLOW Maritime",lx,by,{s:Math.round(fs*0.55),w:600,c:"#FFFFFF"});
   }
-  const title=`${P.name}: fuel comparison`;
+  const title=view.cmp?"Port comparison":`${P.name}: fuel comparison`;
   PT(title,40,slide?86:106,{s:pFitSize(title,1000,slide?44:50,600,PFD),w:600,f:PFD,c:"#FFFFFF"});
   const sub=`EU ETS ${Math.round(view.ets*100)}% · FuelEU ${Math.round(view.feu*100)}% · TTF €${nf0(S.ttf)} · EUA €${nf0(S.eua)} · Pool €${nf0(S.pool)}/tCO2e${isR?` · ZRE €${nf0(S.zre)}/tCO2e`:""} · EUR/USD ${S.fx}`;
   PT(sub,40,slide?110:138,{s:pFitSize(sub,1100,slide?16:17,400,PFB),c:"rgba(255,255,255,.82)"});
   if(ref){
-    PT("VLSFO, FULLY LOADED",W-40,slide?38:52,{s:15,w:600,c:"rgba(255,255,255,.75)",a:"right"});
+    PT(view.cmp?"RTM VLSFO, FULLY LOADED":"VLSFO, FULLY LOADED",W-40,slide?38:52,{s:15,w:600,c:"rgba(255,255,255,.75)",a:"right"});
     PT(fmt(conv(ref,ref.total)),W-40,slide?92:112,{s:slide?60:74,w:600,f:PFD,c:"#FFFFFF",a:"right"});
     PT(u,W-40,slide?113:141,{s:15,c:"rgba(255,255,255,.75)",a:"right"});
   }
