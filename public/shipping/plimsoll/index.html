@@ -401,6 +401,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
         <label class="f"><span>bioLNG liquefaction, €/MWh<small id="pd-liq"></small></span><input id="p-liq" type="number" inputmode="decimal" step="0.5"></label>
         <label class="f"><span>bioLNG WtT CI, g/MJ<small>From PoS</small></span><input id="a-biowtt" type="number" step="1"></label>
         <label class="f"><span>CH4 slip, % of fuel<small>LPDF 4-stroke</small></span><input id="a-slip" type="number" inputmode="decimal" step="0.1"></label>
+        <label class="f"><span>Pilot fuel, % of energy<small>MGO LS, LNG and bioLNG</small></span><input id="a-pilot" type="number" inputmode="decimal" step="0.1" min="0"></label>
       </fieldset>
       <fieldset id="fs-zre"><legend>Dutch ZRE (Rotterdam)</legend>
         <label class="f">ZRE value, €/tCO2e<input id="a-zre" type="number" inputmode="decimal" step="5"></label>
@@ -432,7 +433,8 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
       <li><b>LNG and bioLNG price build.</b> LNG = TTF + logistics. bioLNG = TTF + green gas certificate + liquefaction + logistics. All in €/MWh on HHV, since TTF is quoted on gross calorific value, converted at 55 MJ/kg (15.28 MWh/t). Example at TTF €90.30 and €10 logistics: €100.30 × 15.28 = €1,532/t. In Singapore, LNG bunkers are usually priced off JKM or oil, so TTF plus logistics is a proxy there; set the Singapore logistics figure to match the real delivered price.</li>
       <li><b>Market data.</b> TTF (ICE front-month close), EUA, EUR/USD (ECB reference rate) and the FuelEU pool price (BetterSea FuelEU Surplus Index, weighted monthly figure) are updated by FLOW Maritime. The source and date sit next to each figure. Editing one is a what-if for your view only; "Use live" restores it.</li>
       <li><b>Scrubber penalty.</b> HSFO burns extra fuel to power the scrubber (pumps, and caustic dosing in closed loop). The penalty is applied as extra fuel per unit of useful energy: effective LCV = 40.5 / (1 + penalty), and ETS and FuelEU follow the extra tonnes. Default 2.0% reflects open loop, the most common fleet configuration; use about 1.0% for closed loop. Source: NMBU system-level comparison of SOx abatement energy use.</li>
-      <li><b>Not included.</b> Pilot fuel on LNG (typically 1-2% of energy as MGO), scrubber capex, caustic and maintenance cost for HSFO, and SECA compliance: Rotterdam and Antwerp sit in the North Sea SECA, so HSFO needs a scrubber and VLSFO is not compliant there at all. Singapore at 100% is shown for comparison only; Singapore-bunkered fuel only ever sits on 50% voyages.</li>
+      <li><b>Pilot fuel.</b> LNG and bioLNG engines also burn MGO as pilot fuel, set at 1% of total energy (editable under LNG / BioLNG). Per tonne of LNG that is about 0.012 t of MGO, priced at the port's MGO LS price and carrying its own EU ETS, FuelEU and ZRE cost. The LNG rows are therefore per tonne of LNG including its pilot fuel, and the $/GJ and VLSFO-equivalent figures use the combined energy.</li>
+      <li><b>Not included.</b> Scrubber capex, caustic and maintenance cost for HSFO, and SECA compliance: Rotterdam and Antwerp sit in the North Sea SECA, so HSFO needs a scrubber and VLSFO is not compliant there at all. Singapore at 100% is shown for comparison only; Singapore-bunkered fuel only ever sits on 50% voyages.</li>
       <li><b>Bio blends.</b> Blend % is by mass. The bio part is B100 (FAME) for HSFO, VLSFO and MGO, and mass-balanced bioLNG for LNG. Price, LCV, ETS tonnes, FuelEU balance and ZRE are all linear per tonne, so each is the mass-weighted mix of the two parts. The resulting CI is energy-weighted. Methane slip (LNG) and the scrubber penalty (HSFO) apply to the whole blend. In Rotterdam, the ZRE obligation covers the whole tonne, and the bio part of a B blend earns tickets unless you untick the box to say that value has already been realised elsewhere (typically by the supplier); bioLNG earns none. Market blends are usually quoted as a premium over VLSFO, so check the mixed price against a real quote. At ship level, FuelEU allocation can put the bio energy wholly into the in-scope share; to approximate that on a 50% voyage, set FuelEU scope to 100%.</li>
       <li><b>Separate ETS and FuelEU scope.</b> ETS follows the voyage scope of the emissions. FuelEU can be optimised: bio energy can be allocated wholly to the in-scope share of a ship's energy (BetterSea ruling), so a 50% ETS voyage can carry 100% FuelEU credit on the bio tonnes, up to the in-scope energy available. At 0% on either toggle, that cost or credit drops out. Bio fuel at 0% FuelEU and 0% ETS recovers none of its premium, other than ZRE in Rotterdam.</li>
       <li><b>Antwerp.</b> An EU port, so EU ETS and FuelEU work exactly as in Rotterdam. Dutch ZRE does not apply to fuel supplied in Belgium, so there is no ZRE obligation and no tickets, and B100 shows once, without ZRE. Default prices start equal to Rotterdam, since ARA fuel oil and gasoil prices usually trade close together; set them from a real Antwerp quote. LNG bunkering at Antwerp is more limited than at Rotterdam, so treat TTF plus logistics as an approximation and check it against a real quote.</li>
@@ -479,7 +481,7 @@ const DEFAULTS = {
     ant:{name:"Antwerp",hsfo:553.5,vlsfo:742,mgo:1285.5,logistics:10,bioprem:57,liq:5,b100:1612},
     sin:{name:"Singapore",hsfo:667,vlsfo:878,mgo:1196,logistics:10,bioprem:57,liq:5,b100:1612}
   },
-  target:89.34,slip:1.7,biowtt:-100,b100wtt:14.1,scrub:2.0,zre:150,zreobl:2.6
+  target:89.34,slip:1.7,pilot:1,biowtt:-100,b100wtt:14.1,scrub:2.0,zre:150,zreobl:2.6
 };
 // Market snapshot embedded at publish; replaced live by the shared store (market/latest) when available.
 const MARKET0 = {
@@ -491,7 +493,7 @@ const MARKET0 = {
 };
 const MKEYS=["ttf","eua","fx","pool"];
 const PORTKEYS=["rtm","ant","sin"];
-const MAN=["slip","biowtt","b100wtt","scrub","zre","zreobl"];
+const MAN=["slip","pilot","biowtt","b100wtt","scrub","zre","zreobl"];
 const HHV=55;
 let S = JSON.parse(JSON.stringify(DEFAULTS));
 let M = {...MARKET0};
@@ -554,9 +556,18 @@ function compute(portKey,etsSc,feuSc){
       zreGen = (f.id==="b100" && view.blend.zre) ? f.lcv*(RED_FOSSIL-wtt)/1000 : 0;
       zre = -(zreGen-zreObl)*S.zre*fx;               // $/t, negative = benefit
     }
-    const total=price+ets+feu+zre;
-    const eff = f.id==="hsfo" ? f.lcv/(1+S.scrub/100) : f.lcv; // useful energy per tonne after scrubber parasitic load
-    out.push({f,eff,price,wtw,ttw:ttwAdder,bal,feu,etsT,ets,zreGen,zreObl,zre,total,gj:total/eff,ve:total/eff*VLSFO_LCV});
+    // Pilot fuel: LNG and bioLNG engines also burn MGO, supplying pl of total energy. Added per tonne of LNG, with its own ETS, FuelEU and ZRE.
+    let pPrice=price, pEts=ets, pEtsT=etsT, pBal=bal, pFeu=feu, pZre=zre, pObl=zreObl, pWtw=wtw, lcvT=f.lcv;
+    const pl=(f.id==="lng"||f.id==="biolng")?(S.pilot||0)/100:0, mg=out.find(r=>r.f.id==="mgo");
+    if(pl>0 && mg){
+      const q=pl*f.lcv/(1-pl)/mg.f.lcv;                   // t MGO per t LNG
+      pPrice+=q*mg.price; pEts+=q*mg.ets; pEtsT+=q*mg.etsT; pBal+=q*mg.bal; pObl+=q*mg.zreObl; pZre+=q*mg.zre;
+      pFeu=-pBal*S.pool*fx; if(!view.feuSold && pBal>0) pFeu=0;
+      lcvT=f.lcv+q*mg.f.lcv; pWtw=(f.lcv*wtw+q*mg.f.lcv*mg.wtw)/lcvT;
+    }
+    const total=pPrice+pEts+pFeu+pZre;
+    const eff = f.id==="hsfo" ? f.lcv/(1+S.scrub/100) : lcvT; // useful energy per tonne after scrubber parasitic load or pilot fuel
+    out.push({f,eff,lcvT,price:pPrice,wtw:pWtw,ttw:ttwAdder,bal:pBal,feu:pFeu,etsT:pEtsT,ets:pEts,zreGen,zreObl:pObl,zre:pZre,total,gj:total/eff,ve:total/eff*VLSFO_LCV});
   }
   // Bio blend: every per-tonne quantity is linear in mass, so mix the two component rows by mass.
   const B=view.blend, byId={}; out.forEach(r=>byId[r.f.id]=r);
@@ -564,7 +575,7 @@ function compute(portKey,etsSc,feuSc){
   const br = B.base==="lng" ? byId.biolng : byId.b100;
   if(fr && br){
     const x=Math.min(1,Math.max(0,B.pct/100)), mix=(a,b)=>(1-x)*a+x*b;
-    const lcv=mix(fr.f.lcv,br.f.lcv);
+    const lcv=mix(fr.lcvT,br.lcvT);
     const eff = B.base==="hsfo" ? lcv/(1+S.scrub/100) : lcv;
     const name = B.base==="lng" ? `LNG + ${B.pct}% bioLNG` : `B${B.pct} ${BASENAME[B.base]}${portKey==="rtm"&&!B.zre?" exc ZRE":""}`;
     const balB=mix(fr.bal,br.bal);
@@ -573,7 +584,7 @@ function compute(portKey,etsSc,feuSc){
     const total=mix(fr.price,br.price)+mix(fr.ets,br.ets)+feuB+mix(fr.zre,br.zre);
     out.push({f:{id:"blend",name,lcv,bio:false},eff,
       price:mix(fr.price,br.price),
-      wtw:((1-x)*fr.f.lcv*fr.wtw + x*br.f.lcv*br.wtw)/lcv, ttw:0,
+      wtw:((1-x)*fr.lcvT*fr.wtw + x*br.lcvT*br.wtw)/lcv, ttw:0,
       bal:balB, feu:feuB,
       etsT:mix(fr.etsT,br.etsT), ets:mix(fr.ets,br.ets),
       zreGen:mix(fr.zreGen,br.zreGen), zreObl:mix(fr.zreObl,br.zreObl), zre:mix(fr.zre,br.zre),
@@ -858,7 +869,7 @@ function renderKpis(rows,ref){
 
 // inputs
 const portFields=["hsfo","vlsfo","mgo","logistics","bioprem","liq","b100"];
-const glob={"a-slip":"slip","a-biowtt":"biowtt","a-b100wtt":"b100wtt","a-scrub":"scrub","a-zre":"zre","a-zreobl":"zreobl"};
+const glob={"a-slip":"slip","a-pilot":"pilot","a-biowtt":"biowtt","a-b100wtt":"b100wtt","a-scrub":"scrub","a-zre":"zre","a-zreobl":"zreobl"};
 const MID={ttf:"a-ttf",eua:"a-eua",fx:"a-fx",pool:"a-pool"};
 const dfmt=iso=>{ if(!iso) return ""; const d=new Date(iso.length===10?iso+"T12:00:00Z":iso); return isNaN(d)?String(iso):d.toLocaleDateString("en-GB",{day:"numeric",month:"short"}); };
 const tfmt=iso=>{ const d=new Date(iso); return isNaN(d)?"":d.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); };
