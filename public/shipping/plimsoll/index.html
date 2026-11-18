@@ -1133,6 +1133,26 @@ function drawPrintChart(rows,bx,by,bw,bh){
   });
 }
 
+function drawPrintLegend(x,y,w,isR){
+  const items=[["Fuel price","fuel"],["EU ETS","ets"],["FuelEU deficit","feu"],["FuelEU surplus value","feuc"]];
+  if(isR) items.push(["ZRE obligation","zre"],["ZRE net ticket value","zrec"]);
+  items.push(["Net fully loaded","net"]);
+  let fs=13; const meas=sz=>{ pcx.font=`500 ${sz}px ${PFB}`; return items.reduce((a,it)=>a+20+pcx.measureText(it[0]).width+14,0)-14; };
+  while(fs>10 && meas(fs)>w) fs--;
+  let lx=x;
+  items.forEach(([t,k])=>{
+    const sy=y-11;
+    if(k==="net"){ PLn(lx+6,sy-2,lx+6,sy+14,PEX.ink,3); }
+    else if(k==="feuc"||k==="zrec"){
+      const col=k==="feuc"?PSG.feu:PSG.zre;
+      pcx.save(); pcx.beginPath(); pcx.rect(lx,sy,13,13); pcx.clip(); pcx.fillStyle=PEX.panel; pcx.fillRect(lx,sy,13,13);
+      pcx.strokeStyle=col; pcx.lineWidth=2; pcx.beginPath(); for(let q=-13;q<=13;q+=5){ pcx.moveTo(lx+q,sy+13); pcx.lineTo(lx+q+13,sy); } pcx.stroke(); pcx.restore();
+      pcx.strokeStyle=col; pcx.lineWidth=1; pcx.strokeRect(lx+.5,sy+.5,12,12);
+    } else { pcx.fillStyle=PSG[k]; pcx.fillRect(lx,sy,13,13); }
+    PT(t,lx+20,y,{s:fs,w:500,c:PEX.ink2});
+    pcx.font=`500 ${fs}px ${PFB}`; lx+=20+pcx.measureText(t).width+14;
+  });
+}
 function prColorMap(rows){ const m={}; rows.forEach((r,i)=>m[r.f.id]=SENS_COLORS[i%SENS_COLORS.length]); return m; }
 function drawPrintSens(varKey,lo,hi,title,x,y,w,h,ids,cmap,u){
   PRR(x,y,w,h,10,PEX.panel,PEX.rule);
@@ -1221,7 +1241,8 @@ async function buildPrintImage(theme,fmt0,outW){
   PT("Cost build per fuel",62,cy0+(slide?34:36),{s:slide?24:26,w:600,f:PFD});
   const cnote=`${u}. Hatched areas are credits; the tick marks the net cost.`;
   PT(cnote,62,cy0+(slide?54:58),{s:pFitSize(cnote,LW-44,13,400,PFB),c:PEX.muted});
-  drawPrintChart(rows,40,cy0+(slide?66:72),LW,chH-(slide?84:92));
+  drawPrintChart(rows,40,cy0+(slide?66:72),LW,chH-(slide?116:124));
+  drawPrintLegend(62,cy0+chH-16,LW-44,isR);
   const euaLo=Math.max(0,Math.floor(S.eua*0.5/10)*10), euaHi=Math.ceil(S.eua*2/10)*10;
   drawPrintSens("eua",euaLo,euaHi,"EUA sensitivity, €/tCO2e",RX,cy0,RW,sH,ids,cmap,u);
   drawPrintSens("pool",0,Math.max(400,Math.ceil(S.pool*3/50)*50),"FuelEU pool sensitivity, €/tCO2e",RX,cy0+sH+gap,RW,sH,ids,cmap,u);
