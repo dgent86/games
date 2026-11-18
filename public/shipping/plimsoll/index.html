@@ -173,7 +173,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
 .status{display:inline-block;font-size:12.5px;color:var(--muted)}
 .status.ok{color:var(--good)} .status.warn{color:var(--bad)}
 .autopill{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--chip);color:var(--ink2);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:1px}
-.ovr{color:var(--c-ets);font-weight:600}.scopes,.pair{display:contents}
+.ovr{color:var(--c-ets);font-weight:600}.cust{color:var(--bad);font-weight:600}.f input.custom{color:var(--bad)}.scopes,.pair{display:contents}
 .no-zre .zc{display:none}
 .sitefoot{border-top:1px solid var(--rule);font-size:13px;color:var(--muted)}
 .sitefoot .wrap{display:flex;flex-wrap:wrap;gap:6px 20px;justify-content:space-between;padding-block:16px 28px}
@@ -371,11 +371,11 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
     <div class="phead">
       <div>
         <h2 id="h-in">Assumptions</h2>
-        <p class="note">Prices and market data are set by FLOW Maritime; the date sits next to each figure. Editing any figure is a what-if for your view only and is not saved. Port prices are held separately for each port.</p>
+        <p class="note">Prices and market data are set by FLOW Maritime; the date sits next to each figure. A changed figure shows as Custom input in red; Latest market data restores the latest figures. Port prices are held separately for each port.</p>
       </div>
       <div class="actions">
         <span class="status" id="savestatus" role="status"></span>
-        <button class="btn" type="button" id="reset">Restore default inputs</button>
+        <button class="btn" type="button" id="reset">Latest market data</button>
       </div>
     </div>
     <div class="inputs">
@@ -394,9 +394,9 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
       </fieldset>
       <fieldset><legend>LNG / BioLNG</legend>
         <div class="f"><label for="a-ttf"><span>TTF front-month, €/MWh<small id="src-ttf"></small></span></label><input id="a-ttf" type="number" inputmode="decimal" step="0.5"></div>
-        <label class="f"><span>LNG logistics, €/MWh<small>Added to TTF, LNG and bioLNG</small></span><input id="p-logistics" type="number" inputmode="decimal" step="0.5"></label>
-        <label class="f"><span>Green gas certificate, €/MWh<small>bioLNG only, certificate only</small></span><input id="p-bioprem" type="number" inputmode="decimal" step="0.5"></label>
-        <label class="f"><span>bioLNG liquefaction, €/MWh<small>bioLNG only</small></span><input id="p-liq" type="number" inputmode="decimal" step="0.5"></label>
+        <label class="f"><span>LNG logistics, €/MWh<small id="pd-logistics"></small></span><input id="p-logistics" type="number" inputmode="decimal" step="0.5"></label>
+        <label class="f"><span>Green gas certificate, €/MWh<small id="pd-bioprem"></small></span><input id="p-bioprem" type="number" inputmode="decimal" step="0.5"></label>
+        <label class="f"><span>bioLNG liquefaction, €/MWh<small id="pd-liq"></small></span><input id="p-liq" type="number" inputmode="decimal" step="0.5"></label>
         <label class="f"><span>bioLNG WtT CI, g/MJ<small>From PoS</small></span><input id="a-biowtt" type="number" step="1"></label>
         <label class="f"><span>CH4 slip, % of fuel<small>LPDF 4-stroke</small></span><input id="a-slip" type="number" inputmode="decimal" step="0.1"></label>
       </fieldset>
@@ -499,6 +499,9 @@ let inputsAt = "2026-11-18T06:41:36.051Z"; // date of the prices embedded in thi
 const DATED=["hsfo","vlsfo","mgo","b100"];
 const DATEDLAB={hsfo:"HSFO",vlsfo:"VLSFO",mgo:"MGO",b100:"B100"};
 let priceAt = {};
+let BASE = null;
+function snapBase(){ BASE={ports:JSON.parse(JSON.stringify(S.ports))}; for(const k of MAN) BASE[k]=S[k]; }
+snapBase();
 function syncMarket(){ for(const k of MKEYS) S[k] = (OV[k]!=null) ? OV[k] : M[k]; }
 syncMarket();
 let view = {port:"rtm",ets:1,feu:1,unit:"vlsfoe",blend:{base:"vlsfo",pct:24,zre:true},feuSold:true,excluded:new Set()};
@@ -857,8 +860,9 @@ function fillMarket(){
   for(const k of MKEYS){
     setVal(MID[k],S[k]);
     const sm=document.getElementById("src-"+k);
+    document.getElementById(MID[k]).classList.toggle("custom",OV[k]!=null);
     if(OV[k]!=null){
-      sm.innerHTML=`<span class="ovr">What-if, not saved.</span> Live ${M[k]} · <button type="button" class="linkbtn" data-live="${k}">Use live</button>`;
+      sm.innerHTML=`<span class="cust">Custom input</span> · Live ${M[k]} · <button type="button" class="linkbtn" data-live="${k}">Use live</button>`;
     } else {
       sm.textContent=`${M[k+"Source"]||""}, ${dfmt(M[k+"AsOf"])}`;
     }
@@ -873,9 +877,16 @@ function fillInputs(){
   fillMarket();
   document.querySelectorAll("#seg-target button").forEach(b=>b.setAttribute("aria-pressed",String(parseFloat(b.dataset.v)===S.target)));
 }
+const FNOTE={logistics:"Added to TTF, LNG and bioLNG",bioprem:"bioLNG only, certificate only",liq:"bioLNG only"};
+function latestDate(){ const a=[M.ttfAsOf,M.euaAsOf,M.fxAsOf,M.poolAsOf].filter(Boolean).sort(); return dfmt(M.refreshedAt)||dfmt(a[a.length-1]); }
 function renderPriceDates(){
-  const pa=priceAt[view.port]||{};
-  for(const k of DATED){ const d=dfmt(pa[k]||inputsAt); document.getElementById("pd-"+k).textContent=d?`Updated ${d}`:"Update date not recorded"; }
+  const d=latestDate(), b=BASE&&BASE.ports[view.port];
+  for(const k of portFields){
+    const sm=document.getElementById("pd-"+k), inp=document.getElementById("p-"+k);
+    const c=!!b && S.ports[view.port][k]!==b[k];
+    inp.classList.toggle("custom",c);
+    sm.innerHTML=c?'<span class="cust">Custom input</span>':[d?"Updated "+d:"",FNOTE[k]||""].filter(Boolean).join(" · ");
+  }
 }
 function stampPrice(pk,k){ if(!DATED.includes(k)) return; (priceAt[pk]=priceAt[pk]||{})[k]=new Date().toISOString(); }
 function renderAsOf(){
@@ -899,18 +910,12 @@ document.querySelector(".inputs").addEventListener("click",e=>{
   const b=e.target.closest("[data-live]"); if(!b) return;
   const k=b.dataset.live; OV[k]=null; syncMarket(); document.getElementById(MID[k]).value=String(S[k]); fillMarket(); render();
 });
-let resetArm=null;
 const resetBtn=document.getElementById("reset");
 resetBtn.addEventListener("click",()=>{
-  if(!resetArm){
-    resetBtn.textContent=db?"Tap again to restore defaults for everyone":"Tap again to restore defaults";
-    resetArm=setTimeout(()=>{resetArm=null;resetBtn.textContent="Restore default inputs";},4000);
-    return;
-  }
-  clearTimeout(resetArm); resetArm=null; resetBtn.textContent="Restore default inputs";
-  const t=S.target; S=JSON.parse(JSON.stringify(DEFAULTS)); S.target=t; syncMarket();
-  for(const pk of PORTKEYS) for(const k of DATED) stampPrice(pk,k);
-  fillInputs(); render(); scheduleSave();
+  clearTimeout(saveT); dirty=false;
+  S.ports=JSON.parse(JSON.stringify(BASE.ports)); for(const k of MAN) S[k]=BASE[k];
+  OV={}; syncMarket(); fillInputs(); render(); renderAsOf();
+  if(db) setStatus(canWrite?"Changes save for everyone":"View only","");
 });
 
 // ---- Shared store: market/latest (written by the scheduled task) and inputs/current (saved manual inputs)
@@ -929,6 +934,7 @@ function applySaved(d){
   for(const k of MAN) if(typeof d[k]==="number") S[k]=d[k];
   if(d.priceAt && typeof d.priceAt==="object") for(const pk of PORTKEYS){ const src=d.priceAt[pk]; if(!src||typeof src!=="object") continue; for(const k of DATED) if(typeof src[k]==="string") (priceAt[pk]=priceAt[pk]||{})[k]=src[k]; }
   if(d.updatedAt) inputsAt=d.updatedAt;
+  snapBase();
 }
 function applyMarket(d){
   if(!d) return;
@@ -948,7 +954,7 @@ async function flush(){
   const body=manualState();
   try{
     await db.doc("inputs/current").set(body);
-    inputsAt=body.updatedAt; retried=false;
+    inputsAt=body.updatedAt; retried=false; snapBase(); renderPriceDates();
     setStatus("Saved "+tfmt(body.updatedAt),"ok"); renderAsOf();
   }catch(e){
     const code=e&&e.code;
