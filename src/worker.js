@@ -74,7 +74,7 @@ const init = (db) => (ready ||= db.batch([...SCHEMA, ...FAS_SCHEMA].map((s) => d
 const BLOCK = /\b(fuck\w*|f\*ck|cunts?|nigg\w*|nigga|faggots?|fags?|rape|raped|rapist|wank\w*|paki|spastic|spaz|retard\w*|nonce|kike|shit\w*|twat|bellend|knobhead|dickhead)\b/i;
 const MODES = new Set(['all', 'pl']);
 const SECS = new Set([15, 30, 45, 60]);
-const GAMES = new Set(['home', 'streaker', 'five-a-sold', 'world-cup-fiver']);
+const GAMES = new Set(['home', 'streaker', 'five-a-sold', 'world-cup-fiver', 'shipping', 'plimsoll']);
 const WCF_NATS = new Set(['Argentina', 'Australia', 'Belgium', 'Brazil', 'Cameroon', 'Colombia', 'Croatia', 'Denmark', 'England', 'France', 'Germany', 'Iran', 'Ireland', 'Italy', 'Japan', 'Mexico', 'Morocco', 'Netherlands', 'Nigeria', 'Norway', 'Portugal', 'Saudi Arabia', 'Scotland', 'Serbia', 'South Korea', 'Spain', 'Sweden', 'Switzerland', 'Tunisia', 'USA', 'Uruguay', 'Wales']);
 const EVENTS = new Set(['view', 'start', 'auction_done', 'kickoff', 'finish', 'draft_done', 'champion']);
 

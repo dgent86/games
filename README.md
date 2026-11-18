@@ -6,6 +6,7 @@ Games site on Cloudflare, deployed automatically from this repository: every pus
 - `src/worker.js` is the leaderboard API (`/api/board`, `/api/submit_score`). Scores are stored in the Cloudflare D1 database `dangent-scores`.
 - `wrangler.jsonc` is the Cloudflare configuration.
 - `tools/streaker/` holds Streaker's source: `template.html` (the game), `data.json` (the players) and `build.py`, which writes `public/streaker/index.html`.
+- `public/shipping/` is the Shipping section: `index.html` lists the tools and `plimsoll/index.html` is Plimsoll by FLOW Maritime (fully loaded bunker cost), a standalone copy of the Claude artifact with its prices and market data embedded. Both pages are marked noindex while in testing. To refresh the figures, update the `DEFAULTS` and `MARKET0` blocks and `inputsAt` in that file.
 - `tools/five-a-sold/` holds Five-a-Sold's source: `template.html` (the page), `engine.js` (auction and match engine), `data.json` (players, managers, portraits and commentary) and `build.py`, which writes `public/five-a-sold/index.html`.
 
 Usage counter: the pages send small anonymous events (view, start, auction_done, kickoff, finish) to `/api/event`, stored in the `events` table of `dangent-scores`. Nothing on the site reads them back; only the dashboard (D1 > dangent-scores > Console) or Claude can, e.g.

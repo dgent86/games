@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B2A22">
+<title>Shipping Tools</title>
+<meta name="description" content="Shipping fuel and compliance tools, test versions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+:root{--deep:#0B2A22;--forest:#0F3D30;--card:#123F33;--ink:#E6EEEA;--muted:#9FB5AC;--oat:#F8ECC5;--line:rgba(255,255,255,.12);
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;--body:"Barlow","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--deep);background-image:linear-gradient(180deg,var(--forest) 0,var(--deep) 420px);color:var(--ink);font:16px/1.5 var(--body);padding:0 16px}
+main{max-width:760px;margin:0 auto;padding:44px 0 56px}
+.eyebrow{margin:0;font:600 13px var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 clamp(40px,10vw,64px)/.95 var(--display);letter-spacing:.02em;text-transform:uppercase;margin:8px 0 10px}
+.lead{margin:0 0 30px;color:var(--muted);max-width:56ch}
+.tools{display:grid;gap:14px}
+.tool{display:flex;align-items:center;gap:18px;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;transition:transform .15s,border-color .15s}
+a.tool:hover,a.tool:focus-visible{transform:translateY(-2px);border-color:var(--oat);outline:none}
+.mark{flex:none;width:56px;height:auto;color:var(--oat)}
+.tool .txt{flex:1;min-width:0}
+.tool h2{margin:0;font:700 30px/1 var(--display);letter-spacing:.1em;text-transform:uppercase}
+.tool h2 small{font:500 14px var(--body);letter-spacing:0;text-transform:none;color:var(--muted);margin-left:8px}
+.tool p{margin:8px 0 0;color:var(--muted);font-size:15px}
+.tag{display:inline-block;margin-top:10px;font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--oat);border:1px solid rgba(248,236,197,.4);border-radius:999px;padding:2px 9px}
+.go{flex:none;font:700 16px var(--display);letter-spacing:.1em;text-transform:uppercase;background:var(--oat);color:var(--forest);border-radius:8px;padding:10px 18px}
+.soon{border-style:dashed;background:transparent}
+.soon .go{background:transparent;color:var(--muted);border:1px solid var(--line)}
+footer{margin-top:36px;color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:6px 20px;justify-content:space-between}
+footer a{color:var(--ink);text-decoration:none;font-weight:600}
+footer a:hover{color:var(--oat)}
+@media (max-width:560px){
+  .tool{flex-wrap:wrap;padding:18px}
+  .mark{width:44px}
+  .tool h2{font-size:26px}
+  .tool h2 small{display:block;margin:6px 0 0}
+  .go{width:100%;text-align:center}
+}
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">dangent.uk</p>
+  <h1>Shipping tools</h1>
+  <p class="lead">Fuel cost and compliance tools for shipowners and operators. These are test versions: figures are indicative and feedback is welcome.</p>
+  <div class="tools">
+    <a class="tool" href="/shipping/plimsoll/">
+      <svg class="mark" viewBox="0 0 64 40" aria-hidden="true"><circle cx="32" cy="20" r="15" fill="none" stroke="currentColor" stroke-width="4"/><rect x="6" y="18" width="52" height="4" fill="currentColor"/></svg>
+      <div class="txt">
+        <h2>Plimsoll<small>by FLOW Maritime</small></h2>
+        <p>Fully loaded bunker cost. Fuel price plus EU ETS, FuelEU and Dutch ZRE, compared side by side for Rotterdam, Antwerp and Singapore.</p>
+        <span class="tag">Test version</span>
+      </div>
+      <span class="go">Open</span>
+    </a>
+    <div class="tool soon" aria-disabled="true">
+      <div class="txt"><h2>More soon</h2><p>Further fuel and compliance tools are on the way.</p></div>
+      <span class="go">Soon</span>
+    </div>
+  </div>
+  <footer><span>Indicative figures, before supplier margin and credit terms.</span><a href="/">dangent.uk home</a></footer>
+</main>
+<script>(()=>{if(!/(^|\.)dangent\.uk$/.test(location.hostname))return;try{const body=JSON.stringify({g:'shipping',e:'view',d:'',s:Math.random().toString(36).slice(2,10)});if(navigator.sendBeacon)navigator.sendBeacon('/api/event',new Blob([body],{type:'application/json'}));}catch(_){}})();</script>
+</body>
+</html>

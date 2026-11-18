@@ -1,0 +1,1306 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B2A22">
+<title>Plimsoll by FLOW Maritime</title>
+<meta name="description" content="Fully loaded bunker cost: fuel price plus EU ETS, FuelEU and Dutch ZRE, compared side by side. Test version.">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+</head>
+<body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;1,700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky view bar with live headline, KPI strip, chart + ranking, assumptions, method notes, line-by-line build. FLOW / Soya palette, matched to the biofuel business case tool. */
+:root{
+  --bg:#F6F8F7; --panel:#FFFFFF; --ink:#13241E; --ink2:#4A5C55; --muted:#7A8A84; --rule:#DCE3E0; --grid:#E8EDEB;
+  --brand:#123F33; --brandInk:#FFFFFF; --navy:#00345B;
+  --c-fuel:#1D5C94; --c-ets:#B0883A; --c-feu:#1F8A66; --c-zre:#9A4F8E; --c-port:#5E6F78;
+  --good:#1F7A4D; --bad:#A33B2B; --chip:#EAF1EE; --goodbg:#DDF0E5; --badbg:#F6DFDA; --scrim:rgba(10,20,16,.6);
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow","Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1714; --panel:#16211D; --ink:#E6EEEA; --ink2:#AFC0B9; --muted:#7F918A; --rule:#2A3833; --grid:#22302B;
+  --brand:#0B2A22; --brandInk:#E6EEEA; --navy:#8DB5DB;
+  --c-fuel:#4F8BC6; --c-ets:#C2913C; --c-feu:#2CA078; --c-zre:#B76DA9; --c-port:#8FA3AD;
+  --good:#5CC38F; --bad:#E07A68; --chip:#1E2C27; --goodbg:#1B3A2C; --badbg:#432620; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1714; --panel:#16211D; --ink:#E6EEEA; --ink2:#AFC0B9; --muted:#7F918A; --rule:#2A3833; --grid:#22302B;
+  --brand:#0B2A22; --brandInk:#E6EEEA; --navy:#8DB5DB;
+  --c-fuel:#4F8BC6; --c-ets:#C2913C; --c-feu:#2CA078; --c-zre:#B76DA9; --c-port:#8FA3AD;
+  --good:#5CC38F; --bad:#E07A68; --chip:#1E2C27; --goodbg:#1B3A2C; --badbg:#432620; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums}
+.band{background:var(--brand);color:var(--brandInk)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header .wrap{padding-block:18px 20px;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
+header .wrap>div:first-child{flex:0 1 auto;min-width:0}
+.hright{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:16px;flex:1 1 360px;max-width:620px;text-align:right;margin-left:auto}
+#theme-seg{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.35)}
+#theme-seg button{background:transparent;color:#E6EEEA;opacity:.8;min-height:32px;padding:5px 12px;font-size:13px}
+#theme-seg button[aria-pressed="true"]{background:#E6EEEA;color:#0B2A22;opacity:1}
+.mark{--mk:24px;font-family:var(--display);font-size:var(--mk);line-height:1;display:flex;align-items:baseline;gap:8px}
+.mark .logo{height:1.35em;width:auto;color:#F8ECC5;flex:none;position:relative;top:calc(0.675em - 0.35em);top:calc(0.675em - 0.5cap)}
+.mark b{font-weight:700;letter-spacing:.1em}
+.mark .by{display:flex;align-items:baseline;gap:12px;font-family:var(--body);font-size:13px;font-weight:500;color:rgba(255,255,255,.75);margin-left:6px}
+.mark{position:relative}
+.apwrap{position:relative}
+.alink{font:inherit;font-size:13.5px;font-weight:600;color:#FFFFFF;background:none;border:0;padding:6px 2px;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(255,255,255,.45);text-underline-offset:4px}
+.alink:hover,.alink[aria-expanded="true"]{text-decoration-color:#F8ECC5;color:#F8ECC5}
+.whypop.aspop{left:auto;right:0;width:min(360px,calc(100vw - 32px));text-align:left}
+@media (max-width:640px){.whypop.aspop{left:0;right:auto}}
+.aspop h3{font-family:var(--display);font-weight:600;font-size:19px;margin:0 0 8px}
+.aspop dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 16px;margin:0 0 10px;font-size:13.5px}
+.aspop dt{color:var(--ink2)} .aspop dd{margin:0;text-align:right;font-weight:600}
+.aspop p{margin:0;padding-top:8px;border-top:1px solid var(--grid);font-size:12px;color:var(--muted)}
+header h1{margin-top:16px}
+.mark .flowlogo{font-family:var(--display);font-weight:700;font-size:var(--mk);height:calc(0.7em / 0.729);height:calc(1cap / 0.729);width:auto;flex:none;transform:translateY(calc(0.7em / 0.729 * 0.148));transform:translateY(calc(1cap / 0.729 * 0.148))}
+.mark .info{width:11px;height:11px;border:0;border-radius:50%;background:transparent;color:rgba(255,255,255,.85);cursor:pointer;margin-left:4px;padding:0;flex:none;display:block;position:relative}
+.mark .info svg{display:block;width:11px;height:11px}
+.mark .info::after{content:"";position:absolute;inset:-8px}
+.mark .byt{position:relative;top:calc(-0.35 * var(--mk) + 0.26em)}
+.mark .info:hover,.mark .info[aria-expanded="true"]{color:#F8ECC5}
+.whypop{position:absolute;top:calc(100% + 10px);left:0;z-index:30;width:min(560px,calc(100vw - 32px));background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;box-shadow:0 12px 32px rgba(0,0,0,.28);font-family:var(--body);line-height:1.45}
+.whypop .why{font-size:13.5px}
+.whypop h3{font-family:var(--display);font-weight:600;font-size:19px;margin:0 0 6px;color:var(--ink)}
+.whypop .why-mark{width:56px}
+.whypop p:last-child{margin-bottom:0}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(20px,2.6vw,26px);line-height:1.05;margin:0;letter-spacing:.01em;text-wrap:balance}
+.sub{opacity:.8;font-size:14px;margin:0;max-width:90ch}
+main .wrap{padding-block:0 48px;display:grid;gap:20px}
+.controls{position:sticky;top:env(safe-area-inset-top,0px);z-index:8;background:var(--bg);border-bottom:1px solid var(--rule);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));display:flex;flex-wrap:wrap;gap:10px 20px;align-items:flex-end}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.headline{margin-left:auto;text-align:right;line-height:1.1}
+.headline .big{font-family:var(--display);font-weight:600;font-size:26px;display:block}
+.headline .lab{display:block;margin-bottom:2px}
+.good{color:var(--good)} .bad{color:var(--bad)}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.lab{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{font:inherit;font-size:14px;font-weight:600;border:0;background:transparent;color:var(--ink2);padding:8px 14px;cursor:pointer;min-height:38px}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--brandInk)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--c-fuel);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:18px;min-width:0}
+.panel h2{font-family:var(--display);font-weight:600;font-size:22px;margin:0 0 4px;letter-spacing:.01em}
+.panel .note{color:var(--ink2);font-size:13.5px;margin:0 0 14px;max-width:85ch}
+.phead{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:flex-start;justify-content:space-between}
+.actions{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink2);margin-bottom:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+#chart{width:100%;position:relative}
+#chart svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:220px;z-index:5}
+.tip h4{margin:0 0 6px;font-family:var(--display);font-size:17px;font-weight:600}
+.tip div{display:flex;justify-content:space-between;gap:16px}
+.tip .t{border-top:1px solid var(--rule);margin-top:4px;padding-top:4px;font-weight:600}
+.rank{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.rank li{display:grid;grid-template-columns:24px minmax(0,1fr) auto auto;gap:8px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--grid)}
+.rank .n{font-family:var(--display);font-weight:600;color:var(--muted);font-size:17px}
+.rank .nm{font-weight:600}
+.rank .v{font-weight:600;text-align:right}
+.rank .d{grid-column:2 / 5;font-size:12.5px;color:var(--ink2)}
+.empty{color:var(--ink2);font-size:13.5px;margin:0}
+.pos{color:var(--bad)} .neg{color:var(--good)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:980px;font-size:13.5px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;vertical-align:bottom;white-space:normal}
+th:first-child,td:first-child{text-align:left}
+tbody tr:hover{background:var(--chip)}
+td.tot{font-weight:600}
+tr.ref td{background:var(--chip)}
+tr.ref td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:8px;align-content:start;min-width:0}
+legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6px;padding:0}
+.f{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:8px;align-items:center;font-size:13.5px;color:var(--ink2)}
+.f input,.f select{font:inherit;font-size:14px;width:100%;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);color:var(--ink);text-align:right;min-height:34px}
+.f select{text-align:left}
+.f small{display:block;color:var(--muted);font-size:11.5px;line-height:1.3}
+.flags{display:grid;gap:10px;margin:0;padding:0;list-style:none;font-size:13.5px;color:var(--ink2);max-width:95ch}
+.flags li{padding-left:14px;border-left:3px solid var(--rule)}
+.flags b{color:var(--ink)}
+.chipline{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink2)}
+.chipline span{background:var(--chip);border-radius:999px;padding:3px 10px}
+.btn{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--rule);background:var(--panel);color:var(--ink2);border-radius:6px;padding:7px 12px;cursor:pointer;min-height:38px}
+.btn.primary{background:var(--brand);color:var(--brandInk);border-color:var(--brand)}
+.btn[disabled]{opacity:.5;cursor:default}
+.modal{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal[hidden],.btn[hidden]{display:none!important}
+.modal-in{background:var(--panel);border:1px solid var(--rule);border-radius:12px;width:100%;max-width:1100px;padding:16px;display:grid;gap:12px}
+.modal-bar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.modal-bar h2{font-family:var(--display);font-weight:600;font-size:22px;margin:0 auto 0 0}
+.modal-img{width:100%;height:auto;display:block;border:1px solid var(--rule);border-radius:6px}
+#pr-style .btn[aria-pressed="true"],#pr-fmt .btn[aria-pressed="true"],#pr-res .btn[aria-pressed="true"],#pr-fuels .btn[aria-pressed="true"]{background:var(--brand);color:var(--brandInk);border-color:var(--brand)}
+.sw{display:flex;gap:10px 16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin:0 0 10px}
+.sw i{display:inline-block;width:14px;height:3px;vertical-align:2px;margin-right:6px;border-radius:2px}
+.senswrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+.senscard{min-width:0}
+.senscard h3{font-family:var(--display);font-weight:600;font-size:15px;margin:0 0 4px;color:var(--ink2)}
+.sens{width:100%;position:relative}
+.sens svg{display:block;width:100%;height:auto;overflow:visible}
+.sens .stip{position:absolute;top:0;pointer-events:none;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:170px;z-index:5}
+.sens .stip b{display:block;font-size:12.5px;margin-bottom:4px}
+.sens .stip div{display:flex;justify-content:space-between;gap:12px}
+.sens .stip i,.senstab i{display:inline-block;width:10px;height:3px;border-radius:2px;vertical-align:3px;margin-right:6px}
+.senstab{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;min-width:0}
+.senstab th,.senstab td{padding:4px 6px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+.senstab th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;white-space:normal;vertical-align:bottom}
+.senstab th:first-child,.senstab td:first-child{text-align:left;white-space:normal}
+@media (prefers-reduced-motion:no-preference){#chart rect{transition:x .25s ease,width .25s ease}}
+.sm{display:none}
+.blendbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;padding:12px 14px;background:var(--chip);border:1px solid var(--rule);border-radius:8px;margin:0 0 14px}
+.blendbar .lab{align-self:center;margin-right:2px}
+.bf{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ink2)}
+.bf select,.bf input{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--ink);min-height:36px}
+#b-pct{width:84px;text-align:right}
+.chips{display:flex;gap:6px}
+.chips button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--rule);background:var(--panel);color:var(--ink2);border-radius:6px;padding:6px 10px;min-height:36px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--brand);color:var(--brandInk);border-color:var(--brand)}
+.bf.chk{flex-direction:row;align-items:center;gap:6px;font-size:13px;min-height:36px}
+.bf.chk input{min-height:0;width:18px;height:18px;accent-color:var(--brand)}
+.bnote{font-size:12px;color:var(--muted);align-self:center}
+.linkbtn{font:inherit;font-size:11.5px;font-weight:600;color:var(--c-fuel);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.status{display:inline-block;font-size:12.5px;color:var(--muted)}
+.status.ok{color:var(--good)} .status.warn{color:var(--bad)}
+.autopill{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--chip);color:var(--ink2);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+.ovr{color:var(--c-ets);font-weight:600}.scopes,.pair{display:contents}
+.no-zre .zc{display:none}
+.sitefoot{border-top:1px solid var(--rule);font-size:13px;color:var(--muted)}
+.sitefoot .wrap{display:flex;flex-wrap:wrap;gap:6px 20px;justify-content:space-between;padding-block:16px 28px}
+.sitefoot a{color:var(--ink2);font-weight:600;text-decoration:none}
+.sitefoot a:hover{color:var(--ink)}
+.fold>summary{list-style:none;display:flex;align-items:center;gap:12px;cursor:pointer;min-height:32px}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{content:"";flex:none;width:9px;height:9px;border-right:2px solid var(--ink2);border-bottom:2px solid var(--ink2);transform:rotate(-45deg);margin-left:2px;transition:transform .15s ease}
+.fold[open]>summary::before{transform:rotate(45deg)}
+.fold>summary h2{margin:0}
+.fold[open]>summary{margin-bottom:12px}
+.stfold{margin-top:6px}
+.stfold>summary{list-style:none;display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink2);padding:4px 0}
+.stfold>summary::-webkit-details-marker{display:none}
+.stfold>summary::before{content:"";width:7px;height:7px;border-right:2px solid var(--ink2);border-bottom:2px solid var(--ink2);transform:rotate(-45deg);transition:transform .15s ease}
+.stfold[open]>summary::before{transform:rotate(45deg)}
+.why{display:flex;gap:20px;align-items:flex-start;max-width:95ch;color:var(--ink2);font-size:14px}
+.why p{margin:0 0 10px}
+.why-mark{flex:none;width:72px;height:auto;color:var(--brand);margin-top:4px}
+:root[data-theme="dark"] .why-mark{color:#F8ECC5}
+@media (max-width:640px){.why{flex-direction:column;gap:10px}.why-mark{width:56px}}
+#cards{display:none}
+.card{border-bottom:1px solid var(--grid)}
+.card summary{list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto 16px;gap:10px;align-items:baseline;padding:12px 0;cursor:pointer;min-height:44px}
+.card summary::-webkit-details-marker{display:none}
+.card summary::after{content:"+";color:var(--muted);font-weight:600;text-align:right;grid-column:3;grid-row:1}
+.card[open] summary::after{content:"−"}
+.card .nm{font-weight:600}
+.card .v{font-weight:600}
+.card .d{grid-column:1 / 4;font-size:12.5px;color:var(--ink2);margin-top:-4px}
+.card dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;margin:0 0 14px;font-size:14px}
+.card dt{color:var(--ink2)} .card dd{margin:0;text-align:right}
+.card dd.tot,.card dt.tot{font-weight:600;color:var(--ink);border-top:1px solid var(--grid);padding-top:6px}
+@media (max-width:640px){
+  body{font-size:15px}
+  header .wrap{padding-block:14px 14px}
+  .hright{align-items:flex-end;text-align:right}
+  .mark{--mk:18px}
+  .mark .by{gap:8px;font-size:12px}
+  h1{font-size:20px;margin-top:12px}
+  .sub{font-size:13px}
+  main .wrap{padding-block:0 32px;gap:14px}
+  .controls{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+  .headline{margin-left:0;text-align:left;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .headline .big{font-size:22px}
+  .headline .lab{margin:0}
+  .ctl{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:8px}
+  .lab{font-size:10px;letter-spacing:.06em;line-height:1.2}
+  .scopes,.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+  .scopes .ctl,.pair .ctl{display:flex;flex-direction:column;align-items:stretch;gap:3px}
+  .seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);width:100%}
+  .seg button{padding:8px 4px;min-height:44px;font-size:15px}
+  .lg{display:none} .sm{display:inline}
+  .panel{padding:14px;border-radius:8px}
+  .panel h2{font-size:20px}
+  .panel .note{font-size:13px;margin-bottom:10px}
+  .grid2{gap:14px}
+  .grid2 aside{order:-1}
+  .legend{font-size:12px;gap:4px 12px}
+  .tablewrap{display:none}
+  #cards{display:block}
+  .f{grid-template-columns:minmax(0,1fr) 108px;font-size:14px}
+  .f input,.f select{font-size:16px;padding:9px 8px;min-height:44px}
+  .btn{display:block;margin-top:8px;min-height:44px;width:100%;font-size:15px}
+  .flags{font-size:13.5px}
+  .tip{left:0!important;right:0;min-width:0}
+  .blendbar{gap:8px 10px}
+  .blendbar .lab{width:100%}
+  .bf select,.bf input,.chips button{font-size:16px;min-height:44px}
+  .bf.chk{min-height:44px}
+  .bnote{width:100%}
+}
+</style>
+<script>document.documentElement.dataset.theme="dark";</script>
+
+<header class="band"><div class="wrap">
+  <div>
+    <div class="mark"><svg class="logo" viewBox="0 0 64 40" role="img" aria-label="Plimsoll mark"><circle cx="32" cy="20" r="15" fill="none" stroke="currentColor" stroke-width="4"/><rect x="6" y="18" width="52" height="4" fill="currentColor"/></svg><b>PLIMSOLL</b><span class="by"><span class="byt">by</span><svg class="flowlogo" viewBox="0 0 1147.59 183.54" fill="#FFFFFF" role="img" aria-label="FLOW Maritime"><path d="M647.43,154.27l-6.42-30.53h-40.34l-6.6,30.53h-14.6l30.07-132.79,22.04-.02,30.11,132.81h-14.27ZM602.67,111.04h35.37l-15.25-75.54h-3.66l-16.46,75.54Z"/><polygon points="1068.73 155.29 1068.73 22.49 1129.12 22.49 1129.12 35.37 1083.67 35.37 1083.67 81.25 1125.94 81.25 1125.94 93.91 1083.67 93.91 1083.67 142.51 1130.8 142.51 1130.8 155.29 1068.73 155.29"/><rect x="779.24" y="21.46" width="14.93" height="132.79"/><rect x="902.38" y="21.46" width="14.93" height="132.79"/><polygon points="546.14 154.52 546.14 67.59 546.74 47.15 545.55 47.18 515.37 146.07 506.56 146.07 476.42 47.07 475.02 47.09 475.58 67.62 475.58 154.52 461.34 154.52 461.34 21.72 482.66 21.72 511.26 116.55 538.85 21.72 560.21 21.72 560.21 154.52 546.14 154.52"/><polygon points="1030.43 155.13 1030.43 68.21 1031.03 47.77 1029.85 47.8 999.66 146.69 990.85 146.69 960.72 47.69 959.31 47.71 959.88 68.23 959.88 155.13 945.63 155.13 945.63 22.34 966.96 22.34 995.56 117.17 1023.14 22.34 1044.51 22.34 1044.51 155.13 1030.43 155.13"/><path d="M737.45,154.25l-5.58-22.21c-7.51-29.71-10.04-39.12-28.9-39.12h-7.03v61.33h-14.93V21.46h34.68c21.05,0,34.13,13.04,34.13,34.04,0,14.11-5.24,23.46-17.94,29.66-3.89,1.9-10.43,2.7-10.43,2.7,0,0,6.6,1.68,10.93,6.11,5.27,5.4,10.6,22.38,15.16,38.88,1.82,6.6,3.86,13.98,6.17,21.4h-16.24ZM695.95,80.27h14.44c13.82,0,25.38-8.92,25.38-23.91s-9.09-22.24-24-22.24h-15.82v46.15Z"/><polygon points="840.17 154.25 840.17 34.24 810.98 34.24 810.98 21.46 884.29 21.46 884.29 34.24 855.1 34.24 855.1 154.25 840.17 154.25"/><path d="M26.7,21.87h60.53v22.87h-34.39v31.2h33.21v22.87h-33.21v55.42h-26.13V21.87Z"/><path d="M105.05,21.87h26.13v108.52h41.55v23.84h-67.68V21.87Z"/><polygon points="412.8 21.89 439.47 21.88 382.15 154.21 360.47 154.23 357.33 69.76 319.61 154.22 298.17 154.21 294.37 21.9 321.89 21.87 320.88 99.66 353.95 21.87 381.34 21.87 382.16 99.67 412.8 21.89"/><path d="M206.44,154.62c-20.22-6.12-26.55-27.88-26.04-47.92.48-18.88,5.49-39.22,14.84-55.66,7.34-12.91,18.23-24.1,32.58-28.75,15.84-5.13,33.28-1.72,42.91,12.47,7.34,10.82,9.03,25.63,8.08,38.59-1.17,15.75-5.09,32.94-12.02,47.12-13.98,28.6-37.58,41.03-60.34,34.14ZM231.61,127.83c10.93-8.24,17.71-33,19.09-56.56.61-10.41-.1-25.71-12.31-26.41-17.17-.98-24.23,25.63-26.25,33.8-5.81,23.49-5.31,40.69-1,47.5s13.95,6.58,20.47,1.67Z"/></svg></span><button type="button" class="info" id="why-btn" aria-label="Why Plimsoll" aria-expanded="false" aria-controls="why-pop"><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="11" cy="6.6" r="1.5" fill="currentColor"/><rect x="9.8" y="9.4" width="2.4" height="7.4" rx="1" fill="currentColor"/></svg></button><div class="whypop" id="why-pop" role="dialog" aria-label="Why Plimsoll" hidden></div></div>
+    <h1 id="title">Fully loaded bunker cost</h1>
+  </div>
+  <div class="hright">
+    <div class="apwrap"><button type="button" class="alink" id="as-btn" aria-expanded="false" aria-controls="as-pop">Assumptions</button>
+      <div class="whypop aspop" id="as-pop" role="dialog" aria-label="Assumptions" hidden><h3>Assumptions</h3><dl id="subtitle"></dl><p id="asof"></p></div></div>
+    <div class="seg" id="theme-seg" role="group" aria-label="Colour theme"><button type="button" data-th="dark">Dark</button><button type="button" data-th="light">Light</button></div>
+  </div>
+</div></header>
+
+<main><div class="wrap">
+
+  <div class="controls" role="group" aria-label="View controls">
+    <div class="pair">
+    <div class="ctl"><span class="lab">Port</span>
+      <div class="seg" id="seg-port">
+        <button type="button" data-v="rtm" aria-pressed="true"><span class="lg">Rotterdam</span><span class="sm">RTM</span></button>
+        <button type="button" data-v="ant" aria-pressed="false" title="Antwerp"><span class="lg">Antwerp</span><span class="sm">ANR</span></button>
+        <button type="button" data-v="sin" aria-pressed="false"><span class="lg">Singapore</span><span class="sm">SIN</span></button>
+      </div></div>
+    <div class="ctl"><span class="lab">FuelEU target</span>
+      <div class="seg" id="seg-target">
+        <button type="button" data-v="89.34" aria-pressed="true" title="89.34 gCO2e/MJ"><span class="lg">2025-29</span><span class="sm">2025</span></button>
+        <button type="button" data-v="85.69" aria-pressed="false" title="85.69 gCO2e/MJ"><span class="lg">2030-34</span><span class="sm">2030</span></button>
+        <button type="button" data-v="77.94" aria-pressed="false" title="77.94 gCO2e/MJ"><span class="lg">2035-39</span><span class="sm">2035</span></button>
+      </div></div>
+    </div>
+    <div class="scopes">
+    <div class="ctl"><span class="lab">EU ETS scope</span>
+      <div class="seg" id="seg-ets">
+        <button type="button" data-v="0" aria-pressed="false">0%</button>
+        <button type="button" data-v="0.5" aria-pressed="false">50%</button>
+        <button type="button" data-v="1" aria-pressed="true">100%</button>
+      </div></div>
+    <div class="ctl"><span class="lab">FuelEU scope</span>
+      <div class="seg" id="seg-feu">
+        <button type="button" data-v="0" aria-pressed="false">0%</button>
+        <button type="button" data-v="0.5" aria-pressed="false">50%</button>
+        <button type="button" data-v="1" aria-pressed="true">100%</button>
+      </div></div>
+    </div>
+    <div class="ctl"><span class="lab">Unit</span>
+      <div class="seg" id="seg-unit">
+        <button type="button" data-v="vlsfoe" aria-pressed="true"><span class="lg">$/t VLSFO-eq</span><span class="sm">VLSFO-eq</span></button>
+        <button type="button" data-v="gj" aria-pressed="false">$/GJ</button>
+        <button type="button" data-v="t" aria-pressed="false"><span class="lg">$/t as bunkered</span><span class="sm">$/t</span></button>
+      </div></div>
+    <button class="btn" type="button" id="print-open" style="align-self:flex-end">Printout</button>
+    <div class="headline" aria-live="polite"><span class="lab" id="hl-lab">Your blend vs VLSFO</span><span class="big" id="hl-v"></span></div>
+  </div>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="h-chart">
+      <h2 id="h-chart">Cost build per fuel</h2>
+      <p class="note" id="chartnote"></p>
+      <div class="blendbar" role="group" aria-label="Bio blend">
+        <span class="lab">Bio blend</span>
+        <label class="bf" for="b-base">Fossil part<select id="b-base">
+          <option value="hsfo">HSFO 380cSt</option>
+          <option value="vlsfo">VLSFO</option>
+          <option value="mgo">MGO LS</option>
+          <option value="lng">LNG (LPDF)</option>
+        </select></label>
+        <label class="bf" for="b-pct">Bio share, % by mass<input id="b-pct" type="number" inputmode="numeric" min="0" max="100" step="1"></label>
+        <div class="chips" id="b-chips" role="group" aria-label="Common blends">
+          <button type="button" data-p="24" aria-pressed="false">24%</button>
+          <button type="button" data-p="30" aria-pressed="false">30%</button>
+          <button type="button" data-p="50" aria-pressed="false">50%</button>
+        </div>
+        <label class="bf chk" id="b-zre-wrap" title="Checked: the bio part's ZRE value has not been realised by anyone else, so it's credited here, same as &quot;B100 inc ZRE&quot;. Unchecked: assume that value has already been realised elsewhere (typically kept or sold on by the supplier), so no credit, though the ZRE obligation cost still applies either way."><input type="checkbox" id="b-zre">ZRE tickets on bio part</label>
+        <label class="bf chk" id="b-feusold-wrap" title="Checked: you've actually sold or pooled this fuel's FuelEU surplus, so its credit is shown and deducted from the cost. Unchecked: not sold, so no credit is shown. The underlying tCO2e balance is unchanged either way."><input type="checkbox" id="b-feusold">FuelEU surplus sold</label>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--c-fuel)"></i>Fuel price</span>
+        <span><i style="background:var(--c-ets)"></i>EU ETS</span>
+        <span><i style="background:var(--c-feu)"></i>FuelEU deficit</span>
+        <span><i style="background:repeating-linear-gradient(135deg,var(--c-feu) 0 2px,transparent 2px 5px);outline:1px solid var(--c-feu);outline-offset:-1px"></i>FuelEU surplus value</span>
+        <span class="lgz"><i style="background:var(--c-zre)"></i>ZRE obligation</span>
+        <span class="lgz"><i style="background:repeating-linear-gradient(135deg,var(--c-zre) 0 2px,transparent 2px 5px);outline:1px solid var(--c-zre);outline-offset:-1px"></i>ZRE net ticket value</span>
+        <span><i style="background:var(--ink);width:3px;border-radius:0"></i>Net fully loaded</span>
+      </div>
+      <div id="chart"></div>
+    </section>
+    <aside class="panel" aria-labelledby="h-rank">
+      <div class="phead">
+        <div>
+          <h2 id="h-rank">Ranking</h2>
+          <p class="note">Cheapest first, energy-adjusted, against VLSFO.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" type="button" id="rank-all" title="Restore every fuel type for this port">All fuels</button>
+        </div>
+      </div>
+      <ol class="rank" id="rank"></ol>
+    </aside>
+  </div>
+
+  <section class="panel" aria-labelledby="h-sens">
+    <div class="phead">
+      <div>
+        <h2 id="h-sens">Sensitivities</h2>
+        <p class="note" id="sens-note"></p>
+      </div>
+    </div>
+    <div class="sw" id="sens-legend"></div>
+    <div class="senswrap">
+      <div class="senscard"><h3>EUA, €/tCO2e</h3><div class="sens" id="sens-eua"></div><details class="stfold"><summary>Table</summary><div class="tablewrap-s" id="senstab-eua"></div></details></div>
+      <div class="senscard"><h3>FuelEU pool price, €/tCO2e</h3><div class="sens" id="sens-pool"></div><details class="stfold"><summary>Table</summary><div class="tablewrap-s" id="senstab-pool"></div></details></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-in">
+    <div class="phead">
+      <div>
+        <h2 id="h-in">Assumptions</h2>
+        <p class="note">Prices and market data are set by FLOW Maritime; the date sits next to each figure. Editing any figure is a what-if for your view only and is not saved. Port prices are held separately for each port.</p>
+      </div>
+      <div class="actions">
+        <span class="status" id="savestatus" role="status"></span>
+        <button class="btn" type="button" id="reset">Restore default inputs</button>
+      </div>
+    </div>
+    <div class="inputs">
+      <fieldset><legend>Market data<span class="autopill">Auto</span></legend>
+        <div class="f"><label for="a-eua"><span>EUA, €/tCO2e<small id="src-eua"></small></span></label><input id="a-eua" type="number" inputmode="decimal" step="1"></div>
+        <div class="f"><label for="a-fx"><span>EUR/USD<small id="src-fx"></small></span></label><input id="a-fx" type="number" inputmode="decimal" step="0.0005"></div>
+        <div class="f"><label for="a-pool"><span>FuelEU pool, €/tCO2e<small id="src-pool"></small></span></label><input id="a-pool" type="number" inputmode="decimal" step="1"></div>
+      </fieldset>
+      <fieldset><legend id="lg-port">Rotterdam prices</legend>
+        <label class="f"><span>HSFO 380cSt, $/t<small id="pd-hsfo"></small></span><input id="p-hsfo" type="number" inputmode="decimal" step="5"></label>
+        <label class="f"><span>Scrubber fuel penalty, %<small>Open loop 1.9-2.2%, closed loop 0.9-1.1%</small></span><input id="a-scrub" type="number" inputmode="decimal" step="0.1" min="0"></label>
+        <label class="f"><span>VLSFO, $/t<small id="pd-vlsfo"></small></span><input id="p-vlsfo" type="number" inputmode="decimal" step="5"></label>
+        <label class="f"><span>MGO LS, $/t<small id="pd-mgo"></small></span><input id="p-mgo" type="number" inputmode="decimal" step="5"></label>
+        <label class="f"><span>B100, $/t<small id="pd-b100"></small></span><input id="p-b100" type="number" inputmode="decimal" step="5"></label>
+        <label class="f"><span>B100 WtT CI, g/MJ<small>Evaluator default, 85% reduction</small></span><input id="a-b100wtt" type="number" step="0.5"></label>
+      </fieldset>
+      <fieldset><legend>LNG / BioLNG</legend>
+        <div class="f"><label for="a-ttf"><span>TTF front-month, €/MWh<small id="src-ttf"></small></span></label><input id="a-ttf" type="number" inputmode="decimal" step="0.5"></div>
+        <label class="f"><span>LNG logistics, €/MWh<small>Added to TTF, LNG and bioLNG</small></span><input id="p-logistics" type="number" inputmode="decimal" step="0.5"></label>
+        <label class="f"><span>Green gas certificate, €/MWh<small>bioLNG only, certificate only</small></span><input id="p-bioprem" type="number" inputmode="decimal" step="0.5"></label>
+        <label class="f"><span>bioLNG liquefaction, €/MWh<small>bioLNG only</small></span><input id="p-liq" type="number" inputmode="decimal" step="0.5"></label>
+        <label class="f"><span>bioLNG WtT CI, g/MJ<small>From PoS</small></span><input id="a-biowtt" type="number" step="1"></label>
+        <label class="f"><span>CH4 slip, % of fuel<small>LPDF 4-stroke</small></span><input id="a-slip" type="number" inputmode="decimal" step="0.1"></label>
+      </fieldset>
+      <fieldset id="fs-zre"><legend>Dutch ZRE (Rotterdam)</legend>
+        <label class="f">ZRE value, €/tCO2e<input id="a-zre" type="number" inputmode="decimal" step="5"></label>
+        <label class="f"><span>Supplier obligation, % of energy<small>× 94 g/MJ fossil reference</small></span><input id="a-zreobl" type="number" inputmode="decimal" step="0.1"></label>
+      </fieldset>
+    </div>
+  </section>
+
+  <details class="panel fold">
+    <summary><h2 id="h-table">Line-by-line build</h2></summary>
+    <p class="note">All $/t figures are per tonne of the fuel as bunkered, unless marked VLSFO-equivalent. FuelEU balance is positive for surplus, negative for deficit, at the selected scope. ZRE net is tickets generated less the supplier's own surrender obligation on that tonne.</p>
+    <div class="tablewrap"><table id="tbl">
+      <thead><tr>
+        <th>Fuel</th><th>LCV GJ/t (useful)</th><th>WtW CI g/MJ</th><th>Fuel price $/t</th>
+        <th>ETS tCO2e/t</th><th>ETS $/t</th><th>FuelEU balance tCO2e/t</th><th>FuelEU $/t</th><th class="zc">ZRE net tCO2e/t</th><th class="zc">ZRE $/t</th>
+        <th>Fully loaded $/t</th><th>$/GJ</th><th>$/t VLSFO-eq</th><th>vs VLSFO $/t VLSFO-eq</th>
+      </tr></thead><tbody></tbody></table></div>
+    <div id="cards"></div>
+  </details>
+
+  <details class="panel fold">
+    <summary><h2 id="h-flags">Method and flags</h2></summary>
+    <ul class="flags">
+      <li><b>FuelEU.</b> WtW = WtT + TtW, Annex II factors and GWPs (CH4 25, N2O 298). Balance per tonne = (target minus WtW) × LCV / 1000, valued at the pool price, × scope. Deficits use the pool price, not the €2,400/t VLSFO-eq penalty (about €640/tCO2e), so this assumes pool liquidity.</li>
+      <li><b>FuelEU surplus sold.</b> The "FuelEU surplus sold" box (Bio blend row) controls whether a FuelEU surplus is credited here. Tick it once you've actually sold or pooled that surplus, and its $/t credit is applied (shown hatched, deducted from the gross cost). Left unticked, the credit is zeroed wherever a fuel's FuelEU balance is a surplus, so you're not shown a gain you haven't realised yet. The balance itself (tCO2e/t, in the table and cards) is unchanged either way. A FuelEU deficit still costs at the pool price regardless of the toggle.</li>
+      <li><b>EU ETS.</b> TtW tCO2e with MRV GWPs (CH4 28, N2O 265), CH4 and N2O in scope from 2026. Biogenic CO2 zero-rated for bioLNG and B100; methane slip and N2O are not, so bioLNG still carries about 0.50 tCO2e/t.</li>
+      <li><b>Fossil factors.</b> HSFO as Annex II HFO (40.5 GJ/t, WtT 13.5). VLSFO as LFO (41.0 GJ/t, WtT 13.2). MGO 42.7 GJ/t, WtT 14.4. Fossil LNG WtT 18.5, LHV 49.1. B100 as FAME, 37.2 GJ/t.</li>
+      <li><b>Bio CI inputs.</b> bioLNG −60 g/MJ is treated as WtT from the PoS. B100 defaults to 14.1 g/MJ WtT: the biofuel evaluator's 85% GHG reduction basis, applied against the 94 g/MJ fossil comparator already used for ZRE below; overwrite it with the actual PoS figure once a cargo is confirmed. Either way, the engine TtW adder (slip and N2O for LNG, N2O and CH4 for B100) is added on top. If your figures are already WtW, lower them by the adder shown in the table.</li>
+      <li><b>LNG and bioLNG price build.</b> LNG = TTF + logistics. bioLNG = TTF + green gas certificate + liquefaction + logistics. All in €/MWh on HHV, since TTF is quoted on gross calorific value, converted at 55 MJ/kg (15.28 MWh/t). Example at TTF €90.30 and €10 logistics: €100.30 × 15.28 = €1,532/t. In Singapore, LNG bunkers are usually priced off JKM or oil, so TTF plus logistics is a proxy there; set the Singapore logistics figure to match the real delivered price.</li>
+      <li><b>Market data.</b> TTF (ICE front-month close), EUA, EUR/USD (ECB reference rate) and the FuelEU pool price (BetterSea FuelEU Surplus Index, weighted monthly figure) are updated by FLOW Maritime. The source and date sit next to each figure. Editing one is a what-if for your view only; "Use live" restores it.</li>
+      <li><b>Scrubber penalty.</b> HSFO burns extra fuel to power the scrubber (pumps, and caustic dosing in closed loop). The penalty is applied as extra fuel per unit of useful energy: effective LCV = 40.5 / (1 + penalty), and ETS and FuelEU follow the extra tonnes. Default 2.0% reflects open loop, the most common fleet configuration; use about 1.0% for closed loop. Source: NMBU system-level comparison of SOx abatement energy use.</li>
+      <li><b>Not included.</b> Pilot fuel on LNG (typically 1-2% of energy as MGO), scrubber capex, caustic and maintenance cost for HSFO, and SECA compliance: Rotterdam and Antwerp sit in the North Sea SECA, so HSFO needs a scrubber and VLSFO is not compliant there at all. Singapore at 100% is shown for comparison only; Singapore-bunkered fuel only ever sits on 50% voyages.</li>
+      <li><b>Bio blends.</b> Blend % is by mass. The bio part is B100 (FAME) for HSFO, VLSFO and MGO, and mass-balanced bioLNG for LNG. Price, LCV, ETS tonnes, FuelEU balance and ZRE are all linear per tonne, so each is the mass-weighted mix of the two parts. The resulting CI is energy-weighted. Methane slip (LNG) and the scrubber penalty (HSFO) apply to the whole blend. In Rotterdam, the ZRE obligation covers the whole tonne, and the bio part of a B blend earns tickets unless you untick the box to say that value has already been realised elsewhere (typically by the supplier); bioLNG earns none. Market blends are usually quoted as a premium over VLSFO, so check the mixed price against a real quote. At ship level, FuelEU allocation can put the bio energy wholly into the in-scope share; to approximate that on a 50% voyage, set FuelEU scope to 100%.</li>
+      <li><b>Separate ETS and FuelEU scope.</b> ETS follows the voyage scope of the emissions. FuelEU can be optimised: bio energy can be allocated wholly to the in-scope share of a ship's energy (BetterSea ruling), so a 50% ETS voyage can carry 100% FuelEU credit on the bio tonnes, up to the in-scope energy available. At 0% on either toggle, that cost or credit drops out. Bio fuel at 0% FuelEU and 0% ETS recovers none of its premium, other than ZRE in Rotterdam.</li>
+      <li><b>Antwerp.</b> An EU port, so EU ETS and FuelEU work exactly as in Rotterdam. Dutch ZRE does not apply to fuel supplied in Belgium, so there is no ZRE obligation and no tickets, and B100 shows once, without ZRE. Default prices start equal to Rotterdam, since ARA fuel oil and gasoil prices usually trade close together; set them from a real Antwerp quote. LNG bunkering at Antwerp is more limited than at Rotterdam, so treat TTF plus logistics as an approximation and check it against a real quote.</li>
+      <li><b>Dutch ZRE, Rotterdam only.</b> Every tonne supplied carries the supplier's surrender obligation, LCV × 94 g/MJ × obligation %, passed to the shipowner as a cost (VLSFO: 41.0 × 94 × 2.6% = 0.100 tCO2e × €240 = €24/t). Quoted Rotterdam prices are treated as excluding it. Only B100 generates tickets: LCV × (94 − PoS CI), so B100 inc ZRE nets 2.939 − 0.091 = 2.848 tCO2e × €240 = €683.5/t off its price. B100 exc ZRE generates no tickets but still carries the obligation. bioLNG carries the obligation, since it is physically LNG, and generates no tickets. ZRE does not change with the ETS or FuelEU toggles, because it attaches at Dutch supply, not at the voyage. Full pass-through assumed, with no supplier margin.</li>
+    </ul>
+  </details>
+
+  <template id="why-tpl">
+    <div class="why">
+      <svg class="why-mark" viewBox="0 0 64 40" aria-hidden="true"><circle cx="32" cy="20" r="15" fill="none" stroke="currentColor" stroke-width="4"/><rect x="6" y="18" width="52" height="4" fill="currentColor"/></svg>
+      <div>
+        <h3>Why Plimsoll</h3>
+        <p>The Plimsoll line is the load line on a ship's hull: a ring with a bar through it, showing how deep the ship can safely sit in the water when fully loaded. It is named after Samuel Plimsoll, the British MP who campaigned in the 1870s against overloaded "coffin ships". His campaign led to the Merchant Shipping Act 1876, which made the mark compulsory on British ships.</p>
+        <p>This tool does the same job for fuel. The price on a bunker quote is only what shows above the waterline. Plimsoll adds the full value stack, EU ETS, FuelEU and Dutch ZRE, so every fuel is compared on its fully loaded cost before you commit to a stem.</p>
+      </div>
+    </div>
+  </template>
+
+</div></main>
+
+<div class="modal" id="print" hidden role="dialog" aria-modal="true" aria-labelledby="print-h">
+  <div class="modal-in">
+    <div class="modal-bar">
+      <h2 id="print-h">Printout image</h2>
+      <button class="btn primary" type="button" id="pr-save">Save PNG</button>
+      <button class="btn" type="button" id="pr-copyimg">Copy image</button>
+      <button class="btn" type="button" id="pr-copytxt">Copy summary</button>
+      <button class="btn" type="button" id="pr-close">Close</button>
+    </div>
+    <div class="modal-bar" id="pr-fuels" role="group" aria-label="Fuels to include"></div>
+    <div class="modal-bar" id="pr-style" role="group" aria-label="Image style"><span class="lab">Style</span><button class="btn" type="button" data-th="dark" aria-pressed="false">Dark</button><button class="btn" type="button" data-th="light" aria-pressed="false">Light, best for printing</button></div>
+    <div class="modal-bar" id="pr-fmt" role="group" aria-label="Image shape"><span class="lab">Shape</span><button class="btn" type="button" data-f="slide" aria-pressed="true">16:9 slide</button><button class="btn" type="button" data-f="tall" aria-pressed="false">Tall comparison</button></div>
+    <div class="modal-bar" id="pr-res" role="group" aria-label="Image size"><span class="lab">Size</span></div>
+    <span class="status" id="pr-status" role="status"></span>
+    <img class="modal-img" id="pr-img" alt="Fuel comparison printout" hidden>
+  </div>
+</div>
+
+<script>
+(function(){
+const DEFAULTS = {
+  ports:{
+    rtm:{name:"Rotterdam",hsfo:572.5,vlsfo:748,mgo:1279.5,logistics:10,bioprem:70,liq:5,b100:1700},
+    ant:{name:"Antwerp",hsfo:553.5,vlsfo:742,mgo:1285.5,logistics:10,bioprem:57,liq:5,b100:1612},
+    sin:{name:"Singapore",hsfo:667,vlsfo:878,mgo:1196,logistics:10,bioprem:57,liq:5,b100:1612}
+  },
+  target:89.34,slip:1.7,biowtt:-100,b100wtt:14.1,scrub:2.0,zre:150,zreobl:2.6
+};
+// Market snapshot embedded at publish; replaced live by the shared store (market/latest) when available.
+const MARKET0 = {
+  ttf:84.75, ttfAsOf:"2026-11-16", ttfSource:"ICE TTF front-month close",
+  eua:87.41, euaAsOf:"2026-11-16", euaSource:"EUA spot",
+  fx:1.1014, fxAsOf:"2026-11-16", fxSource:"ECB reference rate",
+  pool:84.09, poolAsOf:"2026-10-31", poolSource:"BetterSea FuelEU Surplus Index (weighted monthly)",
+  refreshedAt:"2026-11-17T07:33:56Z"
+};
+const MKEYS=["ttf","eua","fx","pool"];
+const PORTKEYS=["rtm","ant","sin"];
+const MAN=["slip","biowtt","b100wtt","scrub","zre","zreobl"];
+const HHV=55;
+let S = JSON.parse(JSON.stringify(DEFAULTS));
+let M = {...MARKET0};
+let OV = {};
+let inputsAt = "2026-11-18T06:41:36.051Z"; // date of the prices embedded in this copy
+// When each quoted fuel price was last changed, per port: {rtm:{hsfo:iso,...},...}. Saved with inputs/current.
+const DATED=["hsfo","vlsfo","mgo","b100"];
+const DATEDLAB={hsfo:"HSFO",vlsfo:"VLSFO",mgo:"MGO",b100:"B100"};
+let priceAt = {};
+function syncMarket(){ for(const k of MKEYS) S[k] = (OV[k]!=null) ? OV[k] : M[k]; }
+syncMarket();
+let view = {port:"rtm",ets:1,feu:1,unit:"vlsfoe",blend:{base:"vlsfo",pct:24,zre:true},feuSold:false,excluded:new Set()};
+try{ const sb=JSON.parse(localStorage.getItem("bunker.blend")||"null"); if(sb&&["hsfo","vlsfo","mgo","lng"].includes(sb.base)&&sb.pct>=0&&sb.pct<=100) view.blend={base:sb.base,pct:Math.round(sb.pct),zre:sb.zre!==false}; }catch(_){}
+try{ view.feuSold = localStorage.getItem("bunker.feusold")==="1"; }catch(_){}
+const BASENAME={hsfo:"HSFO",vlsfo:"VLSFO",mgo:"MGO",lng:"LNG"};
+const RED_FOSSIL=94;
+
+const GWP_FEU={ch4:25,n2o:298}, GWP_ETS={ch4:28,n2o:265};
+const VLSFO_LCV=41.0;
+// LCV in GJ/t (= MJ/kg); cf in g/g fuel; wtt in gCO2e/MJ
+const FUELS=[
+  {id:"hsfo",name:"HSFO 380cSt",lcv:40.5,wtt:13.5,co2:3.114,ch4:0.00005,n2o:0.00018,bio:false,slip:false},
+  {id:"vlsfo",name:"VLSFO",lcv:41.0,wtt:13.2,co2:3.151,ch4:0.00005,n2o:0.00018,bio:false,slip:false},
+  {id:"mgo",name:"MGO LS",lcv:42.7,wtt:14.4,co2:3.206,ch4:0.00005,n2o:0.00018,bio:false,slip:false},
+  {id:"lng",name:"LNG (LPDF)",lcv:49.1,wtt:18.5,co2:2.750,ch4:0,n2o:0.00011,bio:false,slip:true},
+  {id:"biolng",name:"bioLNG (LPDF)",lcv:49.1,wtt:null,co2:2.750,ch4:0,n2o:0.00011,bio:true,slip:true},
+  {id:"b100",name:"B100 (FAME)",lcv:37.2,wtt:null,co2:2.834,ch4:0.00005,n2o:0.00018,bio:true,slip:false},
+  {id:"b100x",base:"b100",name:"B100 exc ZRE",rtmOnly:true,lcv:37.2,wtt:null,co2:2.834,ch4:0.00005,n2o:0.00018,bio:true,slip:false}
+];
+
+function compute(portKey,etsSc,feuSc){
+  const P=S.ports[portKey], fx=S.fx, s=S.slip/100;
+  const mwhPerT = HHV/3.6;
+  const out=[];
+  for(const f0 of FUELS){
+    if(f0.rtmOnly && portKey!=="rtm") continue;
+    const f = (portKey==="rtm" && f0.id==="b100") ? {...f0,name:"B100 inc ZRE"} : f0;
+    let price;
+    if(f.id==="lng") price=(S.ttf+P.logistics)*mwhPerT*fx;
+    else if(f.id==="biolng") price=(S.ttf+P.logistics+P.bioprem+(P.liq||0))*mwhPerT*fx;
+    else price=P[f.base||f.id];
+    if(price==null||isNaN(price)) continue;
+    const sl = f.slip? s:0;
+    const co2 = f.bio?0:f.co2;
+    const lcvMJg=f.lcv/1000;
+    const ttw = ((1-sl)*(co2+f.ch4*GWP_FEU.ch4+f.n2o*GWP_FEU.n2o)+sl*GWP_FEU.ch4)/lcvMJg;
+    const ttwAdder = ttw; // for bio, ttw is entirely non-CO2
+    const wtt = f.id==="biolng"?S.biowtt : (f.id==="b100"||f.id==="b100x")?S.b100wtt : f.wtt;
+    const wtw = wtt+ttw;
+    const bal = (S.target-wtw)*f.lcv/1000*feuSc;        // tCO2e per t, + surplus
+    let feu = -bal*S.pool*fx;                              // $/t, + cost
+    if(!view.feuSold && bal>0) feu = 0;                    // surplus not yet sold/pooled: don't show a gain that hasn't been realised
+    const etsT = ((1-sl)*(co2+f.ch4*GWP_ETS.ch4+f.n2o*GWP_ETS.n2o)+sl*GWP_ETS.ch4)*etsSc;
+    const ets = etsT*S.eua*fx;
+    // Dutch ZRE, Rotterdam: obligation on every tonne supplied; only B100 (inc ZRE) generates tickets.
+    let zreGen=0, zreObl=0, zre=0;
+    if(portKey==="rtm"){
+      zreObl = f.lcv*RED_FOSSIL*(S.zreobl/100)/1000;
+      zreGen = f.id==="b100" ? f.lcv*(RED_FOSSIL-wtt)/1000 : 0;
+      zre = -(zreGen-zreObl)*S.zre*fx;               // $/t, negative = benefit
+    }
+    const total=price+ets+feu+zre;
+    const eff = f.id==="hsfo" ? f.lcv/(1+S.scrub/100) : f.lcv; // useful energy per tonne after scrubber parasitic load
+    out.push({f,eff,price,wtw,ttw:ttwAdder,bal,feu,etsT,ets,zreGen,zreObl,zre,total,gj:total/eff,ve:total/eff*VLSFO_LCV});
+  }
+  // Bio blend: every per-tonne quantity is linear in mass, so mix the two component rows by mass.
+  const B=view.blend, byId={}; out.forEach(r=>byId[r.f.id]=r);
+  const fr=byId[B.base];
+  const br = B.base==="lng" ? byId.biolng : (portKey==="rtm" && !B.zre ? byId.b100x : byId.b100);
+  if(fr && br){
+    const x=Math.min(1,Math.max(0,B.pct/100)), mix=(a,b)=>(1-x)*a+x*b;
+    const lcv=mix(fr.f.lcv,br.f.lcv);
+    const eff = B.base==="hsfo" ? lcv/(1+S.scrub/100) : lcv;
+    const name = B.base==="lng" ? `LNG + ${B.pct}% bioLNG` : `B${B.pct} ${BASENAME[B.base]}${portKey==="rtm"&&!B.zre?" exc ZRE":""}`;
+    const balB=mix(fr.bal,br.bal);
+    let feuB=-balB*S.pool*S.fx;                       // FuelEU nets across the blend first
+    if(!view.feuSold && balB>0) feuB=0;               // same rule as single fuels: unsold surplus earns nothing
+    const total=mix(fr.price,br.price)+mix(fr.ets,br.ets)+feuB+mix(fr.zre,br.zre);
+    out.push({f:{id:"blend",name,lcv,bio:false},eff,
+      price:mix(fr.price,br.price),
+      wtw:((1-x)*fr.f.lcv*fr.wtw + x*br.f.lcv*br.wtw)/lcv, ttw:0,
+      bal:balB, feu:feuB,
+      etsT:mix(fr.etsT,br.etsT), ets:mix(fr.ets,br.ets),
+      zreGen:mix(fr.zreGen,br.zreGen), zreObl:mix(fr.zreObl,br.zreObl), zre:mix(fr.zre,br.zre),
+      total, gj:total/eff, ve:total/eff*VLSFO_LCV});
+  }
+  return out;
+}
+
+function conv(r,v){ // convert $/t of this fuel into the chosen unit
+  if(view.unit==="t") return v;
+  if(view.unit==="gj") return v/r.eff;
+  return v/r.eff*VLSFO_LCV;
+}
+const unitLabel=()=>view.unit==="t"?"$/t as bunkered":view.unit==="gj"?"$/GJ":"$/t VLSFO-eq";
+const fmt=(v,d)=>{d=d??(view.unit==="gj"?2:0);return v.toLocaleString("en-GB",{minimumFractionDigits:d,maximumFractionDigits:d})};
+const sgn=(v,d)=>(v>0?"+":v<0?"−":"")+fmt(Math.abs(v),d);
+
+function drawChart(rows){
+  const el=document.getElementById("chart");
+  if(!rows.length){ el.innerHTML='<p class="note" style="margin:0">No fuels selected. Click a port above to restore the comparison.</p>'; return; }
+  const W=el.clientWidth||720, narrow=W<520;
+  const rowH=narrow?58:46, padL=narrow?2:Math.min(132,W*0.3), padR=narrow?52:64, padT=8, padB=30;
+  const H=padT+rows.length*rowH+padB;
+  const segs=rows.map(r=>{
+    const p=conv(r,r.price), e=conv(r,r.ets), fe=conv(r,r.feu), z=conv(r,r.zre);
+    const gross=p+e+Math.max(fe,0)+Math.max(z,0);
+    return {r,p,e,fe,z,gross,net:conv(r,r.total)};
+  });
+  let maxV=Math.max(...segs.map(x=>x.gross))*1.04;
+  const step=niceStep(maxV/5); maxV=Math.ceil(maxV/step)*step;
+  const x=v=>padL+(Math.max(0,v)/maxV)*(W-padL-padR);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Stacked bars of fuel price, ETS and FuelEU per fuel">`;
+  svg+=`<defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--panel)"/><rect width="2" height="5" fill="var(--c-feu)"/></pattern><pattern id="hatchz" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--panel)"/><rect width="2" height="5" fill="var(--c-zre)"/></pattern></defs>`;
+  for(let t=0;t<=maxV+1e-9;t+=step){
+    const xx=x(t);
+    svg+=`<line x1="${xx}" x2="${xx}" y1="${padT}" y2="${H-padB}" stroke="var(--grid)" stroke-width="1"/>`;
+    svg+=`<text x="${xx}" y="${H-padB+18}" text-anchor="middle" font-size="11" fill="var(--muted)">${fmt(t,view.unit==="gj"?0:0)}</text>`;
+  }
+  const bh=22;
+  segs.forEach((s,i)=>{
+    const y=padT+i*rowH+(narrow?24:(rowH-bh)/2), cy=y+bh/2;
+    const isRef=s.r.f.id==="vlsfo"||s.r.f.id==="blend";
+    if(narrow) svg+=`<text x="${padL}" y="${y-7}" font-size="13" font-weight="${isRef?700:600}" fill="var(--ink)">${s.r.f.name}</text>`;
+    else svg+=`<text x="${padL-10}" y="${cy+4}" text-anchor="end" font-size="13" font-weight="${isRef?700:600}" fill="var(--ink)">${s.r.f.name}</text>`;
+    let x0=x(0);
+    // Segments sit edge to edge with a 1px divider; small cost items get a minimum width so they stay visible
+    const MINW=4, pxOf=v=>v/maxV*(W-padL-padR);
+    const put=(w,fill,extra="")=>{ if(w<=0)return; const a=x0, bw=Math.max(MINW,pxOf(w)); svg+=`<rect x="${a}" y="${y}" width="${bw}" height="${bh}" fill="${fill}" ${extra}/>`; if(a>x(0)+0.5) svg+=`<rect x="${a}" y="${y}" width="1" height="${bh}" fill="var(--panel)"/>`; x0=a+bw; };
+    function xv(px){return (px-padL)/(W-padL-padR)*maxV}
+    put(s.p,"var(--c-fuel)",'rx="0"');
+    put(s.e,"var(--c-ets)");
+    if(s.fe>0) put(s.fe,"var(--c-feu)");
+    if(s.z>0) put(s.z,"var(--c-zre)");
+    const c1=s.fe<0?-s.fe:0, c2=s.z<0?-s.z:0;
+    const endX=x0, w1=pxOf(c1), w2=pxOf(c2);
+    const credit=(a,b,pat,col)=>{ a=Math.max(x(0),a); if(b-a>0.5) svg+=`<rect x="${a}" y="${y-3}" width="${b-a}" height="${bh+6}" fill="url(#${pat})" stroke="${col}" stroke-width="1"/>`; };
+    if(c1) credit(endX-w1,endX,"hatch","var(--c-feu)");
+    if(c2) credit(endX-w1-w2,endX-w1,"hatchz","var(--c-zre)");
+    // Net tick: just past the bar end when there are no credits, so it never covers the last segment
+    const nx=(c1||c2) ? Math.max(x(0),endX-w1-w2) : endX+2.5;
+    svg+=`<line x1="${nx}" x2="${nx}" y1="${y-6}" y2="${y+bh+6}" stroke="var(--ink)" stroke-width="3"/>`;
+    const lx=Math.max(endX,nx)+7;
+    svg+=`<text x="${lx}" y="${cy+4}" font-size="13" font-weight="600" fill="var(--ink)">${fmt(s.net)}</text>`;
+    svg+=`<rect class="hit" data-i="${i}" x="0" y="${padT+i*rowH}" width="${W}" height="${rowH}" fill="transparent"/>`;
+  });
+  svg+=`</svg>`;
+  el.innerHTML=svg+`<div class="tip" hidden></div>`;
+  const tip=el.querySelector(".tip");
+  let pinned=-1;
+  function show(h,ev,touch){
+      const s=segs[+h.dataset.i]; const u=unitLabel();
+      tip.innerHTML=`<h4>${s.r.f.name}</h4>
+        <div><span>Fuel price</span><span>${fmt(s.p)}</span></div>
+        <div><span>EU ETS</span><span>${sgn(s.e)}</span></div>
+        <div><span>FuelEU ${s.fe<0?"credit":"cost"}</span><span>${sgn(s.fe)}</span></div>
+        ${s.r.zre?`<div><span>${s.z<0?"ZRE net credit":"ZRE obligation"}</span><span>${sgn(s.z)}</span></div>`:""}
+        <div class="t"><span>Net, ${u}</span><span>${fmt(s.net)}</span></div>`;
+      tip.hidden=false;
+      const bx=el.getBoundingClientRect();
+      if(touch){
+        const rowTop=padT+(+h.dataset.i)*rowH, scale=bx.width/W;
+        tip.style.left="0px";
+        tip.style.top=((rowTop+rowH)*scale+4)+"px";
+      } else {
+        let lx=ev.clientX-bx.left+14, ly=ev.clientY-bx.top+14;
+        if(lx+240>bx.width) lx=ev.clientX-bx.left-250;
+        tip.style.left=Math.max(0,lx)+"px"; tip.style.top=ly+"px";
+      }
+  }
+  el.querySelectorAll(".hit").forEach(h=>{
+    h.addEventListener("pointermove",ev=>{ if(ev.pointerType==="mouse") show(h,ev,false); });
+    h.addEventListener("pointerleave",ev=>{ if(ev.pointerType==="mouse") tip.hidden=true; });
+    h.addEventListener("click",ev=>{
+      if(ev.pointerType==="mouse") return;
+      const i=+h.dataset.i;
+      if(pinned===i){pinned=-1;tip.hidden=true;return;}
+      pinned=i; show(h,ev,true);
+    });
+  });
+  tip.addEventListener("click",()=>{pinned=-1;tip.hidden=true});
+}
+function niceStep(raw){const p=Math.pow(10,Math.floor(Math.log10(raw)));const n=raw/p;return (n<1.5?1:n<3?2:n<7?5:10)*p}
+
+// ---- Sensitivities: how each fuel's advantage over VLSFO moves as EUA / FuelEU pool / ZRE move
+const SENS_COLORS=["#1D5C94","#B0883A","#1F8A66","#9A4F8E","#5E6F78","#6B7FD7","#A33B2B","#0E7C7B"];
+function computeWith(overrides,portKey,etsSc,feuSc){
+  const backup={}; for(const k in overrides) backup[k]=S[k];
+  Object.assign(S,overrides);
+  const rows=compute(portKey,etsSc,feuSc);
+  Object.assign(S,backup);
+  return rows;
+}
+function sensSeries(varKey,lo,hi,n){
+  n=n||9;
+  const base=compute(view.port,view.ets,view.feu).filter(r=>!view.excluded.has(r.f.id));
+  const xs=[]; for(let i=0;i<n;i++) xs.push(lo+(hi-lo)*i/(n-1));
+  if(S[varKey]>lo && S[varKey]<hi && !xs.some(x=>Math.abs(x-S[varKey])<1e-9)){ xs.push(S[varKey]); xs.sort((a,b)=>a-b); }
+  const unitVal=(row)=>conv(row,row.total);
+  const at=(x)=>{ const keep=view.feuSold; view.feuSold=true; try{ return computeWith({[varKey]:x},view.port,view.ets,view.feu); } finally { view.feuSold=keep; } };
+  const rowsNow=at(S[varKey]), rowsUp=at(S[varKey]+10);
+  const grid=xs.map(at);
+  return {xs,series:base.map((r0,idx)=>{
+    const ys=grid.map(rows=>{ const row=rows.find(r=>r.f.id===r0.f.id); return row?unitVal(row):null; });
+    const n0=rowsNow.find(r=>r.f.id===r0.f.id), n1=rowsUp.find(r=>r.f.id===r0.f.id);
+    return {id:r0.f.id,name:r0.f.name,ys,now:n0?unitVal(n0):null,per10:(n0&&n1)?unitVal(n1)-unitVal(n0):null,color:SENS_COLORS[idx%SENS_COLORS.length]};
+  })};
+}
+function sensRange(v){ const span=Math.max(v*0.35,15); return [Math.max(0,v-span),v+span]; }
+function fmtCost(v){
+  const a=Math.abs(v), sg=v<0?"-":"";
+  if(a>=1e9) return sg+"$"+(a/1e9).toFixed(a>=1e10?0:1)+"bn";
+  if(a>=1e6) return sg+"$"+(a/1e6).toFixed(a>=1e7?0:1)+"m";
+  if(a>=1e3) return sg+"$"+(a/1e3).toFixed(a>=1e4?0:1)+"k";
+  return sg+"$"+fmt(a,0);
+}
+function drawSensChart(elId,varKey,lo,hi,base0,fmtX){
+  const el=document.getElementById(elId); if(!el) return;
+  const {xs,series}=sensSeries(varKey,lo,hi,21);
+  const W=el.clientWidth||300, H=190, padL=52,padR=18,padT=8,padB=22;
+  const dp=view.unit==="gj"?1:0, yfmt=v=>"$"+fmt(v,dp), afmt=v=>delta?(v>0?"+":v<0?"−":"")+"$"+fmt(Math.abs(v),dp):yfmt(v);
+  const delta=false;
+  const pv=(s,i)=>s.ys[i]==null?null:(delta&&s.now!=null?s.ys[i]-s.now:s.ys[i]);
+  const allY=series.flatMap(s=>s.ys.map((_,i)=>pv(s,i)).filter(v=>v!=null)).concat(delta?[0]:[]);
+  let lo2=Math.min(...allY), hi2=Math.max(...allY);
+  const step=niceStep((hi2-lo2)/4||1); lo2=Math.floor(lo2/step)*step; hi2=Math.ceil(hi2/step)*step;
+  const X=v=>padL+((v-xs[0])/((xs[xs.length-1]-xs[0])||1))*(W-padL-padR);
+  const Y=v=>padT+(1-(v-lo2)/((hi2-lo2)||1))*(H-padT-padB);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Fully loaded cost per tonne of each fuel as the price varies">`;
+  for(let t=lo2;t<=hi2+1e-9;t+=step){
+    const yy=Y(t);
+    svg+=`<line x1="${padL}" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="var(--grid)" stroke-width="1"/>`;
+    svg+=`<text x="${padL-6}" y="${yy+4}" text-anchor="end" font-size="10" fill="var(--muted)">${afmt(t)}</text>`;
+    if(delta && Math.abs(t)<1e-9) svg+=`<line x1="${padL}" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="var(--muted)" stroke-width="1"/>`;
+  }
+  { const xst=niceStep((xs[xs.length-1]-xs[0])/(W<360?4:6)); for(let t=Math.ceil(xs[0]/xst)*xst;t<=xs[xs.length-1]+1e-9;t+=xst){ svg+=`<text x="${X(t)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--muted)">${fmtX?fmtX(t):fmt(t,0)}</text>`; } }
+  if(base0>=xs[0]&&base0<=xs[xs.length-1]){
+    const bx=X(base0);
+    svg+=`<line x1="${bx}" x2="${bx}" y1="${padT}" y2="${H-padB}" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="3 3"/>`;
+  }
+  [...series.filter(s=>s.id!=="biolng"),...series.filter(s=>s.id==="biolng")].forEach(s=>{
+    let d=""; s.ys.forEach((_,i)=>{ const v=pv(s,i); if(v==null) return; const px=X(xs[i]),py=Y(v); d+=(d?"L":"M")+px+","+py+" "; });
+    if(d) svg+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.id==="biolng"?3.5:2}" stroke-linejoin="round"/>`;
+    if(!delta && s.now!=null && base0>=xs[0]&&base0<=xs[xs.length-1]) svg+=`<circle cx="${X(base0)}" cy="${Y(s.now)}" r="4" fill="${s.color}" stroke="var(--panel)" stroke-width="2"/>`;
+  });
+  svg+=`<line class="sx" x1="0" x2="0" y1="${padT}" y2="${H-padB}" stroke="var(--ink)" stroke-width="1" visibility="hidden"/>`;
+  svg+=`<rect class="shit" x="${padL}" y="0" width="${W-padL-padR}" height="${H}" fill="transparent"/>`;
+  svg+=`</svg>`;
+  el.innerHTML=svg+`<div class="stip" hidden></div>`;
+  // hover / tap: values of every fuel at the nearest price step
+  const svgEl=el.querySelector("svg"), hit=el.querySelector(".shit"), sx=el.querySelector(".sx"), tip=el.querySelector(".stip");
+  function showAt(clientX){
+    const bx=svgEl.getBoundingClientRect(), scale=bx.width/W;
+    const px=(clientX-bx.left)/scale;
+    let i=Math.round((px-padL)/((W-padL-padR)||1)*(xs.length-1)); i=Math.max(0,Math.min(xs.length-1,i));
+    const xx=X(xs[i]); sx.setAttribute("x1",xx); sx.setAttribute("x2",xx); sx.setAttribute("visibility","visible");
+    const rows=series.filter(s=>s.ys[i]!=null).sort((a,b)=>a.ys[i]-b.ys[i]);
+    tip.innerHTML=`<b>At ${fmtX?fmtX(xs[i]):fmt(xs[i],0)}, cheapest first</b>`+rows.map(s=>{ const dv=s.now!=null?s.ys[i]-s.now:0, z=Math.abs(dv)<(view.unit==="gj"?0.005:0.5); return `<div><span><i style="background:${s.color}"></i>${s.name}</span><span>${yfmt(s.ys[i])} <span style="color:var(--muted)">(${z?"±0":(dv>0?"+":"−")+fmt(Math.abs(dv),dp)})</span></span></div>`; }).join("");
+    tip.hidden=false;
+    const left=xx*scale; const w=tip.offsetWidth||180;
+    tip.style.left=Math.max(0,Math.min(bx.width-w,left>bx.width/2?left-w-10:left+10))+"px";
+  }
+  function hide(){ tip.hidden=true; sx.setAttribute("visibility","hidden"); }
+  hit.addEventListener("pointermove",ev=>{ if(ev.pointerType==="mouse") showAt(ev.clientX); });
+  hit.addEventListener("pointerleave",ev=>{ if(ev.pointerType==="mouse") hide(); });
+  hit.addEventListener("click",ev=>{ if(ev.pointerType==="mouse") return; if(!tip.hidden){ hide(); return; } showAt(ev.clientX); });
+  // table: today's cost and change per EUR 10 rise, steepest first
+  const tab=document.getElementById(elId.replace("sens-","senstab-"));
+  if(tab){
+    const rows=series.filter(s=>s.now!=null).sort((a,b)=>Math.abs(b.per10)-Math.abs(a.per10));
+    const sd=view.unit==="gj"?2:0;
+    const bio=series.find(s=>s.id==="biolng");
+    const be=s=>{
+      if(!bio||s===bio||bio.per10==null||s.per10==null) return "";
+      if(bio.now<=s.now) return "Already cheaper";
+      const ds=(bio.per10-s.per10)/10; if(ds>=-1e-9) return "Never";
+      const xc=base0+(s.now-bio.now)/ds; return "€"+fmt(xc,0);
+    };
+    tab.innerHTML=`<table class="senstab"><thead><tr><th>Fuel</th><th>Today, ${unitLabel()}</th><th>Per €10 rise</th>${bio?`<th>bioLNG matches it at</th>`:""}</tr></thead><tbody>`+
+      rows.map(s=>{ const v=s.per10, z=Math.abs(v)<(view.unit==="gj"?0.005:0.5); return `<tr><td><i style="background:${s.color}"></i>${s.name}</td><td>${fmt(s.now,sd)}</td><td class="${z?"":v>0?"pos":"neg"}">${z?"0":sgn(v,sd)}</td>${bio?`<td>${s===bio?"":be(s)}</td>`:""}</tr>`; }).join("")+`</tbody></table>`;
+  }
+}
+function renderSens(){
+  const sn=document.getElementById("sens-note");
+  if(sn) sn.textContent=`Fully loaded cost per tonne (${unitLabel()}) as one input changes, EUA or FuelEU pool price, with everything else at today's values (dashed line). Surplus is counted as sold here.`;
+  const base=compute(view.port,view.ets,view.feu).filter(r=>!view.excluded.has(r.f.id));
+  document.getElementById("sens-legend").innerHTML=base.map((r,i)=>`<span><i style="background:${SENS_COLORS[i%SENS_COLORS.length]}"></i>${r.f.name}</span>`).join("");
+  const euaLo=Math.max(0,Math.floor(S.eua*0.5/10)*10), euaHi=Math.ceil(S.eua*2/10)*10;
+  drawSensChart("sens-eua","eua",euaLo,euaHi,S.eua,v=>"€"+fmt(v,0));
+  const poolLo=0, poolHi=Math.max(400,Math.ceil(S.pool*3/50)*50);
+  drawSensChart("sens-pool","pool",poolLo,poolHi,S.pool,v=>"€"+fmt(v,0));
+}
+
+function render(){
+  const allRows=compute(view.port,view.ets,view.feu);
+  const rows=allRows.filter(r=>!view.excluded.has(r.f.id));
+  const P=S.ports[view.port];
+  document.getElementById("title").textContent=`${P.name}: fully loaded bunker cost`;
+  const pc=v=>Math.round(v*100)+"%";
+  const tlab={"89.34":"2025-29","85.69":"2030-34","77.94":"2035-39"}[String(S.target)]||"";
+  const arows=[["EU ETS scope",pc(view.ets)],["FuelEU scope",pc(view.feu)],["FuelEU target",`${tlab}, ${S.target} g/MJ`],["TTF",`€${S.ttf}/MWh`],["EUA",`€${S.eua}/tCO2e`],["FuelEU pool",`€${S.pool}/tCO2e`]];
+  if(view.port==="rtm") arows.push(["ZRE",`€${S.zre}/tCO2e`]);
+  arows.push(["EUR/USD",String(S.fx)]);
+  document.getElementById("subtitle").innerHTML=arows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+  const isR=view.port==="rtm";
+  document.querySelectorAll(".lgz").forEach(e=>e.hidden=!isR);
+  document.getElementById("fs-zre").hidden=!isR;
+  document.getElementById("tbl").classList.toggle("no-zre",!isR);
+  document.getElementById("chartnote").textContent=`${unitLabel()}. Hatched areas are credits; the tick marks the net cost.`;
+  drawChart(rows);
+  renderSens();
+  // ranking
+  const ref=allRows.find(r=>r.f.id==="vlsfo");
+  renderKpis(allRows,ref);
+  const sorted=[...rows].sort((a,b)=>a.gj-b.gj);
+  document.getElementById("rank").innerHTML=sorted.length?sorted.map((r,i)=>{
+    const d=(r.gj-ref.gj)*VLSFO_LCV;
+    const dtxt=r.f.id==="vlsfo"?"Reference":`<span class="${d>0?"pos":"neg"}">${sgn(d,0)}</span> $/t VLSFO-eq vs VLSFO`;
+    return `<li><span class="n">${i+1}</span><span class="nm">${r.f.name}</span><span class="v">${fmt(conv(r,r.total))}</span><button type="button" class="linkbtn" data-id="${r.f.id}" title="Remove ${r.f.name} from the comparison">Remove</button><span class="d">${dtxt}</span></li>`;
+  }).join("") : `<li class="empty"><span class="d" style="grid-column:1/5">No fuels selected. Click a port above to restore the comparison.</span></li>`;
+  // table
+  document.querySelector("#tbl tbody").innerHTML=rows.length?rows.map(r=>{
+    const d=(r.gj-ref.gj)*VLSFO_LCV;
+    return `<tr class="${r.f.id==="vlsfo"?"ref":""}"><td>${r.f.name}</td><td>${fmt(r.f.lcv,1)}${r.eff!==r.f.lcv?` <span style="color:var(--muted)">(${fmt(r.eff,1)} eff.)</span>`:""}</td>
+      <td>${fmt(r.wtw,1)}${r.f.bio?` <span style="color:var(--muted)">(TtW +${fmt(r.ttw,1)})</span>`:""}</td>
+      <td>${fmt(r.price,0)}</td><td>${fmt(r.etsT,3)}</td><td>${fmt(r.ets,0)}</td>
+      <td class="${r.bal>0?"neg":r.bal<0?"pos":""}">${sgn(r.bal,3)}</td><td class="${r.feu>0.5?"pos":r.feu<-0.5?"neg":""}">${sgn(r.feu,0)}</td>
+      <td class="zc">${r.zre?sgn(r.zreGen-r.zreObl,3):"–"}</td><td class="zc ${r.zre<0?"neg":r.zre>0?"pos":""}">${r.zre?sgn(r.zre,0):"–"}</td>
+      <td class="tot">${fmt(r.total,0)}</td><td>${fmt(r.gj,2)}</td><td class="tot">${fmt(r.ve,0)}</td>
+      <td class="${r.f.id==="vlsfo"?"":d>0?"pos":"neg"}">${r.f.id==="vlsfo"?"ref":sgn(d,0)}</td></tr>`;
+  }).join("") : `<tr><td colspan="13">No fuels selected. Click a port above to restore the comparison.</td></tr>`;
+  const openIds=[...document.querySelectorAll("#cards details[open]")].map(e=>e.dataset.id);
+  document.getElementById("cards").innerHTML=rows.length?rows.map(r=>{
+    const d=(r.gj-ref.gj)*VLSFO_LCV;
+    const dtxt=r.f.id==="vlsfo"?"Reference fuel":`<span class="${d>0?"pos":"neg"}">${sgn(d,0)}</span> $/t VLSFO-eq vs VLSFO`;
+    return `<details class="card" data-id="${r.f.id}" ${openIds.includes(r.f.id)?"open":""}><summary>
+      <span class="nm">${r.f.name}</span><span class="v">${fmt(r.ve,0)}</span><span class="d">${dtxt}</span></summary>
+      <dl>
+        <dt>Fuel price</dt><dd>$${fmt(r.price,0)}/t</dd>
+        <dt>EU ETS (${fmt(r.etsT,3)} tCO2e/t)</dt><dd>${sgn(r.ets,0)}</dd>
+        <dt>FuelEU (${sgn(r.bal,3)} tCO2e/t)</dt><dd class="${r.feu>0.5?"pos":r.feu<-0.5?"neg":""}">${sgn(r.feu,0)}</dd>
+        ${r.zre?`<dt>ZRE generated / obligation</dt><dd>${fmt(r.zreGen,3)} / ${fmt(r.zreObl,3)} t</dd><dt>ZRE net</dt><dd class="${r.zre<0?"neg":"pos"}">${sgn(r.zre,0)}</dd>`:""}
+        <dt class="tot">Fully loaded</dt><dd class="tot">$${fmt(r.total,0)}/t</dd>
+        <dt>Per GJ${r.eff!==r.f.lcv?" (after scrubber)":""}</dt><dd>$${fmt(r.gj,2)}</dd>
+        <dt>VLSFO-equivalent</dt><dd>$${fmt(r.ve,0)}/t</dd>
+        <dt>WtW CI</dt><dd>${fmt(r.wtw,1)} g/MJ</dd>
+        <dt>LCV${r.eff!==r.f.lcv?" (useful)":""}</dt><dd>${fmt(r.f.lcv,1)}${r.eff!==r.f.lcv?" ("+fmt(r.eff,1)+")":""} GJ/t</dd>
+      </dl></details>`;
+  }).join("") : `<p class="empty">No fuels selected. Click a port above to restore the comparison.</p>`;
+}
+
+function renderKpis(rows,ref){
+  const dv=r=>(r.gj-ref.gj)*VLSFO_LCV;
+  const bl=rows.find(r=>r.f.id==="blend");
+  const hv=document.getElementById("hl-v");
+  if(bl){ const d=dv(bl); document.getElementById("hl-lab").textContent=`${bl.f.name} vs VLSFO, $/t VLSFO-eq`; hv.textContent=sgn(d,0); hv.className="big "+(d>0.5?"bad":d<-0.5?"good":""); }
+}
+
+// inputs
+const portFields=["hsfo","vlsfo","mgo","logistics","bioprem","liq","b100"];
+const glob={"a-slip":"slip","a-biowtt":"biowtt","a-b100wtt":"b100wtt","a-scrub":"scrub","a-zre":"zre","a-zreobl":"zreobl"};
+const MID={ttf:"a-ttf",eua:"a-eua",fx:"a-fx",pool:"a-pool"};
+const dfmt=iso=>{ if(!iso) return ""; const d=new Date(iso.length===10?iso+"T12:00:00Z":iso); return isNaN(d)?String(iso):d.toLocaleDateString("en-GB",{day:"numeric",month:"short"}); };
+const tfmt=iso=>{ const d=new Date(iso); return isNaN(d)?"":d.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); };
+function setVal(id,v){ const e=document.getElementById(id); if(e!==document.activeElement) e.value=(v==null?"":String(v)); }
+function fillMarket(){
+  for(const k of MKEYS){
+    setVal(MID[k],S[k]);
+    const sm=document.getElementById("src-"+k);
+    if(OV[k]!=null){
+      sm.innerHTML=`<span class="ovr">What-if, not saved.</span> Live ${M[k]} · <button type="button" class="linkbtn" data-live="${k}">Use live</button>`;
+    } else {
+      sm.textContent=`${M[k+"Source"]||""}, ${dfmt(M[k+"AsOf"])}`;
+    }
+  }
+}
+function fillInputs(){
+  const P=S.ports[view.port];
+  document.getElementById("lg-port").textContent=`${P.name} prices`;
+  renderPriceDates();
+  portFields.forEach(k=>setVal("p-"+k,P[k]));
+  for(const id in glob) setVal(id,S[glob[id]]);
+  fillMarket();
+  document.querySelectorAll("#seg-target button").forEach(b=>b.setAttribute("aria-pressed",String(parseFloat(b.dataset.v)===S.target)));
+}
+function renderPriceDates(){
+  const pa=priceAt[view.port]||{};
+  for(const k of DATED){ const d=dfmt(pa[k]||inputsAt); document.getElementById("pd-"+k).textContent=d?`Updated ${d}`:"Update date not recorded"; }
+}
+function stampPrice(pk,k){ if(!DATED.includes(k)) return; (priceAt[pk]=priceAt[pk]||{})[k]=new Date().toISOString(); }
+function renderAsOf(){
+  renderPriceDates();
+  const parts=[`Market data: TTF ${dfmt(M.ttfAsOf)} · EUA ${dfmt(M.euaAsOf)} · ECB ${dfmt(M.fxAsOf)} · Pool ${dfmt(M.poolAsOf)}`];
+  if(inputsAt) parts.push(`Inputs saved ${tfmt(inputsAt)}`);
+  parts.push("ETS 100% surrender");
+  document.getElementById("asof").textContent=parts.join(" · ");
+}
+portFields.forEach(k=>document.getElementById("p-"+k).addEventListener("input",e=>{
+  const v=parseFloat(e.target.value); if(!isNaN(v)){S.ports[view.port][k]=v; stampPrice(view.port,k); renderPriceDates(); render(); scheduleSave();}
+}));
+for(const id in glob){document.getElementById(id).addEventListener("input",e=>{
+  const v=parseFloat(e.target.value); if(!isNaN(v)){S[glob[id]]=v; render(); scheduleSave();}
+});}
+for(const k of MKEYS){document.getElementById(MID[k]).addEventListener("input",e=>{
+  const v=parseFloat(e.target.value); if(isNaN(v)) return;
+  OV[k]=(v===M[k])?null:v; syncMarket(); fillMarket(); render(); renderAsOf();
+});}
+document.querySelector(".inputs").addEventListener("click",e=>{
+  const b=e.target.closest("[data-live]"); if(!b) return;
+  const k=b.dataset.live; OV[k]=null; syncMarket(); document.getElementById(MID[k]).value=String(S[k]); fillMarket(); render();
+});
+let resetArm=null;
+const resetBtn=document.getElementById("reset");
+resetBtn.addEventListener("click",()=>{
+  if(!resetArm){
+    resetBtn.textContent=db?"Tap again to restore defaults for everyone":"Tap again to restore defaults";
+    resetArm=setTimeout(()=>{resetArm=null;resetBtn.textContent="Restore default inputs";},4000);
+    return;
+  }
+  clearTimeout(resetArm); resetArm=null; resetBtn.textContent="Restore default inputs";
+  const t=S.target; S=JSON.parse(JSON.stringify(DEFAULTS)); S.target=t; syncMarket();
+  for(const pk of PORTKEYS) for(const k of DATED) stampPrice(pk,k);
+  fillInputs(); render(); scheduleSave();
+});
+
+// ---- Shared store: market/latest (written by the scheduled task) and inputs/current (saved manual inputs)
+let db=null, canWrite=false, saving=false, dirty=false, saveT=null, retried=false;
+function setStatus(txt,cls){ const e=document.getElementById("savestatus"); e.textContent=txt; e.className="status"+(cls?" "+cls:""); }
+function manualState(){
+  const ports={};
+  for(const pk of PORTKEYS){ ports[pk]={}; for(const k of portFields){ const v=S.ports[pk][k]; if(typeof v==="number") ports[pk][k]=v; } }
+  const out={ports,priceAt:JSON.parse(JSON.stringify(priceAt)),updatedAt:new Date().toISOString()};
+  for(const k of MAN) out[k]=S[k];
+  return out;
+}
+function applySaved(d){
+  if(!d) return;
+  if(d.ports) for(const pk of PORTKEYS) if(d.ports[pk]) for(const k of portFields){ const v=d.ports[pk][k]; if(typeof v==="number") S.ports[pk][k]=v; }
+  for(const k of MAN) if(typeof d[k]==="number") S[k]=d[k];
+  if(d.priceAt && typeof d.priceAt==="object") for(const pk of PORTKEYS){ const src=d.priceAt[pk]; if(!src||typeof src!=="object") continue; for(const k of DATED) if(typeof src[k]==="string") (priceAt[pk]=priceAt[pk]||{})[k]=src[k]; }
+  if(d.updatedAt) inputsAt=d.updatedAt;
+}
+function applyMarket(d){
+  if(!d) return;
+  for(const k of MKEYS){ if(typeof d[k]==="number"){ M[k]=d[k]; } for(const suf of ["AsOf","Source"]) if(typeof d[k+suf]==="string") M[k+suf]=d[k+suf]; }
+  if(d.refreshedAt) M.refreshedAt=d.refreshedAt;
+  syncMarket();
+}
+function scheduleSave(){
+  if(!db){ return; }
+  if(!canWrite){ setStatus("View only: your changes are not saved","warn"); return; }
+  dirty=true; clearTimeout(saveT); setStatus("Saving…"); saveT=setTimeout(flush,900);
+}
+async function flush(){
+  if(saving){ saveT=setTimeout(flush,500); return; }
+  if(!dirty) return;
+  dirty=false; saving=true;
+  const body=manualState();
+  try{
+    await db.doc("inputs/current").set(body);
+    inputsAt=body.updatedAt; retried=false;
+    setStatus("Saved "+tfmt(body.updatedAt),"ok"); renderAsOf();
+  }catch(e){
+    const code=e&&e.code;
+    if(code==="invalid_argument"){ canWrite=false; setStatus("View only: your changes are not saved","warn"); }
+    else if(code==="unavailable" && !retried){ retried=true; dirty=true; saveT=setTimeout(flush,1500+Math.random()*1500); setStatus("Retrying save…"); }
+    else if(code==="quota_exceeded"){ setStatus("Not saved: the page's storage is full","warn"); }
+    else { setStatus("Not saved. Edit again to retry.","warn"); }
+  }
+  saving=false;
+}
+(async()=>{
+  const c=window.claude;
+  if(!c||!c.use){ setStatus("Test version: your edits are not saved"); return; }
+  try{ db=await c.use("db"); }catch(_){ db=null; }
+  if(!db){ setStatus("Sign in to see the latest saved inputs and market data"); return; }
+  let user=null; try{ user=await c.use("user"); }catch(_){}
+  try{ canWrite = user ? await user.canEdit() : false; }catch(_){ canWrite=false; }
+  setStatus(canWrite?"Changes save for everyone":"View only","");
+  db.doc("market/latest").onSnapshot(snap=>{
+    if(!snap.exists) return;
+    applyMarket(snap.data()); fillMarket(); render(); renderAsOf();
+  },()=>{});
+  db.doc("inputs/current").onSnapshot(snap=>{
+    if(!snap.exists || snap.metadata.hasPendingWrites || dirty || saving) return;
+    applySaved(snap.data()); fillInputs(); render(); renderAsOf();
+  },()=>{});
+})();
+
+function bindSeg(id,key,parse){
+  const seg=document.getElementById(id);
+  seg.addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b)return;
+    seg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+    if(key==="target") S.target=parse(b.dataset.v); else view[key]=parse(b.dataset.v);
+    if(key==="port"){ view.excluded=new Set(); fillInputs(); fillBlend(); }
+    render();
+  });
+}
+bindSeg("seg-port","port",v=>v);
+document.getElementById("rank").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-id]"); if(!b) return;
+  view.excluded.add(b.dataset.id);
+  render();
+});
+document.getElementById("rank-all").addEventListener("click",()=>{
+  view.excluded=new Set();
+  render();
+});
+bindSeg("seg-ets","ets",v=>parseFloat(v));
+bindSeg("seg-target","target",v=>parseFloat(v));
+bindSeg("seg-feu","feu",v=>parseFloat(v));
+bindSeg("seg-unit","unit",v=>v);
+// ---- Bio blend controls (per viewer)
+const bBase=document.getElementById("b-base"), bPct=document.getElementById("b-pct"), bZre=document.getElementById("b-zre");
+function saveBlend(){ try{ localStorage.setItem("bunker.blend",JSON.stringify(view.blend)); }catch(_){} }
+function fillBlend(){
+  bBase.value=view.blend.base;
+  if(bPct!==document.activeElement) bPct.value=String(view.blend.pct);
+  bZre.checked=view.blend.zre;
+  document.querySelectorAll("#b-chips button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.p===view.blend.pct)));
+  const isLng=view.blend.base==="lng";
+  document.getElementById("b-zre-wrap").hidden = isLng || view.port!=="rtm";
+}
+bBase.addEventListener("change",()=>{ view.blend.base=bBase.value; saveBlend(); fillBlend(); render(); });
+bPct.addEventListener("input",()=>{ const v=parseFloat(bPct.value); if(isNaN(v)) return; view.blend.pct=Math.round(Math.min(100,Math.max(0,v))); saveBlend(); fillBlend(); render(); });
+bPct.addEventListener("blur",()=>{ bPct.value=String(view.blend.pct); });
+bZre.addEventListener("change",()=>{ view.blend.zre=bZre.checked; saveBlend(); render(); });
+const bFeuSold=document.getElementById("b-feusold");
+bFeuSold.checked=view.feuSold;
+bFeuSold.addEventListener("change",()=>{ view.feuSold=bFeuSold.checked; try{ localStorage.setItem("bunker.feusold",view.feuSold?"1":"0"); }catch(_){} render(); });
+document.getElementById("b-chips").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; view.blend.pct=+b.dataset.p; saveBlend(); fillBlend(); render(); });
+fillBlend();
+
+/* ---------- printout image export (mirrors SwitchStack's export-image pattern) ---------- */
+const PEXT={
+  light:{bg:"#EEF3F1",panel:"#FFFFFF",ink:"#13241E",ink2:"#4A5C55",muted:"#7A8A84",rule:"#DCE3E0",grid:"#E8EDEB",brand:"#123F33",good:"#1F7A4D",bad:"#A33B2B",goodbg:"#DDF0E5",badbg:"#F6DFDA"},
+  dark:{bg:"#0F1714",panel:"#16211D",ink:"#E6EEEA",ink2:"#AFC0B9",muted:"#7F918A",rule:"#2A3833",grid:"#22302B",brand:"#0B2A22",good:"#5CC38F",bad:"#E07A68",goodbg:"#1B3A2C",badbg:"#432620"}};
+const PSEG={light:{fuel:"#1D5C94",ets:"#B0883A",feu:"#1F8A66",zre:"#9A4F8E"},dark:{fuel:"#4F8BC6",ets:"#C2913C",feu:"#2CA078",zre:"#B76DA9"}};
+let PEX=PEXT.light, PSG=PSEG.light;
+const PFD='"Barlow Condensed","Arial Narrow",Arial,sans-serif', PFB='Barlow,"Segoe UI",Helvetica,Arial,sans-serif';
+let pcx=null;
+function PT(str,x,y,o){o=o||{};pcx.font=`${o.i?"italic ":""}${o.w||400} ${o.s||16}px ${o.f||PFB}`;pcx.fillStyle=o.c||PEX.ink;pcx.textAlign=o.a||"left";pcx.textBaseline="alphabetic";pcx.fillText(str,x,y);}
+function pFitSize(str,maxW,size,w,f){let s=size;pcx.font=`${w} ${s}px ${f}`;while(s>11&&pcx.measureText(str).width>maxW){s-=1;pcx.font=`${w} ${s}px ${f}`;}return s;}
+function PRR(x,y,w,h,r,fill,stroke){pcx.beginPath();pcx.moveTo(x+r,y);pcx.arcTo(x+w,y,x+w,y+h,r);pcx.arcTo(x+w,y+h,x,y+h,r);pcx.arcTo(x,y+h,x,y,r);pcx.arcTo(x,y,x+w,y,r);pcx.closePath();if(fill){pcx.fillStyle=fill;pcx.fill();}if(stroke){pcx.strokeStyle=stroke;pcx.lineWidth=1;pcx.stroke();}}
+function PLn(x1,y1,x2,y2,c,w,dash){pcx.beginPath();pcx.moveTo(x1,y1);pcx.lineTo(x2,y2);pcx.strokeStyle=c;pcx.lineWidth=w||1;pcx.setLineDash(dash||[]);pcx.stroke();pcx.setLineDash([]);}
+const nf0=v=>Number(v).toLocaleString("en-GB",{maximumFractionDigits:2});
+const esc0=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+let prSel=null, prSeenIds=new Set();
+function prRows(){ return compute(view.port,view.ets,view.feu); }
+function prBuildFuelToggle(){
+  const rows=prRows(), host=document.getElementById("pr-fuels");
+  if(!prSel) prSel=new Set();
+  rows.forEach(r=>{ if(!prSeenIds.has(r.f.id)){ prSeenIds.add(r.f.id); prSel.add(r.f.id); } });
+  host.innerHTML=`<span class="lab">Fuels</span>`+rows.map(r=>`<button type="button" class="btn" data-fid="${r.f.id}" aria-pressed="${prSel.has(r.f.id)}">${esc0(r.f.name)}</button>`).join("");
+}
+document.getElementById("pr-fuels").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-fid]"); if(!b) return;
+  const id=b.dataset.fid;
+  if(prSel.has(id)) prSel.delete(id); else prSel.add(id);
+  b.setAttribute("aria-pressed",String(prSel.has(id)));
+  if(prTheme) drawPrint(); else paintPrintBar();
+});
+
+function printSummaryText(){
+  const rows=prRows().filter(r=>prSel.has(r.f.id));
+  const ref=prRows().find(r=>r.f.id==="vlsfo");
+  const P=S.ports[view.port], u=unitLabel(), isR=view.port==="rtm";
+  const lines=[`${P.name}: fully loaded bunker cost`,
+    `EU ETS ${Math.round(view.ets*100)}% · FuelEU ${Math.round(view.feu*100)}% · TTF €${nf0(S.ttf)} · EUA €${nf0(S.eua)} · FuelEU pool €${nf0(S.pool)}/tCO2e${isR?` · ZRE €${nf0(S.zre)}/tCO2e`:""} · EUR/USD ${S.fx}`,""];
+  rows.forEach(r=>{
+    const d=ref?(r.gj-ref.gj)*VLSFO_LCV:0;
+    lines.push(`${r.f.name}: ${fmt(conv(r,r.total))} ${u}${r.f.id!=="vlsfo"&&ref?` (${sgn(d,0)} vs VLSFO)`:""}`);
+  });
+  lines.push("","Indicative, before supplier margin and credit terms.");
+  return lines.join("\n");
+}
+
+function drawPrintChart(rows,bx,by,bw,bh){
+  if(!rows.length){ PT("No fuels selected.",bx+10,by+24,{s:14,c:PEX.muted}); return; }
+  const rowH=Math.min(60,bh/rows.length), padL=bw<1100?210:260, padR=bw<1100?70:90, barH=Math.max(10,Math.min(26,rowH-14));
+  const segs=rows.map(r=>{
+    const p=conv(r,r.price), e=conv(r,r.ets), fe=conv(r,r.feu), z=conv(r,r.zre);
+    const gross=p+e+Math.max(fe,0)+Math.max(z,0);
+    return {r,p,e,fe,z,gross,net:conv(r,r.total)};
+  });
+  let maxV=Math.max(...segs.map(s=>s.gross))*1.04;
+  const step=niceStep(maxV/5||1); maxV=Math.ceil(maxV/step)*step;
+  const X=v=>bx+padL+(Math.max(0,v)/maxV)*(bw-padL-padR);
+  for(let t=0;t<=maxV+1e-9;t+=step){
+    const xx=X(t);
+    PLn(xx,by,xx,by+rows.length*rowH,PEX.grid,1);
+    PT(fmt(t,0),xx,by+rows.length*rowH+20,{s:12,c:PEX.muted,a:"center"});
+  }
+  segs.forEach((s,i)=>{
+    const y=by+i*rowH+(rowH-barH)/2, cy=y+barH/2;
+    const isRef=s.r.f.id==="vlsfo"||s.r.f.id==="blend";
+    PT(s.r.f.name,bx+padL-12,cy+5,{s:15,w:isRef?700:600,a:"right"});
+    let x0=X(0);
+    const xv=px=>(px-bx-padL)/(bw-padL-padR)*maxV;
+    const MINW=5, pxOf=v=>v/maxV*(bw-padL-padR);
+    const put=(seg,col)=>{ if(seg<=0) return; const a=x0, w=Math.max(MINW,pxOf(seg)); pcx.fillStyle=col; pcx.fillRect(a,y,w,barH); if(a>X(0)+0.5){ pcx.fillStyle=PEX.panel; pcx.fillRect(a,y,1.5,barH); } x0=a+w; };
+    put(s.p,PSG.fuel); put(s.e,PSG.ets); if(s.fe>0) put(s.fe,PSG.feu); if(s.z>0) put(s.z,PSG.zre);
+    const c1=s.fe<0?-s.fe:0, c2=s.z<0?-s.z:0;
+    // Credits: hatched over the bar, as on the page (panel background with diagonal stripes in the credit colour)
+    const hatchRect=(from,to,col)=>{ const a=X(Math.max(0,from)), b=X(Math.max(0,to)); if(b-a<=0.5) return;
+      pcx.save(); pcx.beginPath(); pcx.rect(a,y-3,b-a,barH+6); pcx.clip();
+      pcx.fillStyle=PEX.panel; pcx.fillRect(a,y-3,b-a,barH+6);
+      pcx.strokeStyle=col; pcx.lineWidth=2.5; pcx.setLineDash([]); pcx.beginPath();
+      for(let k=a-(barH+6);k<b+barH+6;k+=7){ pcx.moveTo(k,y+barH+3); pcx.lineTo(k+barH+6,y-3); }
+      pcx.stroke(); pcx.restore();
+      pcx.strokeStyle=col; pcx.lineWidth=1.5; pcx.strokeRect(a,y-3,b-a,barH+6); };
+    const endX=x0, w1=pxOf(c1), w2=pxOf(c2);
+    if(c1) hatchRect(xv(endX-w1),xv(endX),PSG.feu);
+    if(c2) hatchRect(xv(endX-w1-w2),xv(endX-w1),PSG.zre);
+    const nx=(c1||c2) ? Math.max(X(0),endX-w1-w2) : endX+2.5;
+    PLn(nx,y-6,nx,y+barH+6,PEX.ink,3);
+    PT(fmt(s.net),Math.max(endX,nx)+9,cy+5,{s:14,w:600});
+  });
+}
+
+function prColorMap(rows){ const m={}; rows.forEach((r,i)=>m[r.f.id]=SENS_COLORS[i%SENS_COLORS.length]); return m; }
+function drawPrintSens(varKey,lo,hi,title,x,y,w,h,ids,cmap,u){
+  PRR(x,y,w,h,10,PEX.panel,PEX.rule);
+  PT(title,x+20,y+30,{s:20,w:600,f:PFD});
+  PT(`Fully loaded, ${u}`,x+w-20,y+30,{s:12,c:PEX.muted,a:"right"});
+  const keep=view.excluded; view.excluded=new Set();
+  let data; try{ data=sensSeries(varKey,lo,hi,21); } finally { view.excluded=keep; }
+  const xs=data.xs, series=data.series.filter(s=>ids.has(s.id));
+  if(!series.length) return;
+  const base0=S[varKey], dp=view.unit==="gj"?1:0;
+  const pl=x+66, pr=x+w-22, pt=y+62, pb=y+h-30;
+  const all=series.flatMap(s=>s.ys.filter(v=>v!=null));
+  let lo2=Math.min(...all), hi2=Math.max(...all);
+  const step=niceStep((hi2-lo2)/4||1); lo2=Math.floor(lo2/step)*step; hi2=Math.ceil(hi2/step)*step;
+  const X=v=>pl+(v-xs[0])/((xs[xs.length-1]-xs[0])||1)*(pr-pl);
+  const Y=v=>pt+(1-(v-lo2)/((hi2-lo2)||1))*(pb-pt);
+  for(let t=lo2;t<=hi2+1e-9;t+=step){ PLn(pl,Y(t),pr,Y(t),PEX.grid,1); PT((t<-1e-9?"−$":"$")+fmt(Math.abs(t),dp),pl-8,Y(t)+4,{s:12,c:PEX.muted,a:"right"}); }
+  const xst=niceStep((xs[xs.length-1]-xs[0])/6);
+  for(let t=Math.ceil(xs[0]/xst)*xst;t<=xs[xs.length-1]+1e-9;t+=xst) PT("€"+fmt(t,0),X(t),pb+18,{s:12,c:PEX.muted,a:"center"});
+  const inR=base0>=xs[0]&&base0<=xs[xs.length-1];
+  if(inR){ PLn(X(base0),pt,X(base0),pb,PEX.ink2,1,[4,4]); PT("Today €"+nf0(base0),X(base0)+6,pt-8,{s:12,c:PEX.ink2}); }
+  [...series.filter(s=>s.id!=="biolng"),...series.filter(s=>s.id==="biolng")].forEach(s=>{
+    pcx.beginPath(); let st=false;
+    s.ys.forEach((v,i)=>{ if(v==null) return; const px=X(xs[i]),py=Y(v); if(!st){pcx.moveTo(px,py);st=true;} else pcx.lineTo(px,py); });
+    pcx.setLineDash([]); pcx.strokeStyle=cmap[s.id]; pcx.lineWidth=s.id==="biolng"?3.5:2.5; pcx.lineJoin="round"; pcx.stroke();
+    if(inR && s.now!=null){ pcx.beginPath(); pcx.arc(X(base0),Y(s.now),4.5,0,Math.PI*2); pcx.fillStyle=cmap[s.id]; pcx.fill(); pcx.strokeStyle=PEX.panel; pcx.lineWidth=2; pcx.stroke(); }
+  });
+}
+function drawPrintTable(rows,ref,x,y,w,h,isR,cmap){
+  const cols=isR?["Fuel","Price $/t","ETS $/t","FuelEU $/t","ZRE $/t","Fully loaded $/t","vs VLSFO"]:["Fuel","Price $/t","ETS $/t","FuelEU $/t","Fully loaded $/t","vs VLSFO"];
+  const nmW=280, restW=w-nmW, cw=restW/(cols.length-1), rh=Math.min(34,h/(rows.length+1));
+  cols.forEach((c,i)=>{ const cx0=i===0?x:x+nmW+(i-1)*cw; PT(c,i===0?cx0:cx0+cw-8,y+rh*0.65,{s:13,w:600,c:PEX.muted,a:i===0?"left":"right"}); });
+  PLn(x,y+rh-6,x+w,y+rh-6,PEX.rule,1);
+  rows.forEach((r,ri)=>{
+    const ry=y+(ri+1)*rh;
+    const d=ref?(r.gj-ref.gj)*VLSFO_LCV:0;
+    const vals=isR
+      ? [r.f.name, fmt(r.price,0), sgn(r.ets,0), sgn(r.feu,0), r.zre?sgn(r.zre,0):"–", fmt(r.total,0), r.f.id==="vlsfo"?"ref":sgn(d,0)]
+      : [r.f.name, fmt(r.price,0), sgn(r.ets,0), sgn(r.feu,0), fmt(r.total,0), r.f.id==="vlsfo"?"ref":sgn(d,0)];
+    vals.forEach((v,i)=>{
+      const cx0=i===0?x:x+nmW+(i-1)*cw;
+      if(i===0 && cmap && cmap[r.f.id]){ PLn(cx0,ry+rh*0.65-5,cx0+16,ry+rh*0.65-5,cmap[r.f.id],4); }
+      PT(v,i===0?cx0+(cmap?24:0):cx0+cw-8,ry+rh*0.65,{s:14,w:i===0?600:500,c:PEX.ink,a:i===0?"left":"right"});
+    });
+    if(ri<rows.length-1) PLn(x,ry+rh-8,x+w,ry+rh-8,PEX.grid,1);
+  });
+}
+
+const FLOW_NEG_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1147.59 183.54" width="1147.59" height="183.54" fill="#FFFFFF"><path d="M647.43,154.27l-6.42-30.53h-40.34l-6.6,30.53h-14.6l30.07-132.79,22.04-.02,30.11,132.81h-14.27ZM602.67,111.04h35.37l-15.25-75.54h-3.66l-16.46,75.54Z"/><polygon points="1068.73 155.29 1068.73 22.49 1129.12 22.49 1129.12 35.37 1083.67 35.37 1083.67 81.25 1125.94 81.25 1125.94 93.91 1083.67 93.91 1083.67 142.51 1130.8 142.51 1130.8 155.29 1068.73 155.29"/><rect x="779.24" y="21.46" width="14.93" height="132.79"/><rect x="902.38" y="21.46" width="14.93" height="132.79"/><polygon points="546.14 154.52 546.14 67.59 546.74 47.15 545.55 47.18 515.37 146.07 506.56 146.07 476.42 47.07 475.02 47.09 475.58 67.62 475.58 154.52 461.34 154.52 461.34 21.72 482.66 21.72 511.26 116.55 538.85 21.72 560.21 21.72 560.21 154.52 546.14 154.52"/><polygon points="1030.43 155.13 1030.43 68.21 1031.03 47.77 1029.85 47.8 999.66 146.69 990.85 146.69 960.72 47.69 959.31 47.71 959.88 68.23 959.88 155.13 945.63 155.13 945.63 22.34 966.96 22.34 995.56 117.17 1023.14 22.34 1044.51 22.34 1044.51 155.13 1030.43 155.13"/><path d="M737.45,154.25l-5.58-22.21c-7.51-29.71-10.04-39.12-28.9-39.12h-7.03v61.33h-14.93V21.46h34.68c21.05,0,34.13,13.04,34.13,34.04,0,14.11-5.24,23.46-17.94,29.66-3.89,1.9-10.43,2.7-10.43,2.7,0,0,6.6,1.68,10.93,6.11,5.27,5.4,10.6,22.38,15.16,38.88,1.82,6.6,3.86,13.98,6.17,21.4h-16.24ZM695.95,80.27h14.44c13.82,0,25.38-8.92,25.38-23.91s-9.09-22.24-24-22.24h-15.82v46.15Z"/><polygon points="840.17 154.25 840.17 34.24 810.98 34.24 810.98 21.46 884.29 21.46 884.29 34.24 855.1 34.24 855.1 154.25 840.17 154.25"/><path d="M26.7,21.87h60.53v22.87h-34.39v31.2h33.21v22.87h-33.21v55.42h-26.13V21.87Z"/><path d="M105.05,21.87h26.13v108.52h41.55v23.84h-67.68V21.87Z"/><polygon points="412.8 21.89 439.47 21.88 382.15 154.21 360.47 154.23 357.33 69.76 319.61 154.22 298.17 154.21 294.37 21.9 321.89 21.87 320.88 99.66 353.95 21.87 381.34 21.87 382.16 99.67 412.8 21.89"/><path d="M206.44,154.62c-20.22-6.12-26.55-27.88-26.04-47.92.48-18.88,5.49-39.22,14.84-55.66,7.34-12.91,18.23-24.1,32.58-28.75,15.84-5.13,33.28-1.72,42.91,12.47,7.34,10.82,9.03,25.63,8.08,38.59-1.17,15.75-5.09,32.94-12.02,47.12-13.98,28.6-37.58,41.03-60.34,34.14ZM231.61,127.83c10.93-8.24,17.71-33,19.09-56.56.61-10.41-.1-25.71-12.31-26.41-17.17-.98-24.23,25.63-26.25,33.8-5.81,23.49-5.31,40.69-1,47.5s13.95,6.58,20.47,1.67Z"/></svg>';
+let flowImgP=null;
+function flowLogoImg(){ if(!flowImgP) flowImgP=new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>res(null); im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(FLOW_NEG_SVG); }); return flowImgP; }
+async function buildPrintImage(theme,fmt0,outW){
+  const flowImg=await flowLogoImg();
+  const slide=fmt0!=="tall";
+  theme=theme==="dark"?"dark":"light"; PEX=PEXT[theme]; PSG=PSEG[theme];
+  const allRows=prRows(), rows=allRows.filter(r=>prSel.has(r.f.id)), ref=allRows.find(r=>r.f.id==="vlsfo");
+  const P=S.ports[view.port], isR=view.port==="rtm", u=unitLabel();
+  const W=1600,H=slide?900:1150,cv=document.createElement("canvas");outW=outW||1600;cv.width=outW;cv.height=Math.round(outW*H/W);pcx=cv.getContext("2d");pcx.scale(outW/W,outW/W);
+  try{await Promise.all([document.fonts.load('600 40px "Barlow Condensed"'),document.fonts.load('italic 700 28px "Barlow Condensed"'),document.fonts.load('400 16px Barlow'),document.fonts.load('600 16px Barlow')]);}catch(_){}
+  pcx.fillStyle=PEX.bg;pcx.fillRect(0,0,W,H);
+  const HH=slide?124:160;pcx.fillStyle=PEX.brand;pcx.fillRect(0,0,W,HH);
+  { // Plimsoll mark + wordmark
+    const by=slide?38:52, fs=slide?26:30, s=fs*1.15, cyL=by-fs*0.36; let lx=40;
+    pcx.strokeStyle="#F8ECC5"; pcx.lineWidth=s*0.1; pcx.setLineDash([]); pcx.beginPath(); pcx.arc(lx+s*0.8,cyL,s*0.375,0,Math.PI*2); pcx.stroke();
+    pcx.fillStyle="#F8ECC5"; pcx.fillRect(lx+s*0.15,cyL-s*0.05,s*1.3,s*0.1); lx+=s*1.6+10;
+    try{ pcx.letterSpacing="2px"; }catch(_){}
+    PT("PLIMSOLL",lx,by,{s:fs,w:700,f:PFD,c:"#FFFFFF"}); pcx.font=`700 ${fs}px ${PFD}`; lx+=pcx.measureText("PLIMSOLL").width+12;
+    try{ pcx.letterSpacing="0px"; }catch(_){}
+    PT("by",lx,by,{s:Math.round(fs*0.55),w:500,c:"rgba(255,255,255,.75)"}); pcx.font=`500 ${Math.round(fs*0.55)}px ${PFB}`; lx+=pcx.measureText("by").width+12;
+    if(flowImg){ const lh=fs*0.95, lw=lh*1147.59/183.54; pcx.drawImage(flowImg,lx,by-lh*0.86,lw,lh); }
+    else PT("FLOW Maritime",lx,by,{s:Math.round(fs*0.55),w:600,c:"#FFFFFF"});
+  }
+  const title=`${P.name}: fuel comparison`;
+  PT(title,40,slide?86:106,{s:pFitSize(title,1000,slide?44:50,600,PFD),w:600,f:PFD,c:"#FFFFFF"});
+  const sub=`EU ETS ${Math.round(view.ets*100)}% · FuelEU ${Math.round(view.feu*100)}% · TTF €${nf0(S.ttf)} · EUA €${nf0(S.eua)} · Pool €${nf0(S.pool)}/tCO2e${isR?` · ZRE €${nf0(S.zre)}/tCO2e`:""} · EUR/USD ${S.fx}`;
+  PT(sub,40,slide?110:138,{s:pFitSize(sub,1100,slide?16:17,400,PFB),c:"rgba(255,255,255,.82)"});
+  if(ref){
+    PT("VLSFO, FULLY LOADED",W-40,slide?38:52,{s:15,w:600,c:"rgba(255,255,255,.75)",a:"right"});
+    PT(fmt(conv(ref,ref.total)),W-40,slide?92:112,{s:slide?60:74,w:600,f:PFD,c:"#FFFFFF",a:"right"});
+    PT(u,W-40,slide?113:141,{s:15,c:"rgba(255,255,255,.75)",a:"right"});
+  }
+  // Top row: cost build per fuel on the left, EUA and FuelEU pool sensitivities stacked on the right.
+  const cy0=slide?148:182, chH=H-cy0-(slide?96:118), LW=900, RX=40+LW+16, RW=1560-RX, gap=14, sH=(chH-gap)/2;
+  const cmap=prColorMap(rows), ids=new Set(rows.map(r=>r.f.id));
+  PRR(40,cy0,LW,chH,10,PEX.panel,PEX.rule);
+  PT("Cost build per fuel",62,cy0+(slide?34:36),{s:slide?24:26,w:600,f:PFD});
+  const cnote=`${u}. Hatched areas are credits; the tick marks the net cost.`;
+  PT(cnote,62,cy0+(slide?54:58),{s:pFitSize(cnote,LW-44,13,400,PFB),c:PEX.muted});
+  drawPrintChart(rows,40,cy0+(slide?66:72),LW,chH-(slide?84:92));
+  const euaLo=Math.max(0,Math.floor(S.eua*0.5/10)*10), euaHi=Math.ceil(S.eua*2/10)*10;
+  drawPrintSens("eua",euaLo,euaHi,"EUA sensitivity, €/tCO2e",RX,cy0,RW,sH,ids,cmap,u);
+  drawPrintSens("pool",0,Math.max(400,Math.ceil(S.pool*3/50)*50),"FuelEU pool sensitivity, €/tCO2e",RX,cy0+sH+gap,RW,sH,ids,cmap,u);
+  // Legend for the sensitivity lines, one row under the panels.
+  { let lx2=40; const ly=cy0+chH+(slide?30:36);
+    PT("SENSITIVITY LINES",lx2,ly,{s:12,w:600,c:PEX.muted}); pcx.font=`600 12px ${PFB}`; lx2+=pcx.measureText("SENSITIVITY LINES").width+18;
+    rows.forEach(r=>{ pcx.font=`500 14px ${PFB}`; const tw=pcx.measureText(r.f.name).width; if(lx2+28+tw>1560) return;
+      PLn(lx2,ly-5,lx2+18,ly-5,cmap[r.f.id],4); PT(r.f.name,lx2+24,ly,{s:14,w:500}); lx2+=24+tw+22; }); }
+  const fy=slide?H-26:H-30;
+  PT("Generated "+new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})+" by Plimsoll, FLOW Maritime",W-40,fy,{s:13,c:PEX.muted,a:"right"});
+  PT("Indicative, before supplier margin and credit terms.",40,fy,{s:13,c:PEX.muted});
+  return cv;
+}
+
+let prTheme=null, prFmt="slide", prW=1920, prCanvas=null, prDl=null;
+const printModal=document.getElementById("print");
+function prStatus(t){document.getElementById("pr-status").textContent=t||"";}
+function prButtons(){ ["pr-save","pr-copyimg"].forEach(id=>{document.getElementById(id).disabled=!prCanvas;}); }
+function prResOpts(){return prFmt==="tall"?[[1600,"1600 x 1150"],[2400,"2400 x 1725"],[3200,"3200 x 2300"]]:[[1280,"1280 x 720 (960 x 540 pt)"],[1920,"1920 x 1080"],[2560,"2560 x 1440"],[3840,"3840 x 2160"]];}
+function paintPrintBar(){
+  document.querySelectorAll("#pr-style button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.th===prTheme)));
+  document.querySelectorAll("#pr-fmt button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===prFmt)));
+  const o=prResOpts(); if(!o.some(x=>x[0]===prW)) prW=prFmt==="tall"?2400:1920;
+  const host=document.getElementById("pr-res");
+  host.querySelectorAll("button").forEach(b=>b.remove());
+  o.forEach(([w,l])=>{const b=document.createElement("button");b.type="button";b.className="btn";b.dataset.w=String(w);b.textContent=l;b.setAttribute("aria-pressed",String(w===prW));host.appendChild(b);});
+}
+function openPrint(){
+  prCanvas=null; prButtons(); prTheme=null;
+  const img=document.getElementById("pr-img"); img.hidden=true; img.removeAttribute("src");
+  prBuildFuelToggle();
+  paintPrintBar();
+  prStatus("Choose a style to draw the printout.");
+  printModal.hidden=false;
+  const f=document.querySelector("#pr-style button"); if(f) f.focus();
+}
+async function drawPrint(){
+  if(!prTheme) return;
+  if(!prSel || prSel.size===0){ prStatus("Select at least one fuel."); return; }
+  paintPrintBar();
+  prStatus("Drawing the printout...");
+  try{
+    prCanvas=await buildPrintImage(prTheme,prFmt,prW);
+    const img=document.getElementById("pr-img"); img.src=prCanvas.toDataURL("image/png"); img.hidden=false;
+    prButtons();
+    const dim=prCanvas.width+" x "+prCanvas.height+" px. ";
+    prStatus(dim+(prDl?"Save the PNG, copy it, or press and hold the image to save it.":"Press and hold the image, or right-click it, to save."));
+  }catch(e){ prStatus("The image could not be drawn."); }
+}
+document.getElementById("pr-style").addEventListener("click",e=>{const b=e.target.closest("button[data-th]");if(b){prTheme=b.dataset.th;drawPrint();}});
+document.getElementById("pr-fmt").addEventListener("click",e=>{const b=e.target.closest("button[data-f]");if(b){prFmt=b.dataset.f;if(prTheme)drawPrint();else paintPrintBar();}});
+document.getElementById("pr-res").addEventListener("click",e=>{const b=e.target.closest("button[data-w]");if(b){prW=Number(b.dataset.w);if(prTheme)drawPrint();else paintPrintBar();}});
+document.getElementById("print-open").addEventListener("click",openPrint);
+document.getElementById("pr-close").addEventListener("click",()=>{printModal.hidden=true;});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!printModal.hidden)printModal.hidden=true;});
+// "i" button: Why Plimsoll popover
+const whyBtn=document.getElementById("why-btn"), whyPop=document.getElementById("why-pop");
+whyPop.appendChild(document.getElementById("why-tpl").content.cloneNode(true));
+function setWhy(open){ whyPop.hidden=!open; whyBtn.setAttribute("aria-expanded",String(open)); }
+const asBtn=document.getElementById("as-btn"), asPop=document.getElementById("as-pop");
+function setAs(open){ asPop.hidden=!open; asBtn.setAttribute("aria-expanded",String(open)); }
+asBtn.addEventListener("click",e=>{ e.stopPropagation(); setWhy(false); setAs(asPop.hidden); });
+whyBtn.addEventListener("click",()=>setAs(false));
+document.addEventListener("click",e=>{ if(!asPop.hidden && !asPop.contains(e.target)) setAs(false); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !asPop.hidden){ setAs(false); asBtn.focus(); } });
+whyBtn.addEventListener("click",e=>{ e.stopPropagation(); setWhy(whyPop.hidden); });
+document.addEventListener("click",e=>{ if(!whyPop.hidden && !whyPop.contains(e.target)) setWhy(false); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !whyPop.hidden){ setWhy(false); whyBtn.focus(); } });
+printModal.addEventListener("click",e=>{if(e.target===printModal)printModal.hidden=true;});
+const prBlobOf=()=>new Promise((res,rej)=>prCanvas.toBlob(b=>b?res(b):rej(new Error("blob")),"image/png"));
+document.getElementById("pr-save").addEventListener("click",async()=>{
+  if(!prCanvas) return;
+  if(!prDl){ prStatus("Saving is not available here. Press and hold the image to save it."); return; }
+  try{
+    const b=await prBlobOf();
+    const nmf="bunker-"+prCanvas.width+"x"+prCanvas.height+"-"+new Date().toISOString().slice(0,10)+".png";
+    await prDl.save({filename:nmf,data:b}); prStatus("Saved.");
+  }catch(e){ prStatus((e&&e.code)==="declined"?"Save cancelled.":"Could not save. Press and hold the image instead."); }
+});
+document.getElementById("pr-copyimg").addEventListener("click",async()=>{
+  if(!prCanvas) return;
+  try{ const b=await prBlobOf(); await navigator.clipboard.write([new ClipboardItem({"image/png":b})]); prStatus("Image copied."); }
+  catch(_){ prStatus("Copy is not available here. Press and hold the image to save it."); }
+});
+document.getElementById("pr-copytxt").addEventListener("click",async()=>{
+  const txt=printSummaryText();
+  try{ await navigator.clipboard.writeText(txt); prStatus("Summary copied."); }
+  catch(_){
+    const ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand("copy");}catch(__){} ta.remove(); prStatus(ok?"Summary copied.":"Copy is not available here.");
+  }
+});
+(async()=>{ try{ if(window.claude&&window.claude.use) prDl=await window.claude.use("downloads"); }catch(_){ prDl=null; } if(!prDl) document.getElementById("pr-save").hidden=true; })();
+
+let rt; window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(render,120)});
+function setTheme(t){
+  document.documentElement.dataset.theme=t;
+  document.querySelectorAll("#theme-seg button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.th===t)));
+}
+document.getElementById("theme-seg").addEventListener("click",e=>{const b=e.target.closest("button[data-th]");if(b)setTheme(b.dataset.th);});
+setTheme("dark");
+fillInputs(); render(); renderAsOf();
+window.__compute=compute; window.__S=()=>S;
+})();
+</script>
+
+<footer class="sitefoot"><div class="wrap"><a href="/shipping/">&larr; Shipping tools</a><span>Test version. Indicative figures, before supplier margin and credit terms.</span></div></footer>
+<script>(()=>{if(!/(^|\.)dangent\.uk$/.test(location.hostname))return;try{const body=JSON.stringify({g:'plimsoll',e:'view',d:'',s:Math.random().toString(36).slice(2,10)});if(navigator.sendBeacon)navigator.sendBeacon('/api/event',new Blob([body],{type:'application/json'}));}catch(_){}})();</script>
+</body>
+</html>
