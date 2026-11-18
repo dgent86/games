@@ -223,13 +223,19 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
   .scopes,.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
   .scopes .ctl,.pair .ctl{display:flex;flex-direction:column;align-items:stretch;gap:3px}
   .seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);width:100%}
-  .seg button{padding:8px 4px;min-height:44px;font-size:15px}
+  .seg button{padding:4px 6px;min-height:32px;font-size:13px}
+  #theme-seg{display:inline-flex;width:auto}
+  #theme-seg button{min-height:24px;padding:3px 9px;font-size:11px}
   .lg{display:none} .sm{display:inline}
   .panel{padding:14px;border-radius:8px}
   .panel h2{font-size:20px}
   .panel .note{font-size:13px;margin-bottom:10px}
-  .grid2{gap:14px}
-  .grid2 aside{order:-1}
+  .grid2{display:contents}
+  main .wrap>*{order:5}
+  main .wrap>.controls{order:0}
+  .grid2>section{order:1}
+  #sens-sec{order:2}
+  .grid2>aside{order:3}
   .legend{font-size:12px;gap:4px 12px}
   .tablewrap{display:none}
   #cards{display:block}
@@ -267,7 +273,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
       <div class="seg" id="seg-port">
         <button type="button" data-v="rtm" aria-pressed="true"><span class="lg">Rotterdam</span><span class="sm">RTM</span></button>
         <button type="button" data-v="ant" aria-pressed="false" title="Antwerp"><span class="lg">Antwerp</span><span class="sm">ANR</span></button>
-        <button type="button" data-v="sin" aria-pressed="false"><span class="lg">Singapore</span><span class="sm">SIN</span></button>
+        <button type="button" data-v="sin" aria-pressed="false"><span class="lg">Singapore</span><span class="sm">SGP</span></button>
       </div></div>
     <div class="ctl"><span class="lab">FuelEU target</span>
       <div class="seg" id="seg-target">
@@ -346,7 +352,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
     </aside>
   </div>
 
-  <section class="panel" aria-labelledby="h-sens">
+  <section class="panel" id="sens-sec" aria-labelledby="h-sens">
     <div class="phead">
       <div>
         <h2 id="h-sens">Sensitivities</h2>
