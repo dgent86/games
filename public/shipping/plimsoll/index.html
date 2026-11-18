@@ -141,6 +141,8 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
 #pr-style .btn[aria-pressed="true"],#pr-fmt .btn[aria-pressed="true"],#pr-res .btn[aria-pressed="true"],#pr-fuels .btn[aria-pressed="true"]{background:var(--brand);color:var(--brandInk);border-color:var(--brand)}
 .sw{display:flex;gap:10px 16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin:0 0 10px}
 .sw i{display:inline-block;width:14px;height:3px;vertical-align:2px;margin-right:6px;border-radius:2px}
+.sw button{font:inherit;font-size:12.5px;color:var(--ink2);background:none;border:1px solid transparent;border-radius:6px;padding:2px 7px;cursor:pointer}
+.sw button[aria-pressed="true"]{background:var(--chip);color:var(--ink);font-weight:600;border-color:var(--rule)}
 .senswrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
 .senscard{min-width:0}
 .senscard h3{font-family:var(--display);font-weight:600;font-size:15px;margin:0 0 4px;color:var(--ink2)}
@@ -731,10 +733,11 @@ function drawSensChart(elId,varKey,lo,hi,base0,fmtX){
     const bx=X(base0);
     svg+=`<line x1="${bx}" x2="${bx}" y1="${padT}" y2="${H-padB}" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="3 3"/>`;
   }
-  [...series.filter(s=>s.id!=="biolng"),...series.filter(s=>s.id==="biolng")].forEach(s=>{
+  const HL=series.some(s=>s.id===view.hl)?view.hl:null, bop=id=>HL?(id===HL?1:.15):1;
+  [...series.filter(s=>s.id!=="biolng"),...series.filter(s=>s.id==="biolng")].sort((a,b)=>(a.id===HL)-(b.id===HL)).forEach(s=>{
     let d=""; s.ys.forEach((_,i)=>{ const v=pv(s,i); if(v==null) return; const px=X(xs[i]),py=Y(v); d+=(d?"L":"M")+px+","+py+" "; });
-    if(d) svg+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.id==="biolng"?3.5:2}" stroke-linejoin="round"/>`;
-    if(!delta && s.now!=null && base0>=xs[0]&&base0<=xs[xs.length-1]) svg+=`<circle cx="${X(base0)}" cy="${Y(s.now)}" r="4" fill="${s.color}" stroke="var(--panel)" stroke-width="2"/>`;
+    if(d) svg+=`<path class="sl" data-id="${s.id}" d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.id===HL?4:s.id==="biolng"?3.5:2}" stroke-linejoin="round" opacity="${bop(s.id)}"/>`;
+    if(!delta && s.now!=null && base0>=xs[0]&&base0<=xs[xs.length-1]) svg+=`<circle cx="${X(base0)}" cy="${Y(s.now)}" r="4" fill="${s.color}" stroke="var(--panel)" stroke-width="2" opacity="${bop(s.id)}"/>`;
   });
   svg+=`<line class="sx" x1="0" x2="0" y1="${padT}" y2="${H-padB}" stroke="var(--ink)" stroke-width="1" visibility="hidden"/>`;
   svg+=`<rect class="shit" x="${padL}" y="0" width="${W-padL-padR}" height="${H}" fill="transparent"/>`;
@@ -742,21 +745,23 @@ function drawSensChart(elId,varKey,lo,hi,base0,fmtX){
   el.innerHTML=svg+`<div class="stip" hidden></div>`;
   // hover / tap: values of every fuel at the nearest price step
   const svgEl=el.querySelector("svg"), hit=el.querySelector(".shit"), sx=el.querySelector(".sx"), tip=el.querySelector(".stip");
-  function showAt(clientX){
+  function showAt(clientX,clientY){
     const bx=svgEl.getBoundingClientRect(), scale=bx.width/W;
     const px=(clientX-bx.left)/scale;
     let i=Math.round((px-padL)/((W-padL-padR)||1)*(xs.length-1)); i=Math.max(0,Math.min(xs.length-1,i));
     const xx=X(xs[i]); sx.setAttribute("x1",xx); sx.setAttribute("x2",xx); sx.setAttribute("visibility","visible");
     const rows=series.filter(s=>s.ys[i]!=null).sort((a,b)=>a.ys[i]-b.ys[i]);
-    tip.innerHTML=`<b>At ${fmtX?fmtX(xs[i]):fmt(xs[i],0)}, cheapest first</b>`+rows.map(s=>{ const dv=s.now!=null?s.ys[i]-s.now:0, z=Math.abs(dv)<(view.unit==="gj"?0.005:0.5); return `<div><span><i style="background:${s.color}"></i>${s.name}</span><span>${yfmt(s.ys[i])} <span style="color:var(--muted)">(${z?"±0":(dv>0?"+":"−")+fmt(Math.abs(dv),dp)})</span></span></div>`; }).join("");
+    const py=(clientY-bx.top)/scale; let near=rows[0]; for(const s of rows) if(Math.abs(Y(s.ys[i])-py)<Math.abs(Y(near.ys[i])-py)) near=s;
+    tip.innerHTML=`<b><i style="background:${near.color}"></i>${near.name}, ${yfmt(near.ys[i])}</b><div><span style="color:var(--muted)">At ${fmtX?fmtX(xs[i]):fmt(xs[i],0)}, cheapest first</span></div>`+rows.map(s=>{ const dv=s.now!=null?s.ys[i]-s.now:0, z=Math.abs(dv)<(view.unit==="gj"?0.005:0.5); return `<div${s===near?' style="font-weight:700"':""}><span><i style="background:${s.color}"></i>${s.name}</span><span>${yfmt(s.ys[i])} <span style="color:var(--muted)">(${z?"±0":(dv>0?"+":"−")+fmt(Math.abs(dv),dp)})</span></span></div>`; }).join("");
     tip.hidden=false;
+    el.querySelectorAll(".sl").forEach(p=>{ p.style.opacity=HL?bop(p.dataset.id):(p.dataset.id===near.id?1:.25); });
     const left=xx*scale; const w=tip.offsetWidth||180;
     tip.style.left=Math.max(0,Math.min(bx.width-w,left>bx.width/2?left-w-10:left+10))+"px";
   }
-  function hide(){ tip.hidden=true; sx.setAttribute("visibility","hidden"); }
-  hit.addEventListener("pointermove",ev=>{ if(ev.pointerType==="mouse") showAt(ev.clientX); });
+  function hide(){ tip.hidden=true; sx.setAttribute("visibility","hidden"); el.querySelectorAll(".sl").forEach(p=>{ p.style.opacity=""; }); }
+  hit.addEventListener("pointermove",ev=>{ if(ev.pointerType==="mouse") showAt(ev.clientX,ev.clientY); });
   hit.addEventListener("pointerleave",ev=>{ if(ev.pointerType==="mouse") hide(); });
-  hit.addEventListener("click",ev=>{ if(ev.pointerType==="mouse") return; if(!tip.hidden){ hide(); return; } showAt(ev.clientX); });
+  hit.addEventListener("click",ev=>{ if(ev.pointerType==="mouse") return; if(!tip.hidden){ hide(); return; } showAt(ev.clientX,ev.clientY); });
   // table: today's cost and change per EUR 10 rise, steepest first
   const tab=document.getElementById(elId.replace("sens-","senstab-"));
   if(tab){
@@ -775,9 +780,11 @@ function drawSensChart(elId,varKey,lo,hi,base0,fmtX){
 }
 function renderSens(){
   const sn=document.getElementById("sens-note");
-  if(sn) sn.textContent=`Fully loaded cost per tonne (${unitLabel()}) as one input changes, EUA or FuelEU pool price, with everything else at today's values (dashed line). Surplus is counted as sold here.`;
+  if(sn) sn.textContent=`Fully loaded cost per tonne (${unitLabel()}) as one input changes, EUA or FuelEU pool price, with everything else at today's values (dashed line). Surplus is counted as sold here. Click a fuel in the key to highlight it.`;
   const base=compute(view.port,view.ets,view.feu).filter(r=>!view.excluded.has(r.f.id));
-  document.getElementById("sens-legend").innerHTML=base.map((r,i)=>`<span><i style="background:${SENS_COLORS[i%SENS_COLORS.length]}"></i>${r.f.name}</span>`).join("");
+  const lg=document.getElementById("sens-legend");
+  lg.innerHTML=base.map((r,i)=>`<button type="button" data-id="${r.f.id}" aria-pressed="${view.hl===r.f.id}"><i style="background:${SENS_COLORS[i%SENS_COLORS.length]}"></i>${r.f.name}</button>`).join("");
+  lg.onclick=e=>{ const b=e.target.closest("button[data-id]"); if(!b) return; view.hl=view.hl===b.dataset.id?null:b.dataset.id; renderSens(); };
   const euaLo=Math.max(0,Math.floor(S.eua*0.5/10)*10), euaHi=Math.ceil(S.eua*2/10)*10;
   drawSensChart("sens-eua","eua",euaLo,euaHi,S.eua,v=>"€"+fmt(v,0));
   const poolLo=0, poolHi=Math.max(400,Math.ceil(S.pool*3/50)*50);
