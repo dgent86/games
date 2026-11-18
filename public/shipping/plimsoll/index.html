@@ -477,9 +477,9 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
 (function(){
 const DEFAULTS = {
   ports:{
-    rtm:{name:"Rotterdam",hsfo:572.5,vlsfo:748,mgo:1279.5,logistics:10,bioprem:70,liq:5,b100:1700},
-    ant:{name:"Antwerp",hsfo:553.5,vlsfo:742,mgo:1285.5,logistics:10,bioprem:57,liq:5,b100:1612},
-    sin:{name:"Singapore",hsfo:667,vlsfo:878,mgo:1196,logistics:10,bioprem:57,liq:5,b100:1612}
+    rtm:{name:"Rotterdam",hsfo:575,vlsfo:760,mgo:1260,logistics:10,bioprem:70,liq:5,b100:1700},
+    ant:{name:"Antwerp",hsfo:560,vlsfo:745,mgo:1275,logistics:10,bioprem:57,liq:5,b100:1612},
+    sin:{name:"Singapore",hsfo:675,vlsfo:890,mgo:1195,logistics:10,bioprem:57,liq:5,b100:1612}
   },
   target:89.34,slip:1.7,pilot:1,biowtt:-100,b100wtt:14.1,scrub:2.0,zre:150,zreobl:2.6
 };
@@ -498,7 +498,7 @@ const HHV=55;
 let S = JSON.parse(JSON.stringify(DEFAULTS));
 let M = {...MARKET0};
 let OV = {};
-let inputsAt = "2026-11-18T06:41:36.051Z"; // date of the prices embedded in this copy
+let inputsAt = "2026-11-18T09:59:00.000Z"; // date of the prices embedded in this copy
 // When each quoted fuel price was last changed, per port: {rtm:{hsfo:iso,...},...}. Saved with inputs/current.
 const DATED=["hsfo","vlsfo","mgo","b100"];
 const DATEDLAB={hsfo:"HSFO",vlsfo:"VLSFO",mgo:"MGO",b100:"B100"};
