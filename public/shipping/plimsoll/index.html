@@ -324,8 +324,8 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
         </select></label>
         <label class="bf" for="b-pct">Bio share, % by mass<input id="b-pct" type="number" inputmode="numeric" min="0" max="100" step="1"></label>
         <div class="chkrow">
-        <label class="bf chk" id="b-zre-wrap" title="Checked: the bio part's ZRE value has not been realised by anyone else, so it's credited here. This applies to the B100 row and to the bio part of any blend. Unchecked: assume that value has already been realised elsewhere (typically kept or sold on by the supplier), so no credit, though the ZRE obligation cost still applies either way."><input type="checkbox" id="b-zre">ZRE value included</label>
-        <label class="bf chk" id="b-feusold-wrap" title="Checked: you've actually sold or pooled this fuel's FuelEU surplus, so its credit is shown and deducted from the cost. Unchecked: not sold, so no credit is shown. The underlying tCO2e balance is unchanged either way."><input type="checkbox" id="b-feusold">FuelEU surplus sold</label>
+        <label class="bf chk" id="b-zre-wrap" title="Apply the ZRE ticket value to the fully loaded price"><input type="checkbox" id="b-zre">ZRE value included</label>
+        <label class="bf chk" id="b-feusold-wrap" title="You have sold the FuelEU surplus generated at the market rate"><input type="checkbox" id="b-feusold">FuelEU surplus sold</label>
         </div>
       </div>
       <div class="legend">
