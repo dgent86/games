@@ -488,19 +488,19 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
 (function(){
 const DEFAULTS = {
   ports:{
-    rtm:{name:"Rotterdam",hsfo:575,vlsfo:760,mgo:1260,logistics:10,bioprem:70,liq:5,b100:1700},
-    ant:{name:"Antwerp",hsfo:560,vlsfo:745,mgo:1275,logistics:10,bioprem:57,liq:5,b100:1612},
-    sin:{name:"Singapore",hsfo:675,vlsfo:890,mgo:1195,logistics:10,bioprem:57,liq:5,b100:1612}
+    rtm:{name:"Rotterdam",hsfo:550,vlsfo:705,mgo:1195,logistics:10,bioprem:70,liq:5,b100:1600},
+    ant:{name:"Antwerp",hsfo:534,vlsfo:691.5,mgo:1207.5,logistics:10,bioprem:70,liq:5,b100:1600},
+    sin:{name:"Singapore",hsfo:642,vlsfo:831,mgo:1140,logistics:10,bioprem:57,liq:5,b100:1600}
   },
   target:89.34,slip:1.7,pilot:1,biowtt:-100,b100wtt:14.1,scrub:2.0,zre:150,zreobl:2.6
 };
 // Market snapshot embedded at publish; replaced live by the shared store (market/latest) when available.
 const MARKET0 = {
   ttf:84.75, ttfAsOf:"2026-11-16", ttfSource:"ICE TTF front-month close",
-  eua:87.41, euaAsOf:"2026-11-16", euaSource:"EUA spot",
-  fx:1.1014, fxAsOf:"2026-11-16", fxSource:"ECB reference rate",
+  eua:82.16, euaAsOf:"2026-11-18", euaSource:"EUA spot",
+  fx:1.0968, fxAsOf:"2026-11-18", fxSource:"ECB reference rate",
   pool:84.09, poolAsOf:"2026-10-31", poolSource:"BetterSea FuelEU Surplus Index (weighted monthly)",
-  refreshedAt:"2026-11-17T07:33:56Z"
+  refreshedAt:"2026-11-19T07:35:00Z"
 };
 const MKEYS=["ttf","eua","fx","pool"];
 const PORTKEYS=["rtm","ant","sin"];
@@ -509,11 +509,11 @@ const HHV=55;
 let S = JSON.parse(JSON.stringify(DEFAULTS));
 let M = {...MARKET0};
 let OV = {};
-let inputsAt = "2026-11-18T09:59:00.000Z"; // date of the prices embedded in this copy
+let inputsAt = "2026-11-19T07:47:36.000Z"; // date of the prices embedded in this copy
 // When each quoted fuel price was last changed, per port: {rtm:{hsfo:iso,...},...}. Saved with inputs/current.
 const DATED=["hsfo","vlsfo","mgo","b100"];
 const DATEDLAB={hsfo:"HSFO",vlsfo:"VLSFO",mgo:"MGO",b100:"B100"};
-let priceAt = {};
+let priceAt = {rtm:{hsfo:"2026-11-19T07:47:36.000Z",vlsfo:"2026-11-19T07:47:36.000Z",mgo:"2026-11-19T07:47:36.000Z",b100:"2026-11-18T10:01:36.445Z"},ant:{hsfo:"2026-11-19T07:47:36.000Z",vlsfo:"2026-11-19T07:47:36.000Z",mgo:"2026-11-19T07:47:36.000Z",b100:"2026-11-18T10:02:22.999Z"},sin:{hsfo:"2026-11-19T07:47:36.000Z",vlsfo:"2026-11-19T07:47:36.000Z",mgo:"2026-11-19T07:47:36.000Z",b100:"2026-11-18T10:02:36.005Z"}};
 let BASE = null;
 function snapBase(){ BASE={ports:JSON.parse(JSON.stringify(S.ports))}; for(const k of MAN) BASE[k]=S[k]; }
 snapBase();
