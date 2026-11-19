@@ -159,7 +159,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
 .senstab th:first-child,.senstab td:first-child{text-align:left;white-space:normal}
 @media (prefers-reduced-motion:no-preference){#chart rect{transition:x .25s ease,width .25s ease}}
 .sm{display:none}
-.blendbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;padding:12px 14px;background:var(--chip);border:1px solid var(--rule);border-radius:8px;margin:0 0 14px}
+.blendbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;padding:12px 14px;background:var(--chip);border:1px solid var(--rule);border-radius:8px;margin:14px 0 0}
 .blendbar .lab{align-self:center;margin-right:2px;order:0}
 .blendbar .chkrow{order:2;flex-wrap:nowrap}
 .bpanel{order:1;display:flex;flex-wrap:nowrap;gap:10px 12px;align-items:center}
@@ -341,6 +341,17 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
     <section class="panel" aria-labelledby="h-chart">
       <h2 id="h-chart">Cost build per fuel</h2>
       <p class="note" id="chartnote"></p>
+      <div class="cmpbox" id="cmp" hidden></div>
+      <div class="legend">
+        <span><i style="background:var(--c-fuel)"></i>Fuel price</span>
+        <span><i style="background:var(--c-ets)"></i>EU ETS</span>
+        <span><i style="background:var(--c-feu)"></i>FuelEU deficit</span>
+        <span><i style="background:repeating-linear-gradient(135deg,var(--c-feu) 0 2px,transparent 2px 5px);outline:1px solid var(--c-feu);outline-offset:-1px"></i>FuelEU surplus value</span>
+        <span class="lgz"><i style="background:var(--c-zre)"></i>ZRE obligation</span>
+        <span class="lgz"><i style="background:repeating-linear-gradient(135deg,var(--c-zre) 0 2px,transparent 2px 5px);outline:1px solid var(--c-zre);outline-offset:-1px"></i>ZRE net ticket value</span>
+        <span><i style="background:var(--ink);width:3px;border-radius:0"></i>Net fully loaded</span>
+      </div>
+      <div id="chart"></div>
       <div class="blendbar" role="group" aria-label="Bio blend">
         <span class="lab">Bio blend</span>
         <div class="bpanel" id="b-panel">
@@ -357,17 +368,6 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
         <label class="bf chk" id="b-feusold-wrap" title="You have sold the FuelEU surplus generated at the market rate"><input type="checkbox" id="b-feusold"><span class="lg">FuelEU surplus sold</span><span class="sm">FuelEU sold</span></label>
         </div>
       </div>
-      <div class="cmpbox" id="cmp" hidden></div>
-      <div class="legend">
-        <span><i style="background:var(--c-fuel)"></i>Fuel price</span>
-        <span><i style="background:var(--c-ets)"></i>EU ETS</span>
-        <span><i style="background:var(--c-feu)"></i>FuelEU deficit</span>
-        <span><i style="background:repeating-linear-gradient(135deg,var(--c-feu) 0 2px,transparent 2px 5px);outline:1px solid var(--c-feu);outline-offset:-1px"></i>FuelEU surplus value</span>
-        <span class="lgz"><i style="background:var(--c-zre)"></i>ZRE obligation</span>
-        <span class="lgz"><i style="background:repeating-linear-gradient(135deg,var(--c-zre) 0 2px,transparent 2px 5px);outline:1px solid var(--c-zre);outline-offset:-1px"></i>ZRE net ticket value</span>
-        <span><i style="background:var(--ink);width:3px;border-radius:0"></i>Net fully loaded</span>
-      </div>
-      <div id="chart"></div>
     </section>
     <aside class="panel" aria-labelledby="h-rank">
       <div class="phead">
