@@ -164,11 +164,15 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
 .bbtn{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;font-weight:600;padding:6px 12px;min-height:36px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
 .bbtn svg{transition:transform .15s}
 .bbtn[aria-expanded="true"] svg{transform:rotate(180deg)}
-.bpanel{flex-basis:100%;display:flex;flex-wrap:wrap;gap:10px 16px;padding-top:10px;border-top:1px solid var(--rule)}
+.blendbar .chkrow{flex-basis:100%;order:2}
+.bpanel{order:1;display:flex;flex-wrap:nowrap;gap:10px 12px;align-items:flex-end}
+.bpanel .bf select,.bpanel .bf input{width:auto;min-width:0}
+.bpanel .bf input{width:72px}
+.bpanel .bf{flex-direction:row;align-items:center;gap:6px;white-space:nowrap}
 .bpanel[hidden]{display:none}
 .bf{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ink2)}
 .bf select,.bf input{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--ink);min-height:36px}
-#b-pct{width:84px;text-align:right}
+#b-pct{width:72px;text-align:right}
 .chips{display:flex;gap:6px}
 .chips button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--rule);background:var(--panel);color:var(--ink2);border-radius:6px;padding:6px 10px;min-height:36px;cursor:pointer}
 .chips button[aria-pressed="true"]{background:var(--brand);color:var(--brandInk);border-color:var(--brand)}
@@ -260,7 +264,12 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
   .btn{display:block;margin-top:8px;min-height:44px;width:100%;font-size:15px}
   .flags{font-size:13.5px}
   .tip{left:0!important;right:0;min-width:0}
-  .blendbar{gap:8px 10px}
+  .blendbar{gap:8px 8px}
+  .bbtn{padding:6px 10px;gap:6px;min-height:44px}
+  .blendbar .bpanel .bf select{width:88px;padding:6px 4px}
+  .blendbar .bpanel .bf #b-pct{width:56px;padding:6px 4px}
+  .bbtn[aria-expanded="true"] span{display:none}
+  .bbtn[aria-expanded="true"]{padding:6px 12px}
   .blendbar .lab{width:100%}
   .bf select,.bf input,.chips button{font-size:16px;min-height:44px}
   .bf.chk{min-height:44px}
@@ -331,18 +340,18 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
       <p class="note" id="chartnote"></p>
       <div class="blendbar" role="group" aria-label="Bio blend">
         <button type="button" class="bbtn" id="b-toggle" aria-expanded="false" aria-controls="b-panel"><span>Edit Bio Blend</span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <div class="chkrow">
-        <label class="bf chk" id="b-zre-wrap" title="Apply the ZRE ticket value to the fully loaded price"><input type="checkbox" id="b-zre">ZRE value included</label>
-        <label class="bf chk" id="b-feusold-wrap" title="You have sold the FuelEU surplus generated at the market rate"><input type="checkbox" id="b-feusold">FuelEU surplus sold</label>
-        </div>
         <div class="bpanel" id="b-panel" hidden>
-        <label class="bf" for="b-base">Fossil part<select id="b-base">
+        <label class="bf" for="b-base">Fossil<select id="b-base">
           <option value="hsfo">HSFO 380cSt</option>
           <option value="vlsfo">VLSFO</option>
           <option value="mgo">MGO LS</option>
           <option value="lng">LNG (LPDF)</option>
         </select></label>
-        <label class="bf" for="b-pct">Bio share, % by mass<input id="b-pct" type="number" inputmode="numeric" min="0" max="100" step="1"></label>
+        <label class="bf" for="b-pct">Bio %<input id="b-pct" title="Bio share, % by mass" aria-label="Bio share, % by mass" type="number" inputmode="numeric" min="0" max="100" step="1"></label>
+        </div>
+        <div class="chkrow">
+        <label class="bf chk" id="b-zre-wrap" title="Apply the ZRE ticket value to the fully loaded price"><input type="checkbox" id="b-zre">ZRE value included</label>
+        <label class="bf chk" id="b-feusold-wrap" title="You have sold the FuelEU surplus generated at the market rate"><input type="checkbox" id="b-feusold">FuelEU surplus sold</label>
         </div>
       </div>
       <div class="cmpbox" id="cmp" hidden></div>
