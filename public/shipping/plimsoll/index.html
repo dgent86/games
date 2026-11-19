@@ -261,14 +261,24 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
   .flags{font-size:13.5px}
   .tip{left:0!important;right:0;min-width:0}
   .blendbar{gap:8px 8px}
-  .blendbar .bpanel .bf select{width:116px;padding:6px 4px}
-  .blendbar .bpanel .bf #b-pct{width:56px;padding:6px 4px}
-  .blendbar .lab{width:100%}
+  .blendbar{flex-wrap:nowrap;align-items:center;padding:8px;gap:4px}
+  .blendbar .lab,.blendbar .fl{display:none}
+  .blendbar .bpanel{gap:4px}
+  .blendbar .bpanel .bf{font-size:12px;gap:4px}
+  .blendbar .bpanel .bf select{width:76px;padding:6px 0;font-size:14px}
+  .blendbar .bpanel .bf #b-pct{width:40px;padding:6px 0 6px 4px;font-size:14px}
   .bf select,.bf input,.chips button{font-size:16px;min-height:44px}
   .bf.chk{min-height:44px}
-  .chkrow{gap:4px 10px;width:100%}
-  .chkrow .bf.chk{font-size:12.5px;gap:4px}
+  .chkrow{gap:2px 6px;width:auto;flex:1 1 auto;justify-content:flex-end}
+  .chkrow .bf.chk{font-size:12px;gap:3px}
+  .chkrow .bf.chk input{width:16px;height:16px}
   .bnote{width:100%}
+}
+@media (max-width:380px){
+  .blendbar .bpanel .bf select{width:64px;font-size:13px}
+  .blendbar .bpanel .bf{font-size:11px}
+  .chkrow .bf.chk{font-size:11px}
+  .chkrow .bf.chk input{width:14px;height:14px}
 }
 </style>
 <script>document.documentElement.dataset.theme="dark";</script>
@@ -334,7 +344,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
       <div class="blendbar" role="group" aria-label="Bio blend">
         <span class="lab">Bio blend</span>
         <div class="bpanel" id="b-panel">
-        <label class="bf" for="b-base">Fossil<select id="b-base">
+        <label class="bf" for="b-base"><span class="fl">Fossil</span><select id="b-base">
           <option value="hsfo">HSFO 380cSt</option>
           <option value="vlsfo">VLSFO</option>
           <option value="mgo">MGO LS</option>
@@ -343,8 +353,8 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
         <label class="bf" for="b-pct">Bio %<input id="b-pct" title="Bio share, % by mass" aria-label="Bio share, % by mass" type="number" inputmode="numeric" min="0" max="100" step="1"></label>
         </div>
         <div class="chkrow">
-        <label class="bf chk" id="b-zre-wrap" title="Apply the ZRE ticket value to the fully loaded price"><input type="checkbox" id="b-zre">ZRE value included</label>
-        <label class="bf chk" id="b-feusold-wrap" title="You have sold the FuelEU surplus generated at the market rate"><input type="checkbox" id="b-feusold">FuelEU surplus sold</label>
+        <label class="bf chk" id="b-zre-wrap" title="Apply the ZRE ticket value to the fully loaded price"><input type="checkbox" id="b-zre"><span class="lg">ZRE value included</span><span class="sm">ZRE</span></label>
+        <label class="bf chk" id="b-feusold-wrap" title="You have sold the FuelEU surplus generated at the market rate"><input type="checkbox" id="b-feusold"><span class="lg">FuelEU surplus sold</span><span class="sm">FuelEU sold</span></label>
         </div>
       </div>
       <div class="cmpbox" id="cmp" hidden></div>
