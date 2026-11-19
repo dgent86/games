@@ -161,6 +161,11 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
 .sm{display:none}
 .blendbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;padding:12px 14px;background:var(--chip);border:1px solid var(--rule);border-radius:8px;margin:0 0 14px}
 .blendbar .lab{align-self:center;margin-right:2px}
+.bbtn{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;font-weight:600;padding:6px 12px;min-height:36px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+.bbtn svg{transition:transform .15s}
+.bbtn[aria-expanded="true"] svg{transform:rotate(180deg)}
+.bpanel{flex-basis:100%;display:flex;flex-wrap:wrap;gap:10px 16px;padding-top:10px;border-top:1px solid var(--rule)}
+.bpanel[hidden]{display:none}
 .bf{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ink2)}
 .bf select,.bf input{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--ink);min-height:36px}
 #b-pct{width:84px;text-align:right}
@@ -325,7 +330,12 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
       <h2 id="h-chart">Cost build per fuel</h2>
       <p class="note" id="chartnote"></p>
       <div class="blendbar" role="group" aria-label="Bio blend">
-        <span class="lab">Bio blend</span>
+        <button type="button" class="bbtn" id="b-toggle" aria-expanded="false" aria-controls="b-panel"><span>Edit Bio Blend</span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="chkrow">
+        <label class="bf chk" id="b-zre-wrap" title="Apply the ZRE ticket value to the fully loaded price"><input type="checkbox" id="b-zre">ZRE value included</label>
+        <label class="bf chk" id="b-feusold-wrap" title="You have sold the FuelEU surplus generated at the market rate"><input type="checkbox" id="b-feusold">FuelEU surplus sold</label>
+        </div>
+        <div class="bpanel" id="b-panel" hidden>
         <label class="bf" for="b-base">Fossil part<select id="b-base">
           <option value="hsfo">HSFO 380cSt</option>
           <option value="vlsfo">VLSFO</option>
@@ -333,9 +343,6 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
           <option value="lng">LNG (LPDF)</option>
         </select></label>
         <label class="bf" for="b-pct">Bio share, % by mass<input id="b-pct" type="number" inputmode="numeric" min="0" max="100" step="1"></label>
-        <div class="chkrow">
-        <label class="bf chk" id="b-zre-wrap" title="Apply the ZRE ticket value to the fully loaded price"><input type="checkbox" id="b-zre">ZRE value included</label>
-        <label class="bf chk" id="b-feusold-wrap" title="You have sold the FuelEU surplus generated at the market rate"><input type="checkbox" id="b-feusold">FuelEU surplus sold</label>
         </div>
       </div>
       <div class="cmpbox" id="cmp" hidden></div>
@@ -1083,6 +1090,8 @@ bZre.addEventListener("change",()=>{ view.blend.zre=bZre.checked; saveBlend(); r
 const bFeuSold=document.getElementById("b-feusold");
 bFeuSold.checked=view.feuSold;
 bFeuSold.addEventListener("change",()=>{ view.feuSold=bFeuSold.checked; try{ localStorage.setItem("bunker.feusold",view.feuSold?"1":"0"); }catch(_){} render(); });
+const bTog=document.getElementById("b-toggle"), bPanel=document.getElementById("b-panel");
+bTog.addEventListener("click",()=>{ const o=bPanel.hidden; bPanel.hidden=!o; bTog.setAttribute("aria-expanded",String(o)); });
 fillBlend();
 
 /* ---------- printout image export (mirrors SwitchStack's export-image pattern) ---------- */
