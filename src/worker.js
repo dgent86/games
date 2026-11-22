@@ -186,15 +186,12 @@ async function records(env) {
   return { rec, seasons: results.length, games };
 }
 
-// World Cup Fiver boards. Furthest stage first, then goals scored, then the earlier run. A manager name shows at most its best 3 runs on a board.
+// World Cup Fiver boards. Furthest stage first, then goals scored, then the earlier run. Every run is listed.
 const WCF_BOARD = `
-  WITH b AS (
-    SELECT *, row_number() OVER (PARTITION BY name ORDER BY stage DESC, gf DESC, created_at, id) AS nth
-    FROM wcf_runs WHERE (?1 = 'all' OR nat = ?1)),
-  r AS (
+  WITH r AS (
     SELECT row_number() OVER (ORDER BY stage DESC, gf DESC, created_at, id) AS rank,
            id, name, nat, stage, opp, gf, ga, scorer, sg, count(*) OVER () AS shown
-    FROM b WHERE nth <= 3),
+    FROM wcf_runs WHERE (?1 = 'all' OR nat = ?1)),
   me AS (SELECT (SELECT rank FROM r WHERE id = ?2) AS rk)
   SELECT r.* FROM r, me
   WHERE r.rank <= 25 OR (me.rk IS NOT NULL AND r.rank BETWEEN me.rk - 2 AND me.rk + 2)
