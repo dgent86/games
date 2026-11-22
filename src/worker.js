@@ -9,6 +9,7 @@
 //   POST /api/records       {}                                       -> Five-a-Sold record holders, users only (cached 2 minutes)
 //   POST /api/wcf_submit    {cid, name, nat, stage, opp, gf, ga, scorer, sg} -> {id}; a finished World Cup Fiver run (stage 0 group, 1 R16 ... 4 lost final, 5 champions)
 //   POST /api/wcf_nations   {}                                       -> per-nation summary for the leaderboard tiles
+//   POST /api/wcf_manager   {name}                                    -> every run by one manager name
 //   POST /api/wcf_board     {nat | 'all', p_id?}                     -> top 25 plus two either side of you, with that board's records
 //   POST /api/fas_*        Five-a-Sold Challenge Mode: accounts, challenges, results, league (see src/challenge.js)
 // Scores can only be added or read here. Edit or delete rows in the Cloudflare dashboard (D1 > dangent-scores > Console).
@@ -186,16 +187,23 @@ async function records(env) {
   return { rec, seasons: results.length, games };
 }
 
-// World Cup Fiver boards. Furthest stage first, then goals scored, then the earlier run. Every run is listed.
+// World Cup Fiver boards. Furthest stage first, then goals scored, then the earlier run. A manager name shows at most its best 3 runs on a board;
+// every run is listed on that manager's own page (wcf_manager).
 const WCF_BOARD = `
-  WITH r AS (
+  WITH b AS (
+    SELECT *, row_number() OVER (PARTITION BY name ORDER BY stage DESC, gf DESC, created_at, id) AS nth
+    FROM wcf_runs WHERE (?1 = 'all' OR nat = ?1)),
+  r AS (
     SELECT row_number() OVER (ORDER BY stage DESC, gf DESC, created_at, id) AS rank,
            id, name, nat, stage, opp, gf, ga, scorer, sg, count(*) OVER () AS shown
-    FROM wcf_runs WHERE (?1 = 'all' OR nat = ?1)),
+    FROM b WHERE nth <= 3),
   me AS (SELECT (SELECT rank FROM r WHERE id = ?2) AS rk)
   SELECT r.* FROM r, me
   WHERE r.rank <= 25 OR (me.rk IS NOT NULL AND r.rank BETWEEN me.rk - 2 AND me.rk + 2)
   ORDER BY r.rank`;
+const WCF_MANAGER = `
+  SELECT id, nat, stage, opp, gf, ga, scorer, sg FROM wcf_runs WHERE name = ?1 COLLATE NOCASE
+  ORDER BY stage DESC, gf DESC, created_at, id LIMIT 500`;
 const WCF_STATS = `
   SELECT count(*) AS runs, COALESCE(sum(stage = 5), 0) AS titles, COALESCE(sum(stage >= 4), 0) AS finals, COALESCE(max(stage), -1) AS best,
          (SELECT name || '|' || nat || '|' || gf FROM wcf_runs WHERE (?1 = 'all' OR nat = ?1) ORDER BY gf DESC, created_at, id LIMIT 1) AS most,
@@ -278,6 +286,12 @@ async function api(fn, request, env) {
     const total = results.reduce((t, r) => t + r.runs, 0);
     return json({ total, nations: results });
   }
+  if (fn === 'wcf_manager') {
+    const name = String(b.name ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20);
+    if (!name) return json({ message: 'Name needed' }, 400);
+    const { results } = await env.DB.prepare(WCF_MANAGER).bind(name).all();
+    return json({ name, rows: results });
+  }
   if (fn === 'wcf_board') {
     const nat = String(b.nat ?? 'all');
     if (nat !== 'all' && !WCF_NATS.has(nat)) return json({ message: 'Bad nation' }, 400);
@@ -316,7 +330,7 @@ async function api(fn, request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons|records|wcf_submit|wcf_nations|wcf_board|fas_(?:signup|recover|logout|me|kit|newcode|new|get|join|entry|result|h2h|league|post|board|remove|seen))\/?$/);
+    const m = url.pathname.match(/^\/api\/(board|all|submit_score|event|season|seasons|records|wcf_submit|wcf_nations|wcf_board|wcf_manager|fas_(?:signup|recover|logout|me|kit|newcode|new|get|join|entry|result|h2h|league|post|board|remove|seen))\/?$/);
     if (m) {
       try { return await api(m[1], request, env); }
       catch (e) { return json({ message: 'Server error' }, 500); }

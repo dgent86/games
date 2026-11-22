@@ -171,6 +171,7 @@ table.rt td.n, table.rt th.n { text-align: right; font-variant-numeric: tabular-
 .lbt thead th { border-bottom: 2px solid var(--panel-lo); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .lbt td.n, .lbt th.n { text-align: right; font-variant-numeric: tabular-nums; } .lbt tr.me td { background: #fff1b8; font-weight: bold; }
 .lbt .res { color: var(--muted); font-size: 12px; } .lbt tr.gap td { text-align: center; color: var(--muted); padding: 2px; }
+.lbt .mgr { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted; }
 .lbt .flag { display: inline-block; width: 8px; height: 8px; margin-right: 4px; background: var(--fl, #888); border: 1px solid #0006; }
 .lbsample { background: #fff1b8; border: 2px dashed #8a6d00; padding: 6px 8px; font-size: 12px; margin-bottom: 8px; }
 /* Champion box on the summary: bold, in the winner's colours, centred */
@@ -1040,8 +1041,27 @@ const DATA = __DATA__;
       const gap = prev && r.rank > prev + 1 ? '<tr class="gap"><td colspan="4">...</td></tr>' : ''; prev = r.rank;
       const kk = DATA.nations[r.nat] ? DATA.nations[r.nat].kit : null;
       const res = OUTCOME[r.stage] + (r.stage >= 1 && r.stage <= 4 ? ' ' + r.opp : '');
-      return gap + `<tr class="${r.id === myid ? 'me' : ''}"><td class="n">${r.rank}</td><td>${nat === 'all' && kk ? `<span class="flag" style="--fl:${kk[0]}"></span>` : ''}${esc(r.name)}${nat === 'all' ? `<div class="res">${esc(r.nat)}</div>` : ''}</td><td class="res">${esc(res)}</td><td class="n">${r.gf}</td></tr>`;
+      return gap + `<tr class="${r.id === myid ? 'me' : ''}"><td class="n">${r.rank}</td><td>${nat === 'all' && kk ? `<span class="flag" style="--fl:${kk[0]}"></span>` : ''}<button type="button" class="mgr" data-mgr="${esc(r.name)}">${esc(r.name)}</button>${nat === 'all' ? `<div class="res">${esc(r.nat)}</div>` : ''}</td><td class="res">${esc(res)}</td><td class="n">${r.gf}</td></tr>`;
     }).join('') + '</tbody></table>' : '<div class="note">Nobody has finished a tournament with this nation yet. Be the first.</div>';
+    $('#lbbBack').textContent = 'All nations';
+    $('#lbbTable').querySelectorAll('.mgr').forEach(b => b.addEventListener('click', () => openManager(b.dataset.mgr, nat, mine, fromEnd)));
+  }
+  // every run by one manager name, reached by tapping a name on a board
+  async function openManager(name, nat, mine, fromEnd) {
+    $('#lbbTitle').textContent = name; $('#lbbRuns').textContent = ''; $('#lbbStats').innerHTML = '';
+    $('#lbbTable').innerHTML = '<div class="note">Loading...</div>';
+    $('#lbbBack').textContent = 'Back to table'; $('#lbbBack').onclick = () => openBoard(nat, mine, fromEnd);
+    const bar = $('#lbbBar'); bar.style.background = ''; bar.style.color = '';
+    let d; try { d = API === null ? { rows: demoBoard('all').rows.slice(0, 5).map(r => ({ ...r, id: r.id })) } : await post('wcf_manager', { name }); } catch (e) { $('#lbbTable').innerHTML = '<div class="note">This manager cannot be loaded right now. Try again in a moment.</div>'; return; }
+    const rows = d.rows, titles = rows.filter(r => r.stage === 5).length, finals = rows.filter(r => r.stage >= 4).length, best = rows.reduce((m, r) => Math.max(m, r.stage), -1);
+    $('#lbbRuns').textContent = rows.length + ' run' + (rows.length === 1 ? '' : 's');
+    $('#lbbStats').innerHTML = rows.length ? `<div><span>Titles</span><b>${titles}</b></div><div><span>Finals</span><b>${finals}</b></div><div><span>Best</span><b>${esc(BEST[best])}</b></div>` : '';
+    const myid = mine == null ? MYID : mine;
+    $('#lbbTable').innerHTML = rows.length ? `<table class="lbt"><thead><tr><th class="n">#</th><th>Nation</th><th>Result</th><th class="n">Goals</th></tr></thead><tbody>` + rows.map((r, i) => {
+      const kk = DATA.nations[r.nat] ? DATA.nations[r.nat].kit : null;
+      const res = OUTCOME[r.stage] + (r.stage >= 1 && r.stage <= 4 ? ' ' + r.opp : '');
+      return `<tr class="${r.id === myid ? 'me' : ''}"><td class="n">${i + 1}</td><td>${kk ? `<span class="flag" style="--fl:${kk[0]}"></span>` : ''}${esc(r.nat)}</td><td class="res">${esc(res)}</td><td class="n">${r.gf}</td></tr>`;
+    }).join('') + '</tbody></table>' : '<div class="note">No runs found for this manager.</div>';
   }
   $('#lbOpen').addEventListener('click', () => openLb(false));
   $('#lbBack').addEventListener('click', () => show(lbEnd ? 'end' : 'pick'));
