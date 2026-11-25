@@ -1300,7 +1300,7 @@ async function buildPrintImage(theme,fmt0,outW){
     PT(u,W-40,slide?113:141,{s:15,c:"rgba(255,255,255,.75)",a:"right"});
   }
   // Top row: cost build per fuel on the left, EUA and FuelEU pool sensitivities stacked on the right.
-  const cy0=slide?148:182, chH=H-cy0-(slide?96:118), LW=900, RX=40+LW+16, RW=1560-RX, gap=14, sH=(chH-gap)/2;
+  const cy0=slide?148:182, chH=H-cy0-(slide?120:142), LW=900, RX=40+LW+16, RW=1560-RX, gap=14, sH=(chH-gap)/2;
   const cmap=prColorMap(rows), ids=new Set(rows.map(r=>r.f.id));
   PRR(40,cy0,LW,chH,10,PEX.panel,PEX.rule);
   PT("Cost build per fuel",62,cy0+(slide?34:36),{s:slide?24:26,w:600,f:PFD});
@@ -1311,11 +1311,12 @@ async function buildPrintImage(theme,fmt0,outW){
   const euaLo=Math.max(0,Math.floor(S.eua*0.5/10)*10), euaHi=Math.ceil(S.eua*2/10)*10;
   drawPrintSens("eua",euaLo,euaHi,"EUA sensitivity, €/tCO2e",RX,cy0,RW,sH,ids,cmap,u);
   drawPrintSens("pool",0,Math.max(400,Math.ceil(S.pool*3/50)*50),"FuelEU pool sensitivity, €/tCO2e",RX,cy0+sH+gap,RW,sH,ids,cmap,u);
-  // Legend for the sensitivity lines, one row under the panels.
-  { let lx2=40; const ly=cy0+chH+(slide?30:36);
-    PT("SENSITIVITY LINES",lx2,ly,{s:12,w:600,c:PEX.muted}); pcx.font=`600 12px ${PFB}`; lx2+=pcx.measureText("SENSITIVITY LINES").width+18;
-    rows.forEach(r=>{ pcx.font=`500 14px ${PFB}`; const tw=pcx.measureText(r.f.name).width; if(lx2+28+tw>1560) return;
-      PLn(lx2,ly-5,lx2+18,ly-5,cmap[r.f.id],4); PT(r.f.name,lx2+24,ly,{s:14,w:500}); lx2+=24+tw+22; }); }
+  // Legend for the sensitivity lines: lower right, under the sensitivity charts, wrapping within that column.
+  { const lx0=RX+4, lxMax=1560; let lx2=lx0, ly=cy0+chH+(slide?26:32); const rh=slide?20:22;
+    PT("SENSITIVITY LINES",lx0,ly,{s:12,w:600,c:PEX.muted}); pcx.font=`600 12px ${PFB}`; lx2+=pcx.measureText("SENSITIVITY LINES").width+16;
+    rows.forEach(r=>{ pcx.font=`500 14px ${PFB}`; const tw=pcx.measureText(r.f.name).width;
+      if(lx2>lx0 && lx2+24+tw>lxMax){ lx2=lx0; ly+=rh; }
+      PLn(lx2,ly-5,lx2+18,ly-5,cmap[r.f.id],4); PT(r.f.name,lx2+24,ly,{s:14,w:500}); lx2+=24+tw+20; }); }
   const fy=slide?H-26:H-30;
   PT("Generated "+new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})+" by Plimsoll, FLOW Maritime",W-40,fy,{s:13,c:PEX.muted,a:"right"});
   PT("Indicative, before supplier margin and credit terms.",40,fy,{s:13,c:PEX.muted});
