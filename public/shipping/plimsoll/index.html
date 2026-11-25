@@ -280,12 +280,8 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
   .chkrow .bf.chk{font-size:11px}
   .chkrow .bf.chk input{width:14px;height:14px}
 }
-html[data-view=public] #chart-sec,html[data-view=public] #fold-table,html[data-view=public] #fold-flags,html[data-view=public] #print-open,html[data-view=public] #print{display:none!important}
-html[data-view=public] .grid2{grid-template-columns:minmax(0,1fr)}
-html[data-view=public] .grid2>aside .blendbar{margin:0 0 14px}
-html[data-view=public] .grid2>aside .cmpbox{margin:0 0 14px}
+html[data-view=public] #assump-sec,html[data-view=public] #fold-table,html[data-view=public] #fold-flags,html[data-view=public] #print-open,html[data-view=public] #print{display:none!important}
 html[data-view=public] .pubnote{margin:12px 0 0}
-@media (max-width:900px){html[data-view=public] .grid2>aside{order:1}html[data-view=public] #sens-sec{order:2}}
 </style>
 <script>document.documentElement.dataset.theme="dark";</script>
 
@@ -403,7 +399,7 @@ html[data-view=public] .pubnote{margin:12px 0 0}
     </div>
   </section>
 
-  <section class="panel" aria-labelledby="h-in">
+  <section class="panel" id="assump-sec" aria-labelledby="h-in">
     <div class="phead">
       <div>
         <h2 id="h-in">Assumptions</h2>
@@ -511,6 +507,7 @@ html[data-view=public] .pubnote{margin:12px 0 0}
 
 <script>
 (function(){
+const PUBLIC=/[?&]view=public\b/.test(location.search)||location.hash==="#public";
 const DEFAULTS = {
   ports:{
     rtm:{name:"Rotterdam",hsfo:550,vlsfo:705,mgo:1195,logistics:10,bioprem:70,liq:5,b100:1600},
@@ -854,8 +851,10 @@ function render(){
   document.getElementById("title").textContent=view.cmp?"Port comparison: fully loaded bunker cost":`${P.name}: fully loaded bunker cost`;
   const pc=v=>Math.round(v*100)+"%";
   const tlab={"89.34":"2025-29","85.69":"2030-34","77.94":"2035-39"}[String(S.target)]||"";
-  const arows=[["EU ETS scope",pc(view.ets)],["FuelEU scope",pc(view.feu)],["FuelEU target",`${tlab}, ${S.target} g/MJ`],["TTF",`€${S.ttf}/MWh`],["EUA",`€${S.eua}/tCO2e`],["FuelEU pool",`€${S.pool}/tCO2e`]];
-  if(view.cmp||view.port==="rtm") arows.push(["ZRE",`€${S.zre}/tCO2e`]);
+  const arows=[["EU ETS scope",pc(view.ets)],["FuelEU scope",pc(view.feu)],["FuelEU target",`${tlab}, ${S.target} g/MJ`]];
+  if(!PUBLIC) arows.push(["TTF",`€${S.ttf}/MWh`]);
+  arows.push(["EUA",`€${S.eua}/tCO2e`],["FuelEU pool",`€${S.pool}/tCO2e`]);
+  if(!PUBLIC&&(view.cmp||view.port==="rtm")) arows.push(["ZRE",`€${S.zre}/tCO2e`]);
   arows.push(["EUR/USD",String(S.fx)]);
   document.getElementById("subtitle").innerHTML=arows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
   const isR=view.cmp?rows.some(r=>r.port==="rtm"):view.port==="rtm";
@@ -1411,12 +1410,9 @@ function setTheme(t){
 document.getElementById("theme-seg").addEventListener("click",e=>{const b=e.target.closest("button[data-th]");if(b)setTheme(b.dataset.th);});
 setTheme("dark");
 /* ---------- public view (?view=public): ranking, sensitivities and general assumptions only ---------- */
-const PUBLIC=/[?&]view=public\b/.test(location.search)||location.hash==="#public";
 if(PUBLIC){
   document.documentElement.dataset.view="public";
-  ["a-scrub","a-b100wtt","a-biowtt","a-slip","a-pilot","a-zreobl"].forEach(id=>{ const e=document.getElementById(id), f=e&&e.closest(".f"); if(f) f.style.display="none"; });
   const rk=document.getElementById("rank");
-  rk.before(document.getElementById("cmp"),document.querySelector(".blendbar"));
   const pn=document.createElement("p"); pn.className="note pubnote";
   pn.textContent="Indicative only, not an offer. Prices and market data are set by FLOW Maritime and dated where shown.";
   rk.after(pn);
