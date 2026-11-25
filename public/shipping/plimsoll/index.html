@@ -280,6 +280,12 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
   .chkrow .bf.chk{font-size:11px}
   .chkrow .bf.chk input{width:14px;height:14px}
 }
+html[data-view=public] #chart-sec,html[data-view=public] #fold-table,html[data-view=public] #fold-flags,html[data-view=public] #print-open,html[data-view=public] #print{display:none!important}
+html[data-view=public] .grid2{grid-template-columns:minmax(0,1fr)}
+html[data-view=public] .grid2>aside .blendbar{margin:0 0 14px}
+html[data-view=public] .grid2>aside .cmpbox{margin:0 0 14px}
+html[data-view=public] .pubnote{margin:12px 0 0}
+@media (max-width:900px){html[data-view=public] .grid2>aside{order:1}html[data-view=public] #sens-sec{order:2}}
 </style>
 <script>document.documentElement.dataset.theme="dark";</script>
 
@@ -338,7 +344,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
   </div>
 
   <div class="grid2">
-    <section class="panel" aria-labelledby="h-chart">
+    <section class="panel" id="chart-sec" aria-labelledby="h-chart">
       <h2 id="h-chart">Cost build per fuel</h2>
       <p class="note" id="chartnote"></p>
       <div class="cmpbox" id="cmp" hidden></div>
@@ -440,7 +446,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
     </div>
   </section>
 
-  <details class="panel fold">
+  <details class="panel fold" id="fold-table">
     <summary><h2 id="h-table">Line-by-line build</h2></summary>
     <p class="note">All $/t figures are per tonne of the fuel as bunkered, unless marked VLSFO-equivalent. FuelEU balance is positive for surplus, negative for deficit, at the selected scope. ZRE net is tickets generated less the supplier's own surrender obligation on that tonne.</p>
     <div class="tablewrap"><table id="tbl">
@@ -452,7 +458,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
     <div id="cards"></div>
   </details>
 
-  <details class="panel fold">
+  <details class="panel fold" id="fold-flags">
     <summary><h2 id="h-flags">Method and flags</h2></summary>
     <ul class="flags">
       <li><b>FuelEU.</b> WtW = WtT + TtW, Annex II factors and GWPs (CH4 25, N2O 298). Balance per tonne = (target minus WtW) × LCV / 1000, valued at the pool price, × scope. Deficits use the pool price, not the €2,400/t VLSFO-eq penalty (about €640/tCO2e), so this assumes pool liquidity.</li>
@@ -1404,6 +1410,17 @@ function setTheme(t){
 }
 document.getElementById("theme-seg").addEventListener("click",e=>{const b=e.target.closest("button[data-th]");if(b)setTheme(b.dataset.th);});
 setTheme("dark");
+/* ---------- public view (?view=public): ranking, sensitivities and general assumptions only ---------- */
+const PUBLIC=/[?&]view=public\b/.test(location.search)||location.hash==="#public";
+if(PUBLIC){
+  document.documentElement.dataset.view="public";
+  ["a-scrub","a-b100wtt","a-biowtt","a-slip","a-pilot","a-zreobl"].forEach(id=>{ const e=document.getElementById(id), f=e&&e.closest(".f"); if(f) f.style.display="none"; });
+  const rk=document.getElementById("rank");
+  rk.before(document.getElementById("cmp"),document.querySelector(".blendbar"));
+  const pn=document.createElement("p"); pn.className="note pubnote";
+  pn.textContent="Indicative only, not an offer. Prices and market data are set by FLOW Maritime and dated where shown.";
+  rk.after(pn);
+}
 fillInputs(); render(); renderAsOf();
 window.__compute=compute; window.__S=()=>S;
 })();
