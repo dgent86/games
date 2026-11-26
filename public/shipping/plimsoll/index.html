@@ -193,6 +193,11 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
 .sitefoot .wrap{display:flex;flex-wrap:wrap;gap:6px 20px;justify-content:space-between;padding-block:16px 28px}
 .sitefoot a{color:var(--ink2);font-weight:600;text-decoration:none}
 .sitefoot a:hover{color:var(--ink)}
+.sitefoot .legal{padding-block:0 28px;align-items:baseline;justify-content:flex-start}
+.tlink{font:inherit;font-size:13px;font-weight:600;color:var(--ink2);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.tlink:hover,.tlink[aria-expanded="true"]{color:var(--ink)}
+.terms{flex-basis:100%;max-width:90ch;font-size:12.5px;color:var(--ink2)}
+.terms p{margin:0 0 8px}
 .fold>summary{list-style:none;display:flex;align-items:center;gap:12px;cursor:pointer;min-height:32px}
 .fold>summary::-webkit-details-marker{display:none}
 .fold>summary::before{content:"";flex:none;width:9px;height:9px;border-right:2px solid var(--ink2);border-bottom:2px solid var(--ink2);transform:rotate(-45deg);margin-left:2px;transition:transform .15s ease}
@@ -937,6 +942,12 @@ function renderPriceDates(){
 function stampPrice(pk,k){ if(!DATED.includes(k)) return; (priceAt[pk]=priceAt[pk]||{})[k]=new Date().toISOString(); }
 function renderAsOf(){
   renderPriceDates();
+  if(PUBLIC){
+    const ds=[]; for(const pk of PORTKEYS) for(const k of ["hsfo","vlsfo","mgo"]) if(priceAt[pk]&&priceAt[pk][k]) ds.push(priceAt[pk][k]);
+    const fd=ds.sort().pop()||inputsAt;
+    document.getElementById("asof").innerHTML=[[M.euaSource||"EUA","EUA",M.euaAsOf],["BetterSea","FuelEU Index",M.poolAsOf],["ECB","EURUSD",M.fxAsOf],["FLOW","fuel prices",fd]].filter(r=>r[2]).map(r=>`${r[0]} - ${r[1]} - ${dfmt(r[2])}`).join("<br>");
+    return;
+  }
   const parts=[`Market data: TTF ${dfmt(M.ttfAsOf)} · EUA ${dfmt(M.euaAsOf)} · ECB ${dfmt(M.fxAsOf)} · Pool ${dfmt(M.poolAsOf)}`];
   if(inputsAt) parts.push(`Inputs saved ${tfmt(inputsAt)}`);
   parts.push("ETS 100% surrender");
@@ -1133,7 +1144,7 @@ function printSummaryText(){
     const d=ref?(r.gj-ref.gj)*VLSFO_LCV:0;
     lines.push(`${r.f.name}: ${fmt(conv(r,r.total))} ${u}${r.f.id!==REFID()&&ref?` (${sgn(d,0)} vs ${view.cmp?"RTM ":""}VLSFO)`:""}`);
   });
-  lines.push("","Indicative, before supplier margin and credit terms.");
+  lines.push("",PUBLIC?"Indicative only.":"Indicative, before supplier margin and credit terms.");
   return lines.join("\n");
 }
 
@@ -1301,7 +1312,7 @@ async function buildPrintImage(theme,fmt0,outW){
       PLn(lx2,ly-5,lx2+18,ly-5,cmap[r.f.id],4); PT(r.f.name,lx2+24,ly,{s:14,w:500}); lx2+=24+tw+20; }); }
   const fy=slide?H-26:H-30;
   PT("Generated "+new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})+" by Plimsoll, FLOW Maritime",W-40,fy,{s:13,c:PEX.muted,a:"right"});
-  PT("Indicative, before supplier margin and credit terms.",40,fy,{s:13,c:PEX.muted});
+  PT(PUBLIC?"Indicative only.":"Indicative, before supplier margin and credit terms.",40,fy,{s:13,c:PEX.muted});
   return cv;
 }
 
@@ -1397,7 +1408,7 @@ if(PUBLIC){
   document.documentElement.dataset.view="public";
   const rk=document.getElementById("rank");
   const pn=document.createElement("p"); pn.className="note pubnote";
-  pn.textContent="Indicative only, not an offer. Prices and market data are set by FLOW Maritime and dated where shown.";
+  pn.textContent="Indicative only.";
   rk.after(pn);
 }
 fillInputs(); render(); renderAsOf();
@@ -1405,7 +1416,11 @@ window.__compute=compute; window.__S=()=>S;
 })();
 </script>
 
-<footer class="sitefoot"><div class="wrap"><a href="/shipping/">&larr; Shipping tools</a><span>Test version. Indicative figures, before supplier margin and credit terms.</span></div></footer>
+<footer class="sitefoot"><div class="wrap"><a href="/shipping/">&larr; Shipping tools</a><span>Indicative only.</span></div>
+<div class="wrap legal"><span>&copy; 2026 FLOW Maritime AB. All rights reserved.</span><button type="button" class="tlink" id="terms-btn" aria-expanded="false" aria-controls="terms">Terms of use</button>
+<div class="terms" id="terms" hidden><p><b>Terms of use.</b> Plimsoll is provided by FLOW Maritime AB for general information only. Figures are indicative, are not an offer, quote or advice, and may be out of date or contain errors. Do not rely on them for commercial, financial, legal or regulatory decisions without checking with FLOW Maritime or your own advisers. To the fullest extent permitted by law, FLOW Maritime AB accepts no liability for loss arising from use of the tool.</p>
+<p>The tool, its methodology, design and content are the property of FLOW Maritime AB and protected by copyright. You may use the output for your own internal business purposes and share printouts with attribution to Plimsoll by FLOW Maritime. You may not copy, scrape, reverse engineer, resell, or build a competing tool from the tool or its output without written permission.</p></div></div></footer>
+<script>(()=>{const b=document.getElementById("terms-btn"),t=document.getElementById("terms");if(b&&t)b.addEventListener("click",()=>{t.hidden=!t.hidden;b.setAttribute("aria-expanded",String(!t.hidden));});})();</script>
 <script>(()=>{if(!/(^|\.)dangent\.uk$/.test(location.hostname))return;try{const body=JSON.stringify({g:'plimsoll',e:'view',d:'',s:Math.random().toString(36).slice(2,10)});if(navigator.sendBeacon)navigator.sendBeacon('/api/event',new Blob([body],{type:'application/json'}));}catch(_){}})();</script>
 </body>
 </html>
