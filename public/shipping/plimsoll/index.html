@@ -280,7 +280,7 @@ legend{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:6
   .chkrow .bf.chk{font-size:11px}
   .chkrow .bf.chk input{width:14px;height:14px}
 }
-html[data-view=public] #assump-sec,html[data-view=public] #fold-table,html[data-view=public] #fold-flags,html[data-view=public] #print-open,html[data-view=public] #print{display:none!important}
+html[data-view=public] #assump-sec,html[data-view=public] #fold-table,html[data-view=public] #fold-flags{display:none!important}
 html[data-view=public] .pubnote{margin:12px 0 0}
 </style>
 <script>document.documentElement.dataset.theme="dark";</script>
@@ -454,25 +454,7 @@ html[data-view=public] .pubnote{margin:12px 0 0}
     <div id="cards"></div>
   </details>
 
-  <details class="panel fold" id="fold-flags">
-    <summary><h2 id="h-flags">Method and flags</h2></summary>
-    <ul class="flags">
-      <li><b>FuelEU.</b> WtW = WtT + TtW, Annex II factors and GWPs (CH4 25, N2O 298). Balance per tonne = (target minus WtW) × LCV / 1000, valued at the pool price, × scope. Deficits use the pool price, not the €2,400/t VLSFO-eq penalty (about €640/tCO2e), so this assumes pool liquidity.</li>
-      <li><b>FuelEU surplus sold.</b> The "FuelEU surplus sold" box (Bio blend row) controls whether a FuelEU surplus is credited here. Tick it once you've actually sold or pooled that surplus, and its $/t credit is applied (shown hatched, deducted from the gross cost). Left unticked, the credit is zeroed wherever a fuel's FuelEU balance is a surplus, so you're not shown a gain you haven't realised yet. The balance itself (tCO2e/t, in the table and cards) is unchanged either way. A FuelEU deficit still costs at the pool price regardless of the toggle.</li>
-      <li><b>EU ETS.</b> TtW tCO2e with MRV GWPs (CH4 28, N2O 265), CH4 and N2O in scope from 2026. Biogenic CO2 zero-rated for bioLNG and B100; methane slip and N2O are not, so bioLNG still carries about 0.50 tCO2e/t.</li>
-      <li><b>Fossil factors.</b> HSFO as Annex II HFO (40.5 GJ/t, WtT 13.5). VLSFO as LFO (41.0 GJ/t, WtT 13.2). MGO 42.7 GJ/t, WtT 14.4. Fossil LNG WtT 18.5, LHV 49.1. B100 as FAME, 37.2 GJ/t.</li>
-      <li><b>Bio CI inputs.</b> bioLNG −60 g/MJ is treated as WtT from the PoS. B100 defaults to 14.1 g/MJ WtT: the biofuel evaluator's 85% GHG reduction basis, applied against the 94 g/MJ fossil comparator already used for ZRE below; overwrite it with the actual PoS figure once a cargo is confirmed. Either way, the engine TtW adder (slip and N2O for LNG, N2O and CH4 for B100) is added on top. If your figures are already WtW, lower them by the adder shown in the table.</li>
-      <li><b>LNG and bioLNG price build.</b> LNG = TTF + logistics. bioLNG = TTF + green gas certificate + liquefaction + logistics. All in €/MWh on HHV, since TTF is quoted on gross calorific value, converted at 55 MJ/kg (15.28 MWh/t). Example at TTF €90.30 and €10 logistics: €100.30 × 15.28 = €1,532/t. In Singapore, LNG bunkers are usually priced off JKM or oil, so TTF plus logistics is a proxy there; set the Singapore logistics figure to match the real delivered price.</li>
-      <li><b>Market data.</b> TTF (ICE front-month close), EUA, EUR/USD (ECB reference rate) and the FuelEU pool price (BetterSea FuelEU Surplus Index, weighted monthly figure) are updated by FLOW Maritime. The source and date sit next to each figure. Editing one is a what-if for your view only; "Use live" restores it.</li>
-      <li><b>Scrubber penalty.</b> HSFO burns extra fuel to power the scrubber (pumps, and caustic dosing in closed loop). The penalty is applied as extra fuel per unit of useful energy: effective LCV = 40.5 / (1 + penalty), and ETS and FuelEU follow the extra tonnes. Default 2.0% reflects open loop, the most common fleet configuration; use about 1.0% for closed loop. Source: NMBU system-level comparison of SOx abatement energy use.</li>
-      <li><b>Pilot fuel.</b> LNG and bioLNG engines also burn MGO as pilot fuel, set at 1% of total energy (editable under LNG / BioLNG). Per tonne of LNG that is about 0.012 t of MGO, priced at the port's MGO LS price and carrying its own EU ETS, FuelEU and ZRE cost. The LNG rows are therefore per tonne of LNG including its pilot fuel, and the $/GJ and VLSFO-equivalent figures use the combined energy.</li>
-      <li><b>Not included.</b> Scrubber capex, caustic and maintenance cost for HSFO, and SECA compliance: Rotterdam and Antwerp sit in the North Sea SECA, so HSFO needs a scrubber and VLSFO is not compliant there at all. Singapore at 100% is shown for comparison only; Singapore-bunkered fuel only ever sits on 50% voyages.</li>
-      <li><b>Bio blends.</b> Blend % is by mass. The bio part is B100 (FAME) for HSFO, VLSFO and MGO, and mass-balanced bioLNG for LNG. Price, LCV, ETS tonnes, FuelEU balance and ZRE are all linear per tonne, so each is the mass-weighted mix of the two parts. The resulting CI is energy-weighted. Methane slip (LNG) and the scrubber penalty (HSFO) apply to the whole blend. In Rotterdam, the ZRE obligation covers the whole tonne, and the bio part of a B blend earns tickets unless you untick the box to say that value has already been realised elsewhere (typically by the supplier); bioLNG earns none. Market blends are usually quoted as a premium over VLSFO, so check the mixed price against a real quote. At ship level, FuelEU allocation can put the bio energy wholly into the in-scope share; to approximate that on a 50% voyage, set FuelEU scope to 100%.</li>
-      <li><b>Separate ETS and FuelEU scope.</b> ETS follows the voyage scope of the emissions. FuelEU can be optimised: bio energy can be allocated wholly to the in-scope share of a ship's energy (BetterSea ruling), so a 50% ETS voyage can carry 100% FuelEU credit on the bio tonnes, up to the in-scope energy available. At 0% on either toggle, that cost or credit drops out. Bio fuel at 0% FuelEU and 0% ETS recovers none of its premium, other than ZRE in Rotterdam.</li>
-      <li><b>Antwerp.</b> An EU port, so EU ETS and FuelEU work exactly as in Rotterdam. Dutch ZRE does not apply to fuel supplied in Belgium, so there is no ZRE obligation and no tickets, and B100 shows once, without ZRE. Default prices start equal to Rotterdam, since ARA fuel oil and gasoil prices usually trade close together; set them from a real Antwerp quote. LNG bunkering at Antwerp is more limited than at Rotterdam, so treat TTF plus logistics as an approximation and check it against a real quote.</li>
-      <li><b>Dutch ZRE, Rotterdam only.</b> Every tonne supplied carries the supplier's surrender obligation, LCV × 94 g/MJ × obligation %, passed to the shipowner as a cost (VLSFO: 41.0 × 94 × 2.6% = 0.100 tCO2e × €240 = €24/t). Quoted Rotterdam prices are treated as excluding it. Only B100 generates tickets: LCV × (94 − PoS CI), so B100 with ZRE value included nets 2.939 − 0.091 = 2.848 tCO2e × €240 = €683.5/t off its price. With it unticked, B100 generates no tickets but still carries the obligation. bioLNG carries the obligation, since it is physically LNG, and generates no tickets. ZRE does not change with the ETS or FuelEU toggles, because it attaches at Dutch supply, not at the voyage. Full pass-through assumed, with no supplier margin.</li>
-    </ul>
-  </details>
+  
 
   <template id="why-tpl">
     <div class="why">
@@ -507,7 +489,7 @@ html[data-view=public] .pubnote{margin:12px 0 0}
 
 <script>
 (function(){
-const PUBLIC=/[?&]view=public\b/.test(location.search)||location.hash==="#public";
+const PUBLIC=true;
 const DEFAULTS = {
   ports:{
     rtm:{name:"Rotterdam",hsfo:550,vlsfo:705,mgo:1195,logistics:10,bioprem:70,liq:5,b100:1600},
@@ -1146,7 +1128,7 @@ function printSummaryText(){
   const ref=prAll().find(r=>r.f.id===REFID());
   const P=S.ports[view.port], u=unitLabel(), isR=view.cmp?rows.some(r=>r.port==="rtm"):view.port==="rtm";
   const lines=[view.cmp?"Port comparison: fully loaded bunker cost":`${P.name}: fully loaded bunker cost`,
-    `EU ETS ${Math.round(view.ets*100)}% · FuelEU ${Math.round(view.feu*100)}% · TTF €${nf0(S.ttf)} · EUA €${nf0(S.eua)} · FuelEU pool €${nf0(S.pool)}/tCO2e${isR?` · ZRE €${nf0(S.zre)}/tCO2e`:""} · EUR/USD ${S.fx}`,""];
+    `EU ETS ${Math.round(view.ets*100)}% · FuelEU ${Math.round(view.feu*100)}%${PUBLIC?"":` · TTF €${nf0(S.ttf)}`} · EUA €${nf0(S.eua)} · FuelEU pool €${nf0(S.pool)}/tCO2e${isR&&!PUBLIC?` · ZRE €${nf0(S.zre)}/tCO2e`:""} · EUR/USD ${S.fx}`,""];
   rows.forEach(r=>{
     const d=ref?(r.gj-ref.gj)*VLSFO_LCV:0;
     lines.push(`${r.f.name}: ${fmt(conv(r,r.total))} ${u}${r.f.id!==REFID()&&ref?` (${sgn(d,0)} vs ${view.cmp?"RTM ":""}VLSFO)`:""}`);
@@ -1292,7 +1274,7 @@ async function buildPrintImage(theme,fmt0,outW){
   }
   const title=view.cmp?"Port comparison":`${P.name}: fuel comparison`;
   PT(title,40,slide?86:106,{s:pFitSize(title,1000,slide?44:50,600,PFD),w:600,f:PFD,c:"#FFFFFF"});
-  const sub=`EU ETS ${Math.round(view.ets*100)}% · FuelEU ${Math.round(view.feu*100)}% · TTF €${nf0(S.ttf)} · EUA €${nf0(S.eua)} · Pool €${nf0(S.pool)}/tCO2e${isR?` · ZRE €${nf0(S.zre)}/tCO2e`:""} · EUR/USD ${S.fx}`;
+  const sub=`EU ETS ${Math.round(view.ets*100)}% · FuelEU ${Math.round(view.feu*100)}%${PUBLIC?"":` · TTF €${nf0(S.ttf)}`} · EUA €${nf0(S.eua)} · Pool €${nf0(S.pool)}/tCO2e${isR&&!PUBLIC?` · ZRE €${nf0(S.zre)}/tCO2e`:""} · EUR/USD ${S.fx}`;
   PT(sub,40,slide?110:138,{s:pFitSize(sub,1100,slide?16:17,400,PFB),c:"rgba(255,255,255,.82)"});
   if(ref){
     PT(view.cmp?"RTM VLSFO, FULLY LOADED":"VLSFO, FULLY LOADED",W-40,slide?38:52,{s:15,w:600,c:"rgba(255,255,255,.75)",a:"right"});
